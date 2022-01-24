@@ -5,5 +5,7 @@
 	bison -d $<
 
 OBJS = luapp.c lexer.yy.c parser.tab.c compiler.c node.c
-luapp: $(OBJS)
-	gcc -o $@ $^ 
+
+# Builds all of the files and stores the out file in bin/
+make: $(OBJS)
+	gcc -o bin/luapp $^ 
