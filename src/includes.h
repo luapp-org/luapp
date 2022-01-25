@@ -3,5 +3,8 @@
 typedef void *yyscan_t;
 #endif
 
-#include "lexer.yy.h"
+typedef struct node *YYSTYPE;
+#define YYSTYPE struct node *
+
 #include "parser.tab.h"
+#include "lexer.yy.h"

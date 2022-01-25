@@ -66,7 +66,7 @@
 
 
 /* First part of user prologue.  */
-#line 10 "parser.y"
+#line 14 "parser.y"
 
     #include <stdio.h>
 
@@ -568,7 +568,7 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    76,    76
+       0,    80,    80
 };
 #endif
 
@@ -1709,7 +1709,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 78 "parser.y"
+#line 82 "parser.y"
 
 
 static void yyerror(YYLTYPE *loc,
@@ -1722,6 +1722,11 @@ static void yyerror(YYLTYPE *loc,
   (*error_count)++;
 }
 
-const char *token_to_string(int token) {
+/*  token_to_string - converts the given token to it's corresponding string name
+*       args: token
+*       rets: token name
+*/
+const char *token_to_string(int token) 
+{
     return yytname[token - 255];
 }

@@ -10,8 +10,12 @@
     #include <errno.h>
     #include <string.h>
     
+    typedef struct node *YYSTYPE;
+    #define YYSTYPE struct node *
+
     #include "compiler.h"
     #include "parser.tab.h"
+    #include "node.h"
 
     /* Tell GCC to ignore the warning for now (must be a bug) */
     #pragma GCC diagnostic ignored "-Wstringop-overflow="
@@ -161,7 +165,7 @@ integer         {digit}+
 ".."                return CONCAT_T;
 "..."               return VARARG_T;
 
-{identifier}        return IDENTIFIER_T;
+{identifier}        { *yylval = node_identifier(*yylloc, yytext, yyleng); return IDENTIFIER_T; }
 {integer}           return INTEGER_T;
 
 
