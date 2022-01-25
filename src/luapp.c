@@ -59,6 +59,7 @@ int main(int argc, char **argv)
         }
     }
 
+    /* Determine if we are using stdin or file in. */
     if (optind == argc - 1) {
         /* Check if the input file is a .lpp or .lua file */
         dot = strrchr(argv[optind], '.');
@@ -70,7 +71,9 @@ int main(int argc, char **argv)
             printf("Incorrect file type.\n");
             return 1;
         }
-    } else {
+    } else if (optind >= argc) 
+        lex_init(&lexer, stdin);
+    else {
         printf("Expected 1 input file, found %d.\n", argc - optind);
         return 1;
     }
