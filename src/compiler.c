@@ -1,5 +1,13 @@
+/*  compiler.c - only version
+ *      all utilities used throughout the compiler
+ */
+
 #include "compiler.h"
 
+/*  compiler_error - prints a compiler error to stdout based on params
+ *      args: location of error, format, args
+ *      rets: none
+ */
 void compiler_error(YYLTYPE location, const char *format, ...)
 {
     va_list ap;
@@ -10,21 +18,10 @@ void compiler_error(YYLTYPE location, const char *format, ...)
     printf("\n");
 }
 
-char *concat(const char *s1, const char *s2)
-{
-    const size_t len1 = strlen(s1);
-    const size_t len2 = strlen(s2);
-    /* allocate enough memory for the new string and it's null terminator */
-    char *result = malloc(len1 + len2 + 1);
-    /* make sure we were able to allocate enough space */
-    if (result == NULL)
-        return NULL;
-    /* copy the strings into result */
-    memcpy(result, s1, len1);
-    memcpy(result + len1, s2, len2 + 1);
-    return result;
-}
-
+/*  clear - clears the given string
+ *      args: string
+ *      rets: none
+ */
 void clear(char arr[])
 {
     int length = strlen(arr);

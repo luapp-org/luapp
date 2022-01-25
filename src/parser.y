@@ -1,3 +1,7 @@
+/*  parser.y - only version
+ *      parses lexical tokens into an AST (abstract syntax tree)
+ */
+ 
 %locations
 %defines
 %define api.pure
@@ -87,6 +91,11 @@ static void yyerror(YYLTYPE *loc,
   (*error_count)++;
 }
 
-const char *token_to_string(int token) {
+/*  token_to_string - converts the given token to it's corresponding string name
+*       args: token
+*       rets: token name
+*/
+const char *token_to_string(int token) 
+{
     return yytname[token - 255];
 }

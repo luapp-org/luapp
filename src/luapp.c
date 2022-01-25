@@ -1,3 +1,7 @@
+/*  luapp.c - only version
+ *      main entry point for the compiler
+ */
+
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
@@ -7,8 +11,14 @@
 
 #include "lexer.h"
 
+/*  print_summary - prints a quick summary of a pass (elapsed time and number of
+ *  errors) 
+ *      args: pass name, numer of errors, start time 
+ *      rets: none
+ */
 static void print_summary(char *pass, int error_count, clock_t start)
 {
+    /* Calculate the total time that the pass took (seconds) */
     double sec = ((clock() - start) * 1000);
 
     printf("\n%s encountered %d %s, elapsed time: %lf second(s).\n", pass,
@@ -37,6 +47,7 @@ int main(int argc, char **argv)
 
     stage = "codegen";
     output = stdout;
+    /* Parse the command line args and store them in their corresponding vars */
     while ((opt = getopt(argc, argv, "o:s:")) != -1) {
         switch (opt) {
         case 'o':
@@ -49,9 +60,10 @@ int main(int argc, char **argv)
     }
 
     if (optind == argc - 1) {
-        /* check if the input file is a .lpp or .lua file */
+        /* Check if the input file is a .lpp or .lua file */
         dot = strrchr(argv[optind], '.');
 
+        /* If the given file is of the correct type, init the lexer */
         if (dot && !strcmp(dot, ".lpp") || !strcmp(dot, ".lua")) {
             lex_init(&lexer, fopen(argv[optind], "r"));
         } else {
