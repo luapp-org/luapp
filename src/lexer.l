@@ -163,7 +163,7 @@ integer         {digit}+
 "..."               return VARARG_T;
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext, yyleng); return IDENTIFIER_T; }
-{integer}           return INTEGER_T;
+{integer}           { *yylval = node_integer(*yylloc, yytext, yyleng); return INTEGER_T; }
 
 
 {newline}           yyextra = 1;
