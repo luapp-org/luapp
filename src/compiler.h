@@ -6,9 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Errors */
-#define LEX_UNKCHAR -1
-#define LEX_UNFSTR -2
+typedef struct node *YYSTYPE;
+#define YYSTYPE struct node *
 
 #if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
 typedef struct YYLTYPE YYLTYPE;
