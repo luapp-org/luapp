@@ -70,15 +70,22 @@
 
     #include <stdio.h>
 
-    #include "includes.h"
     #include "compiler.h"
-    
+
+    #ifndef YY_TYPEDEF_YY_SCANNER_T
+    #define YY_TYPEDEF_YY_SCANNER_T
+    typedef void *yyscan_t;
+    #endif
+
+    #include "parser.tab.h"
+    #include "lexer.yy.h"
+
     #define YYERROR_VERBOSE
     static void yyerror(YYLTYPE *loc, YYSTYPE *root,
                       int *error_count, yyscan_t scanner,
                       char const *s);
 
-#line 82 "parser.tab.c"
+#line 89 "parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -568,7 +575,7 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    80,    80
+       0,    87,    87
 };
 #endif
 
@@ -1471,7 +1478,7 @@ yyreduce:
   switch (yyn)
     {
 
-#line 1475 "parser.tab.c"
+#line 1482 "parser.tab.c"
 
       default: break;
     }
@@ -1709,7 +1716,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 82 "parser.y"
+#line 89 "parser.y"
 
 
 static void yyerror(YYLTYPE *loc,

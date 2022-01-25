@@ -9,9 +9,6 @@
     #include <stdio.h>
     #include <errno.h>
     #include <string.h>
-    
-    typedef struct node *YYSTYPE;
-    #define YYSTYPE struct node *
 
     #include "compiler.h"
     #include "parser.tab.h"

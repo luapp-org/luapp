@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "compiler.h"
 #include "lexer.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of

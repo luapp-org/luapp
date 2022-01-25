@@ -1,7 +1,7 @@
 #ifndef _LEXER_H
 #define _LEXER_H
 
-#include "includes.h"
+#include "lexer.yy.h"
 
 void lex_init(yyscan_t *lexer, FILE *input);
 void lex_destroy(yyscan_t *lexer);

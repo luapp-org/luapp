@@ -14,9 +14,16 @@
 %{
     #include <stdio.h>
 
-    #include "includes.h"
     #include "compiler.h"
-    
+
+    #ifndef YY_TYPEDEF_YY_SCANNER_T
+    #define YY_TYPEDEF_YY_SCANNER_T
+    typedef void *yyscan_t;
+    #endif
+
+    #include "parser.tab.h"
+    #include "lexer.yy.h"
+
     #define YYERROR_VERBOSE
     static void yyerror(YYLTYPE *loc, YYSTYPE *root,
                       int *error_count, yyscan_t scanner,
