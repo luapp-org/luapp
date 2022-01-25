@@ -1,31 +1,34 @@
+#include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <limits.h>
-#include <assert.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "lexer.h"
 
-static void print_summary(char *pass, int error_count, clock_t start) {
+static void print_summary(char *pass, int error_count, clock_t start)
+{
     double sec = ((clock() - start) * 1000);
 
-    printf("\n%s encountered %d %s, elapsed time: %lf second(s).\n", 
-            pass, error_count, (error_count == 1 ? "error" : "errors"), (sec / 1000000) / 1000);
+    printf("\n%s encountered %d %s, elapsed time: %lf second(s).\n", pass,
+           error_count, (error_count == 1 ? "error" : "errors"),
+           (sec / 1000000) / 1000);
 }
 
 /*
-* Entrypoint for the compiler.
-*
-* luapp -s [lexer|parser|symbol|type|ir|codgen] -o [outputfile] [inputfile]
-*
-* -s : indicates the name of the stage to stop after.
-*      Defaults to the last stage.
-* -o : name of the output file. Defaults to "output.s"
-*
-* You should pass the name of the file to compile.
-*/
-int main(int argc, char **argv) {
+ * Entrypoint for the compiler.
+ *
+ * luapp -s [lexer|parser|symbol|type|ir|codgen] -o [outputfile] [inputfile]
+ *
+ * -s : indicates the name of the stage to stop after.
+ *      Defaults to the last stage.
+ * -o : name of the output file. Defaults to "output.s"
+ *
+ * You should pass the name of the file to compile.
+ */
+int main(int argc, char **argv)
+{
     int opt, error_count;
     char *stage, *dot;
     FILE *input, *output;
@@ -36,12 +39,12 @@ int main(int argc, char **argv) {
     output = stdout;
     while ((opt = getopt(argc, argv, "o:s:")) != -1) {
         switch (opt) {
-            case 'o':
-                output = fopen(optarg, "w");
-                break;
-            case 's':
-                stage = optarg;
-                break;
+        case 'o':
+            output = fopen(optarg, "w");
+            break;
+        case 's':
+            stage = optarg;
+            break;
         }
     }
 

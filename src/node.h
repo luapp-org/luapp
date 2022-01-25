@@ -17,10 +17,9 @@ struct node {
     struct YYLTYPE *location;
     union {
         struct {
-            
+
         } integer;
     } data;
-     
 }
 
 #endif
