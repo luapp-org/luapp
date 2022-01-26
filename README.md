@@ -3,7 +3,7 @@ This is the Lua++ C lang build, currently private but will soon be public. This 
 
 ### Lua++ syntax in extented BNF
 This is just pasted from [lua.org](https://www.lua.org/manual/5.1/manual.html#8) for now, but I'll add some other syntax rules for OOP later.
-```
+```bnf
 chunk ::= {stat [`;´]} [laststat [`;´]]
 
 block ::= chunk
