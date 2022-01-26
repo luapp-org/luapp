@@ -12,7 +12,13 @@ typedef void *yyscan_t;
 
 #include "compiler.h"
 
-enum node_type { NODE_INTEGER, NODE_IDENTIFIER, NODE_STRING };
+enum node_type {
+    NODE_INTEGER,
+    NODE_IDENTIFIER,
+    NODE_STRING,
+    NODE_EXPRESSION_STATEMENT,
+    NODE_STATEMENT_LIST
+};
 
 /* Node struct with data unions */
 struct node {
@@ -29,13 +35,28 @@ struct node {
         struct {
             char value[0];
         } string;
+        struct {
+            struct node *expression;
+        } expression_statement;
+        struct {
+            struct node *init;      /* First statement */
+            struct node *statement; /* Next statement */
+        } statment_list;
     } data;
 };
 
-/* Node creation methods */
+/* Node create method definition */
 static struct node *node_create(YYLTYPE location, enum node_type type);
+
+/* Node expression method definitions */
 struct node *node_integer(YYLTYPE location, char *value);
 struct node *node_identifier(YYLTYPE location, char *value, int length);
 struct node *node_string(YYLTYPE location, char *value, int length);
+
+/* Node statement method definitions */
+struct node *node_expression_statement(YYLTYPE location,
+                                       struct node *expression);
+struct node *node_statement_list(YYLTYPE location, struct node *init,
+                                 struct node *statement);
 
 #endif

@@ -71,3 +71,33 @@ struct node *node_string(YYLTYPE location, char *value, int length)
 
     return node;
 }
+
+/*  node_expression_statement - allocate a node to represent an expression as a
+ *  statement 
+ *      args: location, expression node 
+ *      rets: statement node
+ */
+struct node *node_expression_statement(YYLTYPE location,
+                                       struct node *expression)
+{
+    struct node *node = node_create(location, NODE_EXPRESSION_STATEMENT);
+
+    node->data.expression_statement.expression = expression;
+
+    return node;
+}
+
+/*  node_statement_list - allocate a node to represent a statement list
+ *      args: location, first statement, next statement 
+ *      rets: statement list node
+ */
+struct node *node_statement_list(YYLTYPE location, struct node *init,
+                                 struct node *statement)
+{
+    struct node *node = node_create(location, NODE_STATEMENT_LIST);
+
+    node->data.statment_list.init = init;
+    node->data.statment_list.statement = statement;
+
+    return node;
+}
