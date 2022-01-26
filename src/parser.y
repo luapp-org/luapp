@@ -15,6 +15,7 @@
     #include <stdio.h>
 
     #include "compiler.h"
+    #include "node.h"
 
     #ifndef YY_TYPEDEF_YY_SCANNER_T
     #define YY_TYPEDEF_YY_SCANNER_T
@@ -63,6 +64,7 @@
 %token MINUS_T/*            -     */
 %token ASTERISK_T/*         *     */
 %token SLASH_T/*            /     */
+%token PERCENT_T/*          %     */
 %token EQUAL_T/*            =     */
 %token LEFT_PARAN_T/*       (     */
 %token RIGHT_PARAN_T/*      )     */
@@ -83,9 +85,49 @@
 %token VARARG_T/*           ...   */
 
 %%
-identifier
-  : IDENTIFIER_T
+
+binary_operation
+  : expression PLUS_T expression
+      { $$ = node_binary_operation(@2, BINOP_ADD, $1, $2); }
+  | expression MINUS_T expression
+      { $$ = node_binary_operation(@2, BINOP_SUB, $1, $2); }
+  | expression ASTERISK_T expression
+      { $$ = node_binary_operation(@2, BINOP_MUL, $1, $2); }
+  | expression SLASH_T expression
+      { $$ = node_binary_operation(@2, BINOP_DIV, $1, $2); }
+  | expression CARROT_T expression
+      { $$ = node_binary_operation(@2, BINOP_POW, $1, $2); }
+  | expression PERCENT_T expression
+      { $$ = node_binary_operation(@2, BINOP_MOD, $1, $2); }
+  | expression CONCAT_T expression
+      { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $2); }
+  | expression LESS_THAN_T expression
+      { $$ = node_binary_operation(@2, BINOP_LT, $1, $2); }
+  | expression GREATER_THAN_T expression
+      { $$ = node_binary_operation(@2, BINOP_GT, $1, $2); }
+  | expression GREATER_EQUAL_T expression
+      { $$ = node_binary_operation(@2, BINOP_GE, $1, $2); }
+  | expression LESS_EQUAL_T expression
+      { $$ = node_binary_operation(@2, BINOP_LE, $1, $2); }
+  | expression NOT_EQUAL_T expression
+      { $$ = node_binary_operation(@2, BINOP_NE, $1, $2); }
+  | expression DOUBLE_EQUAL_T expression
+      { $$ = node_binary_operation(@2, BINOP_EQ, $1, $2); }
 ;
+
+unary_operation
+  : MINUS_T expression
+      { $$ = node_unary_operation(@2, UNOP_NEG, $1); }
+  | NOT_T expression
+      { $$ = node_unary_operation(@2, UNOP_NOT, $1); }
+  | POUND_T expression
+      { $$ = node_unary_operation(@2, UNOP_LEN, $1); }
+;
+
+expression
+  : NIL_T  | FALSE_T | TRUE_T | INTEGER_T | VARARG_T
+;
+
 %%
 
 static void yyerror(YYLTYPE *loc,
