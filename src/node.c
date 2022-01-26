@@ -57,3 +57,17 @@ struct node *node_identifier(YYLTYPE location, char* value, int length)
 
     return node;
 }
+
+/*  node_string - allocate a node to represent a string
+ *      args: location, name of identifier, length of name
+ *      rets: string node
+ */
+struct node *node_string(YYLTYPE location, char* value, int length)
+{
+    struct node *node = node_create(location, NODE_STRING);
+
+    /* Set the name by appending all of the characters in value */
+    strncat(node->data.identifier.name, value, length);
+
+    return node;
+}

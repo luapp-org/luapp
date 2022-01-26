@@ -14,7 +14,8 @@ typedef void *yyscan_t;
 
 enum node_type {
     NODE_INTEGER,
-    NODE_IDENTIFIER
+    NODE_IDENTIFIER,
+    NODE_STRING
 };
 
 struct node {
@@ -28,11 +29,15 @@ struct node {
         struct {
             char name[0];
         } identifier;
+        struct {
+            char value[0];
+        } string;
     } data;
 };
 
 static struct node *node_create(YYLTYPE location, enum node_type type);
 struct node *node_integer(YYLTYPE location, char* value);
 struct node *node_identifier(YYLTYPE location, char* value, int length);
+struct node *node_string(YYLTYPE location, char* value, int length);
 
 #endif

@@ -52,7 +52,11 @@ integer         {digit}+
 <LSTRING>"\\r"      { strncat(string, "\r", 1); }
 <LSTRING>"\\v"      { strncat(string, "\v", 1); }
 <LSTRING>"\\"       { strncat(string, "\\", 1); }
-<LSTRING>"]]"       { BEGIN(INITIAL); return STRING_T; }
+<LSTRING>"]]"       { 
+                        *yylval = node_identifier(*yylloc, string, yyleng); 
+                        BEGIN(INITIAL); 
+                        return STRING_T; 
+                    }
 <LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unfinished string"); return -1; }
 <LSTRING>.          { strncat(string, &yytext[0], 1); }
 <LSTRING>\n         { strncat(string, "\n", 1); }
@@ -65,6 +69,7 @@ integer         {digit}+
 <STRING>"\""        { 
                         if (start == '"') {
                             start = 0;
+                            *yylval = node_identifier(*yylloc, string, yyleng);
                             clear(string); 
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -79,6 +84,7 @@ integer         {digit}+
 <STRING>"'"        { 
                         if (start == '\'') {
                             start = 0;
+                            *yylval = node_identifier(*yylloc, string, yyleng);
                             clear(string); 
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -163,7 +169,7 @@ integer         {digit}+
 "..."               return VARARG_T;
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext, yyleng); return IDENTIFIER_T; }
-{integer}           { *yylval = node_integer(*yylloc, yytext, yyleng); return INTEGER_T; }
+{integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
 
 
 {newline}           yyextra = 1;
