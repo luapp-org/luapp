@@ -99,9 +99,9 @@ static void yyerror(YYLTYPE *loc,
 }
 
 /*  token_to_string - converts the given token to it's corresponding string name
-*       args: token
-*       rets: token name
-*/
+ *      args: token
+ *      rets: token name
+ */
 const char *token_to_string(int token) 
 {
     return yytname[token - 255];

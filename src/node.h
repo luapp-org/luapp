@@ -12,19 +12,16 @@ typedef void *yyscan_t;
 
 #include "compiler.h"
 
-enum node_type {
-    NODE_INTEGER,
-    NODE_IDENTIFIER,
-    NODE_STRING
-};
+enum node_type { NODE_INTEGER, NODE_IDENTIFIER, NODE_STRING };
 
+/* Node struct with data unions */
 struct node {
     enum node_type type;
     struct YYLTYPE location;
     union {
         struct {
-            double value; 
-            bool overflow;
+            double value;
+            bool overflow; /* Indicates double overflow */
         } integer;
         struct {
             char name[0];
@@ -35,9 +32,10 @@ struct node {
     } data;
 };
 
+/* Node creation methods */
 static struct node *node_create(YYLTYPE location, enum node_type type);
-struct node *node_integer(YYLTYPE location, char* value);
-struct node *node_identifier(YYLTYPE location, char* value, int length);
-struct node *node_string(YYLTYPE location, char* value, int length);
+struct node *node_integer(YYLTYPE location, char *value);
+struct node *node_identifier(YYLTYPE location, char *value, int length);
+struct node *node_string(YYLTYPE location, char *value, int length);
 
 #endif
