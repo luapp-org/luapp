@@ -158,6 +158,7 @@ integer         {digit}+
 \~                  return SQUIGGLE_T;
 \:                  return COLON_T;
 \#                  return POUND_T;
+\%                  return PERCENT_T;
 "."                 return DOT_T;
 \;                  /* do nothing */
 
