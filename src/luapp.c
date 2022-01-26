@@ -11,6 +11,7 @@
 
 #include "compiler.h"
 #include "lexer.h"
+#include "parser.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors) 

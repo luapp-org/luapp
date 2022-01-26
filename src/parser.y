@@ -140,6 +140,27 @@ static void yyerror(YYLTYPE *loc,
   (*error_count)++;
 }
 
+/*  parser_parse - creates a tree of nodes
+ *      args: pointer to error count, lexer instance
+ *      rets: token name
+ */
+struct node *parser_parse(int *error_count, yyscan_t lexer)
+{
+    struct node *tree;
+
+    int result = yyparse(&tree, error_count, lexer);
+
+    /* Handle any errors that came up in the pass */
+    if (result == 1 || *error_count > 0) 
+        return NULL;
+    else if (result == 2) {
+        printf("Parser ran out of memory. Try restarting the compiler.\n");
+        return NULL;
+    }
+
+    return tree;
+}
+
 /*  token_to_string - converts the given token to it's corresponding string name
  *      args: token
  *      rets: token name
