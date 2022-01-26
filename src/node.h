@@ -16,9 +16,38 @@ enum node_type {
     NODE_INTEGER,
     NODE_IDENTIFIER,
     NODE_STRING,
+    NODE_BOOLEAN,
+    NODE_NIL,
+    NODE_BINARY_OPERATION,
+    NODE_UNARY_OPERATION,
+    NODE_EXPRESSION_LIST,
     NODE_EXPRESSION_STATEMENT,
     NODE_STATEMENT_LIST
 };
+
+/* Binary operations */
+enum node_binary_operation {
+    /* Arithmetic operations */
+    BINOP_MUL,
+    BINOP_DIV,
+    BINOP_ADD,
+    BINOP_SUB,
+    BINOP_POW,
+    BINOP_MOD,
+    BINOP_CONCAT,
+    /* Comparative */
+    BINOP_GT,
+    BINOP_LT,
+    BINOP_GE,
+    BINOP_LE,
+    BINOP_EQ,
+    BINOP_NE,
+    BINOP_AND,
+    BINOP_OR
+};
+
+/* Unary operations (-, not, #) */
+enum node_unary_operation { UNOP_NEG, UNOP_NOT, UNOP_LEN };
 
 /* Node struct with data unions */
 struct node {
@@ -36,6 +65,22 @@ struct node {
             char value[0];
         } string;
         struct {
+            bool value;
+        } boolean;
+        struct {
+            enum node_binary_operation operation;
+            struct node *left;  /* Left operand */
+            struct node *right; /* Right operand */
+        } binary_operation;
+        struct {
+            enum node_unary_operation operation;
+            struct node *expression; /* Operand */
+        } unary_operation;
+        struct {
+            struct node *init;       /* First expression */
+            struct node *expression; /* Next expression */
+        } expression_list;
+        struct {
             struct node *expression;
         } expression_statement;
         struct {
@@ -45,15 +90,25 @@ struct node {
     } data;
 };
 
-/* Node create method definition */
+/* Node create method constructor */
 static struct node *node_create(YYLTYPE location, enum node_type type);
 
-/* Node expression method definitions */
+/* Node expression constructors */
 struct node *node_integer(YYLTYPE location, char *value);
 struct node *node_identifier(YYLTYPE location, char *value, int length);
 struct node *node_string(YYLTYPE location, char *value, int length);
+struct node *node_boolean(YYLTYPE location, bool value);
+struct node *node_nil(YYLTYPE location);
+struct node *node_binary_operation(YYLTYPE location,
+                                   enum node_binary_operation operation,
+                                   struct node *left, struct node *right);
+struct node *node_unary_operation(YYLTYPE location,
+                                  enum node_unary_operation operation,
+                                  struct node *expression);
+struct node *node_expression_list(YYLTYPE location, struct node *init,
+                                 struct node *expression);
 
-/* Node statement method definitions */
+/* Node statement constructors */
 struct node *node_expression_statement(YYLTYPE location,
                                        struct node *expression);
 struct node *node_statement_list(YYLTYPE location, struct node *init,

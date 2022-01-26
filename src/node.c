@@ -72,6 +72,77 @@ struct node *node_string(YYLTYPE location, char *value, int length)
     return node;
 }
 
+/*  node_boolean - allocate a node to represent a boolean
+ *      args: location, value 
+ *      rets: boolean node
+ */
+struct node *node_boolean(YYLTYPE location, bool value)
+{
+    struct node *node = node_create(location, NODE_BOOLEAN);
+    
+    node->data.boolean.value = value;
+    
+    return node;
+}
+
+/*  node_nil - allocate a node to represent a nil value
+ *      args: location, value 
+ *      rets: boolean node
+ */
+struct node *node_nil(YYLTYPE location)
+{
+    /* No data for this node, it's just a 'marker' */
+    return node_create(location, NODE_NIL);
+}
+
+/*  node_binary_operation - allocate a node to represent a binary operation
+ *      args: location, operation, left operand, right operand 
+ *      rets: binary operation node
+ */
+struct node *node_binary_operation(YYLTYPE location,
+                                   enum node_binary_operation operation,
+                                   struct node *left, struct node *right)
+{
+    struct node *node = node_create(location, NODE_BINARY_OPERATION);
+
+    node->data.binary_operation.operation = operation;
+    node->data.binary_operation.left = left;
+    node->data.binary_operation.right = right;
+
+    return node;
+}
+
+/*  node_unary_operation - allocate a node to represent a unary operation
+ *      args: location, operation, operand 
+ *      rets: unary operation node
+ */
+struct node *node_unary_operation(YYLTYPE location,
+                                  enum node_unary_operation operation,
+                                  struct node *expression)
+{
+    struct node *node = node_create(location, NODE_UNARY_OPERATION);
+
+    node->data.unary_operation.operation = operation;
+    node->data.unary_operation.expression = expression;
+
+    return node;
+}
+
+/*  node_expression_list - allocate a node to represent an expression list
+ *      args: location, first expression, next expression 
+ *      rets: expression list node
+ */
+struct node *node_expression_list(YYLTYPE location, struct node *init,
+                                 struct node *expression)
+{
+    struct node *node = node_create(location, NODE_EXPRESSION_LIST);
+
+    node->data.expression_list.init = init;
+    node->data.expression_list.expression = expression;
+
+    return node;
+}
+
 /*  node_expression_statement - allocate a node to represent an expression as a
  *  statement 
  *      args: location, expression node 
