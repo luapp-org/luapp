@@ -46,6 +46,7 @@ int main(int argc, char **argv)
     FILE *input, *output;
     yyscan_t lexer;
     time_t start;
+    struct node *tree;
 
     stage = "codegen";
     output = stdout;
@@ -80,6 +81,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    /* Only enable lexer pass */
     if (!strcmp(stage, "lexer")) {
         error_count = 0;
         start = clock();
@@ -88,5 +90,22 @@ int main(int argc, char **argv)
 
         print_summary("Lexer", error_count, start);
         return (error_count > 0) ? 1 : 0;
+    }
+
+    error_count = 0;
+    start = clock();
+    /* Run the parser, it's needed for all later passes */
+    tree = parser_parse(&error_count, lexer);
+    lex_destroy(&lexer);
+
+    /* Make sure the parser did not return any errors */
+    if (tree == NULL) {
+        print_summary("Parser", error_count, start);
+        return 1;
+    }
+
+    /* If the stage is "parser" print the AST */
+    if (!strcmp("parser", stage)) {
+        
     }
 }
