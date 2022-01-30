@@ -7,3 +7,4 @@ ColumnLimit: 80
 BreakBeforeBraces: Custom
 BraceWrapping:
     AfterFunction: true
+IndentCaseLabels: true
