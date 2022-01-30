@@ -57,7 +57,7 @@ integer         {digit}+
                         BEGIN(INITIAL); 
                         return STRING_T; 
                     }
-<LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unfinished string"); return -1; }
+<LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
 <LSTRING>.          { strncat(string, &yytext[0], 1); }
 <LSTRING>\n         { strncat(string, "\n", 1); }
 
@@ -69,7 +69,7 @@ integer         {digit}+
 <STRING>"\""        { 
                         if (start == '"') {
                             start = 0;
-                            *yylval = node_identifier(*yylloc, string, yyleng);
+                            *yylval = node_string(*yylloc, string, yyleng);
                             clear(string); 
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -84,7 +84,7 @@ integer         {digit}+
 <STRING>"'"        { 
                         if (start == '\'') {
                             start = 0;
-                            *yylval = node_identifier(*yylloc, string, yyleng);
+                            *yylval = node_string(*yylloc, string, yyleng);
                             clear(string); 
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -111,7 +111,7 @@ integer         {digit}+
                          else 
                             strncat(string, "\\\'", 2);
                     }
-<STRING><<EOF>>     { compiler_error(*yylloc_param, "unfinished string"); return -1; }
+<STRING><<EOF>>     { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
 <STRING>.           { strncat(string, &yytext[0], 1); }
 
 "--[["              { BEGIN(LCOMMENT); }
@@ -150,8 +150,8 @@ integer         {digit}+
 \*                  return ASTERISK_T;
 \/                  return SLASH_T;
 \=                  return EQUAL_T;
-\(                  return RIGHT_PARAN_T;
-\)                  return LEFT_PARAN_T;
+\)                  return RIGHT_PARAN_T;
+\(                  return LEFT_PARAN_T;
 \^                  return CARROT_T;
 \>                  return GREATER_THAN_T;
 \<                  return LESS_THAN_T;
@@ -159,6 +159,7 @@ integer         {digit}+
 \:                  return COLON_T;
 \#                  return POUND_T;
 \%                  return PERCENT_T;
+\,                  return COMMA_T;
 "."                 return DOT_T;
 \;                  /* do nothing */
 
@@ -175,7 +176,7 @@ integer         {digit}+
 
 {newline}           yyextra = 1;
 {ws}
-.                   { compiler_error(*yylloc_param, "unrecognized charcter %s", yytext); return -1; }
+.                   { compiler_error(*yylloc_param, "unrecognized charcter %s", yytext); yyterminate(); }
 %%
 
 /*  lex_init - initializes the flex lexer
