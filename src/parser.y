@@ -75,6 +75,7 @@
 %token COLON_T/*            :     */
 %token POUND_T/*            #     */
 %token DOT_T/*              .     */
+%token COMMA_T/*            ,     */
 
 /* Complex symbols */
 %token DOUBLE_EQUAL_T/*     ==    */
@@ -83,6 +84,8 @@
 %token LESS_EQUAL_T/*       <=    */
 %token CONCAT_T/*           ..    */
 %token VARARG_T/*           ...   */
+
+%start program
 
 %%
 
@@ -117,15 +120,61 @@ binary_operation
 
 unary_operation
   : MINUS_T expression
-      { $$ = node_unary_operation(@2, UNOP_NEG, $1); }
+      { $$ = node_unary_operation(@$, UNOP_NEG, $1); }
   | NOT_T expression
-      { $$ = node_unary_operation(@2, UNOP_NOT, $1); }
+      { $$ = node_unary_operation(@$, UNOP_NOT, $1); }
   | POUND_T expression
-      { $$ = node_unary_operation(@2, UNOP_LEN, $1); }
+      { $$ = node_unary_operation(@$, UNOP_LEN, $1); }
+;
+
+expression_list 
+    : expression
+    | expression_list COMMA_T expression
+        { $$ = node_expression_list(@$, $1, $3); }
+;
+
+variable 
+    : IDENTIFIER_T
+;
+
+prefix_expression
+    : variable
+    | LEFT_PARAN_T expression RIGHT_PARAN_T
+        { $$ = node_expression_group(@$, $2); }
+;
+
+arguments
+    : LEFT_PARAN_T RIGHT_PARAN_T
+    | LEFT_PARAN_T expression_list RIGHT_PARAN_T
+    | STRING_T
+;
+
+call 
+    : prefix_expression arguments
+        { $$ = node_call(@$, $1, $2, false); }
+    | prefix_expression COLON_T IDENTIFIER_T arguments
+//      { $$ = node_call(@$, $1, $2, false); }
 ;
 
 expression
-  : NIL_T  | FALSE_T | TRUE_T | INTEGER_T | VARARG_T
+  : NIL_T  | FALSE_T | TRUE_T | INTEGER_T | STRING_T | VARARG_T
+  | binary_operation | unary_operation
+;
+
+program 
+    : block
+        { *root = $1; }
+;
+
+statement
+    : call 
+        { $$ = node_expression_statement(@$, $1); }
+;
+
+block 
+    : statement
+    | block statement
+        {$$ = node_block(@$, $1, $2); }
 ;
 
 %%

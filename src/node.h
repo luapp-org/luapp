@@ -21,8 +21,10 @@ enum node_type {
     NODE_BINARY_OPERATION,
     NODE_UNARY_OPERATION,
     NODE_EXPRESSION_LIST,
+    NODE_CALL,
+    NODE_EXPRESSION_GROUP,
     NODE_EXPRESSION_STATEMENT,
-    NODE_STATEMENT_LIST
+    NODE_BLOCK
 };
 
 /* Binary operations */
@@ -84,9 +86,17 @@ struct node {
             struct node *expression;
         } expression_statement;
         struct {
+            struct node *prefix_expression;
+            struct node *args;
+            bool self_call; /* Depricated: self syntax only for tables */
+        } call;
+        struct {
+            struct node *expression;
+        } expression_group;
+        struct {
             struct node *init;      /* First statement */
             struct node *statement; /* Next statement */
-        } statment_list;
+        } block;
     } data;
 };
 
@@ -106,12 +116,18 @@ struct node *node_unary_operation(YYLTYPE location,
                                   enum node_unary_operation operation,
                                   struct node *expression);
 struct node *node_expression_list(YYLTYPE location, struct node *init,
-                                 struct node *expression);
+                                  struct node *expression);
+struct node *node_call(YYLTYPE location, struct node *prefix_expression,
+                       struct node *args, bool self_call);
+struct node *node_expression_group(YYLTYPE location, struct node *expression);
 
 /* Node statement constructors */
 struct node *node_expression_statement(YYLTYPE location,
                                        struct node *expression);
-struct node *node_statement_list(YYLTYPE location, struct node *init,
+struct node *node_block(YYLTYPE location, struct node *init,
                                  struct node *statement);
+
+/* AST traversal methods */
+void print_ast(FILE *output, struct node* node);
 
 #endif

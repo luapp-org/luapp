@@ -73,20 +73,20 @@ struct node *node_string(YYLTYPE location, char *value, int length)
 }
 
 /*  node_boolean - allocate a node to represent a boolean
- *      args: location, value 
+ *      args: location, value
  *      rets: boolean node
  */
 struct node *node_boolean(YYLTYPE location, bool value)
 {
     struct node *node = node_create(location, NODE_BOOLEAN);
-    
+
     node->data.boolean.value = value;
-    
+
     return node;
 }
 
 /*  node_nil - allocate a node to represent a nil value
- *      args: location, value 
+ *      args: location, value
  *      rets: boolean node
  */
 struct node *node_nil(YYLTYPE location)
@@ -96,7 +96,7 @@ struct node *node_nil(YYLTYPE location)
 }
 
 /*  node_binary_operation - allocate a node to represent a binary operation
- *      args: location, operation, left operand, right operand 
+ *      args: location, operation, left operand, right operand
  *      rets: binary operation node
  */
 struct node *node_binary_operation(YYLTYPE location,
@@ -113,7 +113,7 @@ struct node *node_binary_operation(YYLTYPE location,
 }
 
 /*  node_unary_operation - allocate a node to represent a unary operation
- *      args: location, operation, operand 
+ *      args: location, operation, operand
  *      rets: unary operation node
  */
 struct node *node_unary_operation(YYLTYPE location,
@@ -129,11 +129,11 @@ struct node *node_unary_operation(YYLTYPE location,
 }
 
 /*  node_expression_list - allocate a node to represent an expression list
- *      args: location, first expression, next expression 
+ *      args: location, first expression, next expression
  *      rets: expression list node
  */
 struct node *node_expression_list(YYLTYPE location, struct node *init,
-                                 struct node *expression)
+                                  struct node *expression)
 {
     struct node *node = node_create(location, NODE_EXPRESSION_LIST);
 
@@ -143,9 +143,42 @@ struct node *node_expression_list(YYLTYPE location, struct node *init,
     return node;
 }
 
+/*  node_call - allocate a node to represent a call (function or constructor)
+ *      args: location, prefix expression, arguments, self call
+ *      rets: call node
+ *
+ *  BNF -> prefixexp args | prefixexp `:´ Name args
+ */
+struct node *node_call(YYLTYPE location, struct node *prefix_expression,
+                       struct node *args, bool self_call)
+{
+    struct node *node = node_create(location, NODE_CALL);
+
+    /* NOTE: call arguments will always be an expression list */
+    node->data.call.prefix_expression = prefix_expression;
+    node->data.call.prefix_expression = args;
+
+    return node;
+}
+
+/*  node_expression_group - allocate a node to represent an expression group
+ *      args: location, expression in group
+ *      rets: expression group node
+ *
+ *  BNF -> `(´ exp `)´
+ */
+struct node *node_expression_group(YYLTYPE location, struct node *expression)
+{
+    struct node *node = node_create(location, NODE_EXPRESSION_GROUP);
+
+    node->data.expression_group.expression = expression;
+
+    return node;
+}
+
 /*  node_expression_statement - allocate a node to represent an expression as a
- *  statement 
- *      args: location, expression node 
+ *  statement
+ *      args: location, expression node
  *      rets: statement node
  */
 struct node *node_expression_statement(YYLTYPE location,
@@ -159,16 +192,36 @@ struct node *node_expression_statement(YYLTYPE location,
 }
 
 /*  node_statement_list - allocate a node to represent a statement list
- *      args: location, first statement, next statement 
+ *      args: location, first statement, next statement
  *      rets: statement list node
  */
-struct node *node_statement_list(YYLTYPE location, struct node *init,
-                                 struct node *statement)
+struct node *node_block(YYLTYPE location, struct node *init,
+                        struct node *statement)
 {
-    struct node *node = node_create(location, NODE_STATEMENT_LIST);
+    struct node *node = node_create(location, NODE_BLOCK);
 
-    node->data.statment_list.init = init;
-    node->data.statment_list.statement = statement;
+    node->data.block.init = init;
+    node->data.block.statement = statement;
 
     return node;
+}
+
+/*  print_ast - traverses through the AST and prints every node
+ *      args: output file, node to be printed
+ *      rets: none
+ */
+void print_ast(FILE *output, struct node *node)
+{
+    /* output and node must not be null */
+    assert(output);
+    assert(node);
+
+    switch (node->type) {
+        case NODE_INTEGER:
+            fprintf(output, "%lf", node->data.integer.value);
+            break;
+
+        default:
+            break;
+    }
 }
