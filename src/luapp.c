@@ -107,6 +107,7 @@ int main(int argc, char **argv)
     /* If the stage is "parser" print the AST */
     if (!strcmp("parser", stage)) {
         print_ast(output, tree);
+        print_summary("Parser", error_count, start);
         return 0;
     }
 }
