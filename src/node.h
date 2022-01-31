@@ -64,7 +64,7 @@ struct node {
             char name[0];
         } identifier;
         struct {
-            char value[0];
+            char *value;
         } string;
         struct {
             bool value;
@@ -109,25 +109,20 @@ struct node *node_identifier(YYLTYPE location, char *value, int length);
 struct node *node_string(YYLTYPE location, char *value, int length);
 struct node *node_boolean(YYLTYPE location, bool value);
 struct node *node_nil(YYLTYPE location);
-struct node *node_binary_operation(YYLTYPE location,
-                                   enum node_binary_operation operation,
+struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
-struct node *node_unary_operation(YYLTYPE location,
-                                  enum node_unary_operation operation,
+struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression);
-struct node *node_expression_list(YYLTYPE location, struct node *init,
-                                  struct node *expression);
-struct node *node_call(YYLTYPE location, struct node *prefix_expression,
-                       struct node *args, bool self_call);
+struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression);
+struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
+                       bool self_call);
 struct node *node_expression_group(YYLTYPE location, struct node *expression);
 
 /* Node statement constructors */
-struct node *node_expression_statement(YYLTYPE location,
-                                       struct node *expression);
-struct node *node_block(YYLTYPE location, struct node *init,
-                                 struct node *statement);
+struct node *node_expression_statement(YYLTYPE location, struct node *expression);
+struct node *node_block(YYLTYPE location, struct node *init, struct node *statement);
 
 /* AST traversal methods */
-void print_ast(FILE *output, struct node* node);
+void print_ast(FILE *output, struct node *node);
 
 #endif

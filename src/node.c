@@ -67,7 +67,7 @@ struct node *node_string(YYLTYPE location, char *value, int length)
     struct node *node = node_create(location, NODE_STRING);
 
     /* Set the name by appending all of the characters in value */
-    strncat(node->data.identifier.name, value, length);
+    node->data.string.value = strdup(value);
 
     return node;
 }
@@ -99,8 +99,7 @@ struct node *node_nil(YYLTYPE location)
  *      args: location, operation, left operand, right operand
  *      rets: binary operation node
  */
-struct node *node_binary_operation(YYLTYPE location,
-                                   enum node_binary_operation operation,
+struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right)
 {
     struct node *node = node_create(location, NODE_BINARY_OPERATION);
@@ -116,8 +115,7 @@ struct node *node_binary_operation(YYLTYPE location,
  *      args: location, operation, operand
  *      rets: unary operation node
  */
-struct node *node_unary_operation(YYLTYPE location,
-                                  enum node_unary_operation operation,
+struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression)
 {
     struct node *node = node_create(location, NODE_UNARY_OPERATION);
@@ -132,8 +130,7 @@ struct node *node_unary_operation(YYLTYPE location,
  *      args: location, first expression, next expression
  *      rets: expression list node
  */
-struct node *node_expression_list(YYLTYPE location, struct node *init,
-                                  struct node *expression)
+struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression)
 {
     struct node *node = node_create(location, NODE_EXPRESSION_LIST);
 
@@ -149,14 +146,14 @@ struct node *node_expression_list(YYLTYPE location, struct node *init,
  *
  *  BNF -> prefixexp args | prefixexp `:´ Name args
  */
-struct node *node_call(YYLTYPE location, struct node *prefix_expression,
-                       struct node *args, bool self_call)
+struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
+                       bool self_call)
 {
     struct node *node = node_create(location, NODE_CALL);
 
     /* NOTE: call arguments will always be an expression list */
     node->data.call.prefix_expression = prefix_expression;
-    node->data.call.prefix_expression = args;
+    node->data.call.args = args;
 
     return node;
 }
@@ -181,8 +178,7 @@ struct node *node_expression_group(YYLTYPE location, struct node *expression)
  *      args: location, expression node
  *      rets: statement node
  */
-struct node *node_expression_statement(YYLTYPE location,
-                                       struct node *expression)
+struct node *node_expression_statement(YYLTYPE location, struct node *expression)
 {
     struct node *node = node_create(location, NODE_EXPRESSION_STATEMENT);
 
@@ -195,8 +191,7 @@ struct node *node_expression_statement(YYLTYPE location,
  *      args: location, first statement, next statement
  *      rets: statement list node
  */
-struct node *node_block(YYLTYPE location, struct node *init,
-                        struct node *statement)
+struct node *node_block(YYLTYPE location, struct node *init, struct node *statement)
 {
     struct node *node = node_create(location, NODE_BLOCK);
 
@@ -205,6 +200,13 @@ struct node *node_block(YYLTYPE location, struct node *init,
 
     return node;
 }
+
+/* binary_operations -- the string values of all binary operations */
+static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
+                                          "<", ">=", "<=", "==", "~=", "and", "or", NULL};
+
+/* unary_operations -- the string values of all unary operations */
+static const char *unary_operations[] = {"-", "not", "#", NULL};
 
 /*  print_ast - traverses through the AST and prints every node
  *      args: output file, node to be printed
@@ -220,7 +222,57 @@ void print_ast(FILE *output, struct node *node)
         case NODE_INTEGER:
             fprintf(output, "%lf", node->data.integer.value);
             break;
+        case NODE_IDENTIFIER:
+            fprintf(output, "%s", node->data.identifier.name);
+            break;
+        case NODE_STRING:
+            fprintf(output, "\"%s\"", node->data.string.value);
+            break;
+        case NODE_BOOLEAN:
+            fprintf(output, "%s", node->data.boolean.value ? "true" : "false");
+            break;
+        case NODE_NIL:
+            fprintf(output, "nil");
+            break;
+        case NODE_BINARY_OPERATION:
+            print_ast(output, node->data.binary_operation.left);
+            fputc(' ', output);
+            fputs(binary_operations[node->data.binary_operation.operation], output);
+            fputc(' ', output);
+            print_ast(output, node->data.binary_operation.right);
+            break;
+        case NODE_UNARY_OPERATION:
+            fputs(unary_operations[node->data.unary_operation.operation], output);
+            print_ast(output, node->data.unary_operation.expression);
+            break;
+        case NODE_EXPRESSION_LIST:
+            print_ast(output, node->data.expression_list.init);
 
+            if (node->data.block.statement != NULL) {
+                fputs(", ", output);
+                print_ast(output, node->data.expression_list.expression);
+            }
+            break;
+        case NODE_CALL:
+            print_ast(output, node->data.call.prefix_expression);
+            fputc('(', output);
+            print_ast(output, node->data.call.args);
+            fputc(')', output);
+            break;
+        case NODE_EXPRESSION_GROUP:
+            fputc('(', output);
+            print_ast(output, node->data.expression_group.expression);
+            fputc(')', output);
+            break;
+        case NODE_EXPRESSION_STATEMENT:
+            print_ast(output, node->data.expression_statement.expression);
+            fputc('\n', output);
+            break;
+        case NODE_BLOCK:
+            print_ast(output, node->data.block.init);
+            if (node->data.block.statement != NULL)
+                print_ast(output, node->data.block.statement);
+            break;
         default:
             break;
     }

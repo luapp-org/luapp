@@ -11,11 +11,12 @@
 
 #include "compiler.h"
 #include "lexer.h"
+#include "node.h"
 #include "parser.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
- *  errors) 
- *      args: pass name, numer of errors, start time 
+ *  errors)
+ *      args: pass name, numer of errors, start time
  *      rets: none
  */
 static void print_summary(char *pass, int error_count, clock_t start)
@@ -23,9 +24,8 @@ static void print_summary(char *pass, int error_count, clock_t start)
     /* Calculate the total time that the pass took (seconds) */
     double sec = ((clock() - start) * 1000);
 
-    printf("\n%s encountered %d %s, elapsed time: %lf second(s).\n", pass,
-           error_count, (error_count == 1 ? "error" : "errors"),
-           (sec / 1000000) / 1000);
+    printf("\n%s encountered %d %s, elapsed time: %lf second(s).\n", pass, error_count,
+           (error_count == 1 ? "error" : "errors"), (sec / 1000000) / 1000);
 }
 
 /*
@@ -53,12 +53,12 @@ int main(int argc, char **argv)
     /* Parse the command line args and store them in their corresponding vars */
     while ((opt = getopt(argc, argv, "o:s:")) != -1) {
         switch (opt) {
-        case 'o':
-            output = fopen(optarg, "w");
-            break;
-        case 's':
-            stage = optarg;
-            break;
+            case 'o':
+                output = fopen(optarg, "w");
+                break;
+            case 's':
+                stage = optarg;
+                break;
         }
     }
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
             printf("Incorrect file type.\n");
             return 1;
         }
-    } else if (optind >= argc) 
+    } else if (optind >= argc)
         lex_init(&lexer, stdin);
     else {
         printf("Expected 1 input file, found %d.\n", argc - optind);
@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 
     /* If the stage is "parser" print the AST */
     if (!strcmp("parser", stage)) {
-        
+        print_ast(output, tree);
+        return 0;
     }
 }
