@@ -173,6 +173,40 @@ struct node *node_expression_group(YYLTYPE location, struct node *expression)
     return node;
 }
 
+/*  node_name_index - allocate a node to represent a name index
+ *      args: location, expression, index name
+ *      rets: name index node
+ *
+ *  BNF -> prefixexp `.´ Name
+ */
+struct node *node_name_index(YYLTYPE location, struct node *expression, struct node *index,
+                             bool self_index)
+{
+    struct node *node = node_create(location, NODE_NAME_INDEX);
+
+    node->data.name_index.expression = expression;
+    node->data.name_index.index = index;
+    node->data.name_index.self_index = self_index;
+
+    return node;
+}
+
+/*  node_expression_index - allocate a node to represent an expression index node
+ *      args: location, expression, index expression
+ *      rets: expression index node
+ *
+ *  BNF -> prefixexp `[´ exp `]´
+ */
+struct node *node_expression_index(YYLTYPE location, struct node *expression, struct node *index)
+{
+    struct node *node = node_create(location, NODE_EXPRESSION_INDEX);
+
+    node->data.name_index.expression = expression;
+    node->data.name_index.index = index;
+
+    return node;
+}
+
 /*  node_expression_statement - allocate a node to represent an expression as a
  *  statement
  *      args: location, expression node
@@ -208,13 +242,13 @@ static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   ".
 /* unary_operations -- the string values of all unary operations */
 static const char *unary_operations[] = {"-", "not", "#", NULL};
 
-/*  print_ast - traverses through the AST and prints every node
+/*  print_ast - traverses through the AST and prints every node via graphviz
  *      args: output file, node to be printed
  *      rets: none
  */
 void print_ast(FILE *output, struct node *node)
 {
-    /* output and node must not be null */
+    /* output and node must not be NULL */
     assert(output);
     assert(node);
 
@@ -247,7 +281,6 @@ void print_ast(FILE *output, struct node *node)
             break;
         case NODE_EXPRESSION_LIST:
             print_ast(output, node->data.expression_list.init);
-
             if (node->data.block.statement != NULL) {
                 fputs(", ", output);
                 print_ast(output, node->data.expression_list.expression);

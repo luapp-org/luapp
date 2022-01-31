@@ -23,6 +23,8 @@ enum node_type {
     NODE_EXPRESSION_LIST,
     NODE_CALL,
     NODE_EXPRESSION_GROUP,
+    NODE_NAME_INDEX,
+    NODE_EXPRESSION_INDEX,
     NODE_EXPRESSION_STATEMENT,
     NODE_BLOCK
 };
@@ -94,6 +96,15 @@ struct node {
             struct node *expression;
         } expression_group;
         struct {
+            struct node *expression;
+            struct node *index;
+            bool self_index; /* prefixexp `:´ Name  ->  only in self-calls*/
+        } name_index;
+        struct {
+            struct node *expression;
+            struct node *index;
+        } expression_index;
+        struct {
             struct node *init;      /* First statement */
             struct node *statement; /* Next statement */
         } block;
@@ -117,6 +128,9 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
 struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
                        bool self_call);
 struct node *node_expression_group(YYLTYPE location, struct node *expression);
+struct node *node_name_index(YYLTYPE location, struct node *expression, struct node *index,
+                             bool self_index);
+struct node *node_expression_index(YYLTYPE location, struct node *expression, struct node *index);
 
 /* Node statement constructors */
 struct node *node_expression_statement(YYLTYPE location, struct node *expression);

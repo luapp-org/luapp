@@ -139,6 +139,7 @@ variable
 
 prefix_expression
     : variable
+    | call
     | LEFT_PARAN_T expression RIGHT_PARAN_T
         { $$ = node_expression_group(@$, $2); }
 ;
@@ -154,7 +155,7 @@ call
     : prefix_expression arguments
         { $$ = node_call(@$, $1, $2, false); }
     | prefix_expression COLON_T IDENTIFIER_T arguments
-//      { $$ = node_call(@$, $1, $2, false); }
+        { $$ = node_call(@$, node_name_index(@$, $1, $3), $4, true); }
 ;
 
 expression
