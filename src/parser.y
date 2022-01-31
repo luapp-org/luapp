@@ -146,6 +146,7 @@ prefix_expression
 arguments
     : LEFT_PARAN_T RIGHT_PARAN_T
     | LEFT_PARAN_T expression_list RIGHT_PARAN_T
+        { $$ = $2; }
     | STRING_T
 ;
 
