@@ -129,8 +129,8 @@ integer         {digit}+
 "else"              return ELSE_T;
 "elseif"            return ELSEIF_T;
 "end"               return END_T;
-"false"             return FALSE_T;
-"true"              return TRUE_T;
+"false"             { *yylval = node_boolean(*yylloc, false); return FALSE_T; }
+"true"              { *yylval = node_boolean(*yylloc, true); return TRUE_T; }
 "for"               return FOR_T;
 "function"          return FUNCTION_T;
 "if"                return IF_T;
@@ -145,6 +145,8 @@ integer         {digit}+
 "until"             return UNTIL_T;
 "while"             return WHILE_T;
 
+\[                  return LEFT_SQUARE_T;
+\]                  return RIGHT_SQUARE_T;
 \+                  return PLUS_T;
 -                   return MINUS_T;
 \*                  return ASTERISK_T;
