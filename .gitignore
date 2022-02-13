@@ -1,5 +1,6 @@
-# Ignore the directory for all of the binary files
+# Ignore the directory for all of the binary and dot files
 src/bin
+src/dot/*.dot
 
 # Ignore all Flex generated files
 src/lexer.yy.c

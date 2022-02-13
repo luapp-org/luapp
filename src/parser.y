@@ -91,31 +91,31 @@
 
 binary_operation
   : expression PLUS_T expression
-      { $$ = node_binary_operation(@2, BINOP_ADD, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_ADD, $1, $3); }
   | expression MINUS_T expression
-      { $$ = node_binary_operation(@2, BINOP_SUB, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_SUB, $1, $3); }
   | expression ASTERISK_T expression
-      { $$ = node_binary_operation(@2, BINOP_MUL, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_MUL, $1, $3); }
   | expression SLASH_T expression
-      { $$ = node_binary_operation(@2, BINOP_DIV, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_DIV, $1, $3); }
   | expression CARROT_T expression
-      { $$ = node_binary_operation(@2, BINOP_POW, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_POW, $1, $3); }
   | expression PERCENT_T expression
-      { $$ = node_binary_operation(@2, BINOP_MOD, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_MOD, $1, $3); }
   | expression CONCAT_T expression
-      { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $3); }
   | expression LESS_THAN_T expression
-      { $$ = node_binary_operation(@2, BINOP_LT, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_LT, $1, $3); }
   | expression GREATER_THAN_T expression
-      { $$ = node_binary_operation(@2, BINOP_GT, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_GT, $1, $3); }
   | expression GREATER_EQUAL_T expression
-      { $$ = node_binary_operation(@2, BINOP_GE, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_GE, $1, $3); }
   | expression LESS_EQUAL_T expression
-      { $$ = node_binary_operation(@2, BINOP_LE, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_LE, $1, $3); }
   | expression NOT_EQUAL_T expression
-      { $$ = node_binary_operation(@2, BINOP_NE, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_NE, $1, $3); }
   | expression DOUBLE_EQUAL_T expression
-      { $$ = node_binary_operation(@2, BINOP_EQ, $1, $2); }
+      { $$ = node_binary_operation(@2, BINOP_EQ, $1, $3); }
 ;
 
 unary_operation
@@ -155,7 +155,7 @@ call
     : prefix_expression arguments
         { $$ = node_call(@$, $1, $2, false); }
     | prefix_expression COLON_T IDENTIFIER_T arguments
-        { $$ = node_call(@$, node_name_index(@$, $1, $3), $4, true); }
+        { $$ = node_call(@$, node_name_index(@$, $1, $3, true), $4, true); }
 ;
 
 expression
@@ -175,6 +175,7 @@ statement
 
 block 
     : statement
+        {$$ = node_block(@$, $1, NULL); }
     | block statement
         {$$ = node_block(@$, $1, $2); }
 ;

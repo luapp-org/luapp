@@ -136,7 +136,10 @@ struct node *node_expression_index(YYLTYPE location, struct node *expression, st
 struct node *node_expression_statement(YYLTYPE location, struct node *expression);
 struct node *node_block(YYLTYPE location, struct node *init, struct node *statement);
 
-/* AST traversal methods */
-void print_ast(FILE *output, struct node *node);
+/* Graphviz generation methods */
+void write_node(FILE *output, char *name);
+void write_parentless_node(FILE *output, char* name);
+char *format_node(struct node *node);
+void print_ast(FILE *output, struct node *node, bool first);
 
 #endif

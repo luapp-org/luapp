@@ -4,6 +4,10 @@
 
 #include "node.h"
 
+/* Used for graphviz */
+static int parent_id = 0;
+static int id = 0;
+
 /*  node_create - allocate and initialize a generic node
  *      args: location, node type
  *      rets: allocated node
@@ -242,69 +246,203 @@ static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   ".
 /* unary_operations -- the string values of all unary operations */
 static const char *unary_operations[] = {"-", "not", "#", NULL};
 
-/*  print_ast - traverses through the AST and prints every node via graphviz
- *      args: output file, node to be printed
+/*  write_node - writes a node to a file in graphviz format
+ *      args: output file, name of the node
  *      rets: none
  */
-void print_ast(FILE *output, struct node *node)
+void write_node(FILE *output, char *name)
 {
+    write_parentless_node(output, name);
+    fprintf(output, "\tn%i->n%i\n", parent_id, id);
+}
+
+/*  write_parentless_node - writes a parentless node to a file in graphviz format
+ *      args: output file, name of the node
+ *      rets: none
+ */
+void write_parentless_node(FILE *output, char *name)
+{
+    fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
+}
+
+/*  format_node - formats the 'data' value of the given node
+ *      args: node to be formatted
+ *      rets: formatted string
+ *
+ *  Note: Yes, I know, this code is horrible. I'm going to leave this here until I find a
+ *  good workaround. For now this is the only way I could think of formatting the nodes correctly.
+ */
+char *format_node(struct node *node)
+{
+    char *str;
+    size_t len;
+
+    /* Get the size of the formatted string */
+    switch (node->type) {
+        case NODE_INTEGER:
+            len = (size_t)snprintf(NULL, 0, "integer\\n\\\"%lf\\\"", node->data.integer.value);
+            break;
+        case NODE_IDENTIFIER:
+            len = (size_t)snprintf(NULL, 0, "identifier\\n\\\"%s\\\"", node->data.identifier.name);
+            break;
+        case NODE_STRING:
+            len = (size_t)snprintf(NULL, 0, "string\\n\\\"%s\\\"", node->data.string.value);
+            break;
+        case NODE_BOOLEAN:
+            len = (size_t)snprintf(NULL, 0, "boolean\\n\\\"%s\\\"",
+                                   node->data.boolean.value ? "true" : "false");
+            break;
+    }
+
+    /* Allocate memory for our new string using len */
+    if ((str = malloc(len)) == NULL) {
+        fprintf(stderr, "format_node(): Unable to allocate memory");
+        exit(EXIT_FAILURE);
+    }
+
+    /* TODO: Not sure why we need len + 1? I tried with just len, but it cut off the last character.
+     * Find and research a better way to do this (this function is actually surprisingly fast).
+     */
+
+    /* Format the string and store it in the newly allocated memory in str */
+    switch (node->type) {
+        case NODE_INTEGER:
+            snprintf(str, len + 1, "integer\\n\\\"%lf\\\"", node->data.integer.value);
+            break;
+        case NODE_IDENTIFIER:
+            snprintf(str, len + 1, "identifier\\n\\\"%s\\\"", node->data.identifier.name);
+            break;
+        case NODE_STRING:
+            snprintf(str, len + 1, "string\\n\\\"%s\\\"", node->data.string.value);
+            break;
+        case NODE_BOOLEAN:
+            snprintf(str, len + 1, "boolean\\n\\\"%s\\\"",
+                     node->data.boolean.value ? "true" : "false");
+            break;
+    }
+
+    return str;
+}
+
+/*  print_ast - traverses through the AST and prints every node via graphviz
+ *      args: output file, node to be printed, boolean indicating node is root
+ *      rets: none
+ */
+void print_ast(FILE *output, struct node *node, bool first)
+{
+    int previous;
+    char buff[22];
+    char *valbuff;
+
     /* output and node must not be NULL */
     assert(output);
     assert(node);
 
     switch (node->type) {
-        case NODE_INTEGER:
-            fprintf(output, "%lf", node->data.integer.value);
-            break;
-        case NODE_IDENTIFIER:
-            fprintf(output, "%s", node->data.identifier.name);
-            break;
-        case NODE_STRING:
-            fprintf(output, "\"%s\"", node->data.string.value);
-            break;
         case NODE_BOOLEAN:
-            fprintf(output, "%s", node->data.boolean.value ? "true" : "false");
+        case NODE_STRING:
+        case NODE_IDENTIFIER:
+        case NODE_INTEGER:
+            valbuff = format_node(node);
+
+            write_node(output, valbuff);
+            id++;
+
+            free(valbuff);
             break;
         case NODE_NIL:
-            fprintf(output, "nil");
+            write_node(output, "nil");
+            id++;
             break;
         case NODE_BINARY_OPERATION:
-            print_ast(output, node->data.binary_operation.left);
-            fputc(' ', output);
-            fputs(binary_operations[node->data.binary_operation.operation], output);
-            fputc(' ', output);
-            print_ast(output, node->data.binary_operation.right);
+            /* Fromat name of node: "binary operation \n op" */
+            sprintf(buff, "binary operation\\n%s",
+                    binary_operations[node->data.binary_operation.operation]);
+
+            write_node(output, buff);
+
+            /* Save and increment the id of the current node */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Print expressions (left and right) */
+            print_ast(output, node->data.binary_operation.left, false);
+            print_ast(output, node->data.binary_operation.right, false);
+
+            parent_id = previous;
             break;
         case NODE_UNARY_OPERATION:
-            fputs(unary_operations[node->data.unary_operation.operation], output);
-            print_ast(output, node->data.unary_operation.expression);
+            /* Fromat name of node: "unary operation \n op" */
+            sprintf(buff, "unary operation\\n%s",
+                    unary_operations[node->data.unary_operation.operation]);
+
+            write_node(output, buff);
+
+            /* Save and increment the id of the current node */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Print unary expression */
+            print_ast(output, node->data.unary_operation.expression, false);
+
+            parent_id = previous;
             break;
         case NODE_EXPRESSION_LIST:
-            print_ast(output, node->data.expression_list.init);
-            if (node->data.block.statement != NULL) {
-                fputs(", ", output);
-                print_ast(output, node->data.expression_list.expression);
-            }
+            /* No graphviz needed */
+            print_ast(output, node->data.expression_list.init, false);
+
+            if (node->data.block.statement != NULL)
+                print_ast(output, node->data.expression_list.expression, false);
             break;
         case NODE_CALL:
-            print_ast(output, node->data.call.prefix_expression);
-            fputc('(', output);
-            print_ast(output, node->data.call.args);
-            fputc(')', output);
+            write_node(output, "call");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the call */
+            print_ast(output, node->data.call.prefix_expression, false);
+            print_ast(output, node->data.call.args, false);
+
+            parent_id = previous;
             break;
         case NODE_EXPRESSION_GROUP:
-            fputc('(', output);
-            print_ast(output, node->data.expression_group.expression);
-            fputc(')', output);
+            /* No graphviz needed */
+            print_ast(output, node->data.expression_group.expression, false);
             break;
         case NODE_EXPRESSION_STATEMENT:
-            print_ast(output, node->data.expression_statement.expression);
-            fputc('\n', output);
+            /* No graphviz needed */
+            print_ast(output, node->data.expression_statement.expression, false);
             break;
         case NODE_BLOCK:
-            print_ast(output, node->data.block.init);
+            previous = 0;
+
+            /* Check if we are in the root node */
+            if (first) {
+                fprintf(output, "digraph G\n{\n");
+                fprintf(output, "\tnode[fontname=Monospace]\n");
+
+                /* Write the parentless node and increment id */
+                write_parentless_node(output, "program");
+                id++;
+            } else {
+                /* Save parent id for reset later */
+                previous = parent_id;
+                id++;
+            }
+
+            print_ast(output, node->data.block.init, false);
+
             if (node->data.block.statement != NULL)
-                print_ast(output, node->data.block.statement);
+                print_ast(output, node->data.block.statement, false);
+
+            /* Reset parent ID for next node */
+            parent_id = previous;
+
+            /* Close diagraph */
+            if (first)
+                fprintf(output, "}\n");
             break;
         default:
             break;
