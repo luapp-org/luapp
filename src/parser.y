@@ -68,6 +68,8 @@
 %token EQUAL_T/*            =     */
 %token LEFT_PARAN_T/*       (     */
 %token RIGHT_PARAN_T/*      )     */
+%token RIGHT_SQUARE_T/*     ]     */
+%token LEFT_SQUARE_T/*      [     */
 %token CARROT_T/*           ^     */
 %token GREATER_THAN_T/*     >     */
 %token LESS_THAN_T/*        <     */
@@ -120,11 +122,11 @@ binary_operation
 
 unary_operation
   : MINUS_T expression
-      { $$ = node_unary_operation(@$, UNOP_NEG, $1); }
+      { $$ = node_unary_operation(@$, UNOP_NEG, $2); }
   | NOT_T expression
-      { $$ = node_unary_operation(@$, UNOP_NOT, $1); }
+      { $$ = node_unary_operation(@$, UNOP_NOT, $2); }
   | POUND_T expression
-      { $$ = node_unary_operation(@$, UNOP_LEN, $1); }
+      { $$ = node_unary_operation(@$, UNOP_LEN, $2); }
 ;
 
 expression_list 
@@ -135,6 +137,8 @@ expression_list
 
 variable 
     : IDENTIFIER_T
+    | prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T
+        { $$ = node_expression_index(@$, $1, $3); }
 ;
 
 prefix_expression
@@ -160,7 +164,7 @@ call
 
 expression
   : NIL_T  | FALSE_T | TRUE_T | INTEGER_T | STRING_T | VARARG_T
-  | binary_operation | unary_operation
+  | binary_operation | unary_operation | prefix_expression
 ;
 
 program 

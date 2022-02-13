@@ -407,6 +407,19 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             parent_id = previous;
             break;
+        case NODE_EXPRESSION_INDEX:
+            write_node(output, "expression index");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+            
+            /* Visit children nodes of the expression index */
+            print_ast(output, node->data.expression_index.expression, false);
+            print_ast(output, node->data.expression_index.index, false);
+
+            parent_id = previous;
+            break;
         case NODE_EXPRESSION_GROUP:
             /* No graphviz needed */
             print_ast(output, node->data.expression_group.expression, false);
