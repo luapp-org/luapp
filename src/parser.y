@@ -139,6 +139,8 @@ variable
     : IDENTIFIER_T
     | prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T
         { $$ = node_expression_index(@$, $1, $3); }
+    | prefix_expression DOT_T IDENTIFIER_T
+        { $$ = node_name_index(@$, $1, $3, false); }
 ;
 
 prefix_expression
@@ -150,6 +152,7 @@ prefix_expression
 
 arguments
     : LEFT_PARAN_T RIGHT_PARAN_T
+        { $$ = NULL; }
     | LEFT_PARAN_T expression_list RIGHT_PARAN_T
         { $$ = $2; }
     | STRING_T
@@ -172,16 +175,27 @@ program
         { *root = $1; }
 ;
 
+variable_list 
+    : variable
+    | variable_list COMMA_T variable
+        { $$ = node_variable_list(@$, $1, $3); }
+;
+
 statement
-    : call 
+    : variable_list EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, $3); }
+    | call 
         { $$ = node_expression_statement(@$, $1); }
+    | DO_T block END_T
+        { $$ = node_block(@$, $2, NULL); }
+
 ;
 
 block 
     : statement
-        {$$ = node_block(@$, $1, NULL); }
+        { $$ = node_block(@$, $1, NULL); }
     | block statement
-        {$$ = node_block(@$, $1, $2); }
+        { $$ = node_block(@$, $1, $2); }
 ;
 
 %%
