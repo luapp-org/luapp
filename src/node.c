@@ -102,6 +102,10 @@ struct node *node_nil(YYLTYPE location)
 /*  node_binary_operation - allocate a node to represent a binary operation
  *      args: location, operation, left operand, right operand
  *      rets: binary operation node
+ * 
+ *  BNF -> `+´ | `-´ | `*´ | `/´ | `^´ | `%´ | `..´ | 
+ *	 `<´ | `<=´ | `>´ | `>=´ | `==´ | `~=´ | 
+ *	 and | or
  */
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right)
@@ -118,6 +122,8 @@ struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation 
 /*  node_unary_operation - allocate a node to represent a unary operation
  *      args: location, operation, operand
  *      rets: unary operation node
+ * 
+ *  BNF -> `-´ | not | `#´
  */
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression)
@@ -133,6 +139,8 @@ struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation op
 /*  node_expression_list - allocate a node to represent an expression list
  *      args: location, first expression, next expression
  *      rets: expression list node
+ * 
+ *  BNF -> {exp `,´} exp
  */
 struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression)
 {
@@ -140,6 +148,22 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
 
     node->data.expression_list.init = init;
     node->data.expression_list.expression = expression;
+
+    return node;
+}
+
+/*  node_variable_list - allocate a node to represent an variable list
+ *      args: location, first variable, next variable
+ *      rets: variable list node
+ * 
+ *  BNF -> var {`,´ var}
+ */
+struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable)
+{
+    struct node *node = node_create(location, NODE_VARIABLE_LIST);
+
+    node->data.variable_list.init = init;
+    node->data.variable_list.variable = variable;
 
     return node;
 }
@@ -239,6 +263,22 @@ struct node *node_block(YYLTYPE location, struct node *init, struct node *statem
     return node;
 }
 
+/*  node_assignment - allocate a node to represent an assignment
+ *      args: location, list of variable, list of values
+ *      rets: assignment node
+ * 
+ *  BNF -> varlist `=´ explist
+ */
+struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values)
+{
+    struct node *node = node_create(location, NODE_ASSIGNMENT);
+
+    node->data.assignment.variables = variables;
+    node->data.assignment.values = values;
+
+    return node;
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -302,6 +342,12 @@ char *format_node(struct node *node)
 
     /* TODO: Not sure why we need len + 1? I tried with just len, but it cut off the last character.
      * Find and research a better way to do this (this function is actually surprisingly fast).
+     * 
+     * Idea ---> Maybe I can just make a buffer with a massive size (e.g char buffer[MAX_SIZE]). If 
+     * a string is greater than that size, just shorten it or rely on it never being that big? This
+     * seems like a BS method, but it is the only real workaround I could think of.
+     * 
+     * Try MAX_SIZE 1000-9999
      */
 
     /* Format the string and store it in the newly allocated memory in str */
@@ -334,9 +380,9 @@ void print_ast(FILE *output, struct node *node, bool first)
     char buff[22];
     char *valbuff;
 
-    /* output and node must not be NULL */
-    assert(output);
-    assert(node);
+    /* Don't use assert. This is how we detect empty nodes (e.g. print() -- no arguments) */
+    if (node == NULL)
+        return;
 
     switch (node->type) {
         case NODE_BOOLEAN:
@@ -345,9 +391,11 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_INTEGER:
             valbuff = format_node(node);
 
+            /* Write the formatted value */
             write_node(output, valbuff);
             id++;
 
+            /* Free all the memory we allocated for the buffer */
             free(valbuff);
             break;
         case NODE_NIL:
@@ -391,8 +439,15 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* No graphviz needed */
             print_ast(output, node->data.expression_list.init, false);
 
-            if (node->data.block.statement != NULL)
+            if (node->data.expression_list.expression != NULL)
                 print_ast(output, node->data.expression_list.expression, false);
+            break;
+        case NODE_VARIABLE_LIST:
+            /* No graphviz needed */
+            print_ast(output, node->data.variable_list.init, false);
+
+            if (node->data.variable_list.variable != NULL)
+                print_ast(output, node->data.variable_list.variable, false);
             break;
         case NODE_CALL:
             write_node(output, "call");
@@ -420,9 +475,30 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             parent_id = previous;
             break;
+        case NODE_NAME_INDEX:
+            write_node(output, "name index");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+            
+            /* Visit children nodes of the name index */
+            print_ast(output, node->data.name_index.expression, false);
+            print_ast(output, node->data.name_index.index, false);
+
+            parent_id = previous;
+            break;
         case NODE_EXPRESSION_GROUP:
-            /* No graphviz needed */
+            write_node(output, "expression group");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit the child expression */
             print_ast(output, node->data.expression_group.expression, false);
+
+            parent_id = previous;
             break;
         case NODE_EXPRESSION_STATEMENT:
             /* No graphviz needed */
@@ -456,6 +532,19 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Close diagraph */
             if (first)
                 fprintf(output, "}\n");
+            break;
+        case NODE_ASSIGNMENT:
+            write_node(output, "assignment");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the assignment node */
+            print_ast(output, node->data.assignment.variables, false);
+            print_ast(output, node->data.assignment.values, false);
+
+            parent_id = previous;
             break;
         default:
             break;

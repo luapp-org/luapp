@@ -21,12 +21,14 @@ enum node_type {
     NODE_BINARY_OPERATION,
     NODE_UNARY_OPERATION,
     NODE_EXPRESSION_LIST,
+    NODE_VARIABLE_LIST,
     NODE_CALL,
     NODE_EXPRESSION_GROUP,
     NODE_NAME_INDEX,
     NODE_EXPRESSION_INDEX,
     NODE_EXPRESSION_STATEMENT,
-    NODE_BLOCK
+    NODE_BLOCK,
+    NODE_ASSIGNMENT
 };
 
 /* Binary operations */
@@ -85,13 +87,17 @@ struct node {
             struct node *expression; /* Next expression */
         } expression_list;
         struct {
+            struct node *init;     /* First expression */
+            struct node *variable; /* Next expression */
+        } variable_list;
+        struct {
             struct node *expression;
         } expression_statement;
         struct {
             struct node *prefix_expression;
             struct node *args;
-            bool self_call; /* Depricated: self syntax only for tables */
-        } call;
+            bool self_call; // Depricated: self syntax only for tables. Class methods force the
+        } call;             // creation of the self variable.
         struct {
             struct node *expression;
         } expression_group;
@@ -108,6 +114,10 @@ struct node {
             struct node *init;      /* First statement */
             struct node *statement; /* Next statement */
         } block;
+        struct {
+            struct node *variables; /* First statement */
+            struct node *values;    /* Next statement */
+        } assignment;
     } data;
 };
 
@@ -125,6 +135,7 @@ struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation 
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression);
 struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression);
+struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable);
 struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
                        bool self_call);
 struct node *node_expression_group(YYLTYPE location, struct node *expression);
@@ -135,10 +146,11 @@ struct node *node_expression_index(YYLTYPE location, struct node *expression, st
 /* Node statement constructors */
 struct node *node_expression_statement(YYLTYPE location, struct node *expression);
 struct node *node_block(YYLTYPE location, struct node *init, struct node *statement);
+struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name);
-void write_parentless_node(FILE *output, char* name);
+void write_parentless_node(FILE *output, char *name);
 char *format_node(struct node *node);
 void print_ast(FILE *output, struct node *node, bool first);
 
