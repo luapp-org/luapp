@@ -118,6 +118,10 @@ binary_operation
       { $$ = node_binary_operation(@2, BINOP_NE, $1, $3); }
   | expression DOUBLE_EQUAL_T expression
       { $$ = node_binary_operation(@2, BINOP_EQ, $1, $3); }
+  | expression AND_T expression
+      { $$ = node_binary_operation(@2, BINOP_AND, $1, $3); }
+  | expression OR_T expression
+      { $$ = node_binary_operation(@2, BINOP_OR, $1, $3); }
 ;
 
 unary_operation
@@ -181,6 +185,12 @@ variable_list
         { $$ = node_variable_list(@$, $1, $3); }
 ;
 
+else_body
+    : ELSEIF_T expression THEN_T block else_body
+    | ELSEIF_T expression THEN_T block END_T
+    | ELSE_T block END_T
+;
+
 statement
     : variable_list EQUAL_T expression_list
         { $$ = node_assignment(@$, $1, $3); }
@@ -188,7 +198,12 @@ statement
         { $$ = node_expression_statement(@$, $1); }
     | DO_T block END_T
         { $$ = node_block(@$, $2, NULL); }
-
+    | WHILE_T expression DO_T block END_T
+        { $$ = node_while_loop(@$, $2, $4); }
+    | REPEAT_T block UNTIL_T expression END_T
+        { $$ = node_repeat_loop(@$, $2, $4); }
+    | IF_T expression THEN_T block
+    | IF_T expression THEN_T block else_body
 ;
 
 block 

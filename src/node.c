@@ -102,9 +102,9 @@ struct node *node_nil(YYLTYPE location)
 /*  node_binary_operation - allocate a node to represent a binary operation
  *      args: location, operation, left operand, right operand
  *      rets: binary operation node
- * 
- *  BNF -> `+´ | `-´ | `*´ | `/´ | `^´ | `%´ | `..´ | 
- *	 `<´ | `<=´ | `>´ | `>=´ | `==´ | `~=´ | 
+ *
+ *  BNF -> `+´ | `-´ | `*´ | `/´ | `^´ | `%´ | `..´ |
+ *	 `<´ | `<=´ | `>´ | `>=´ | `==´ | `~=´ |
  *	 and | or
  */
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
@@ -122,7 +122,7 @@ struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation 
 /*  node_unary_operation - allocate a node to represent a unary operation
  *      args: location, operation, operand
  *      rets: unary operation node
- * 
+ *
  *  BNF -> `-´ | not | `#´
  */
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
@@ -139,7 +139,7 @@ struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation op
 /*  node_expression_list - allocate a node to represent an expression list
  *      args: location, first expression, next expression
  *      rets: expression list node
- * 
+ *
  *  BNF -> {exp `,´} exp
  */
 struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression)
@@ -155,7 +155,7 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
 /*  node_variable_list - allocate a node to represent an variable list
  *      args: location, first variable, next variable
  *      rets: variable list node
- * 
+ *
  *  BNF -> var {`,´ var}
  */
 struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable)
@@ -266,7 +266,7 @@ struct node *node_block(YYLTYPE location, struct node *init, struct node *statem
 /*  node_assignment - allocate a node to represent an assignment
  *      args: location, list of variable, list of values
  *      rets: assignment node
- * 
+ *
  *  BNF -> varlist `=´ explist
  */
 struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values)
@@ -275,6 +275,56 @@ struct node *node_assignment(YYLTYPE location, struct node *variables, struct no
 
     node->data.assignment.variables = variables;
     node->data.assignment.values = values;
+
+    return node;
+}
+
+/*  node_while_loop - allocate a node to represent a while loop statement
+ *      args: location, loop condition, body of loop
+ *      rets: while loop node
+ *
+ *  BNF -> while exp do block end
+ */
+struct node *node_while_loop(YYLTYPE location, struct node *condition, struct node *body)
+{
+    struct node *node = node_create(location, NODE_WHILELOOP);
+
+    node->data.while_loop.condition = condition;
+    node->data.while_loop.body = body;
+
+    return node;
+}
+
+/*  node_repeat_loop - allocate a node to represent a repeat loop statement
+ *      args: location, body of loop, loop condition
+ *      rets: repeat loop node
+ *
+ *  BNF -> repeat block until exp
+ */
+struct node *node_repeat_loop(YYLTYPE location, struct node *body, struct node *condition)
+{
+    struct node *node = node_create(location, NODE_REPEATLOOP);
+
+    node->data.repeat_loop.body = body;
+    node->data.repeat_loop.condition = condition;
+
+    return node;
+}
+
+/*  node_if_statement - allocate a node to represent an if statement
+ *      args: location, condition, body, else
+ *      rets: if statement node
+ *
+ *  BNF -> if exp then block {elseif exp then block} [else block] end
+ */
+struct node *node_if_statement(YYLTYPE location, struct node *condition, struct node *body,
+                               struct node *else_body)
+{
+    struct node *node = node_create(location, NODE_IF);
+
+    node->data.if_statement.condition = condition;
+    node->data.if_statement.body = body;
+    node->data.if_statement.else_body = else_body;
 
     return node;
 }
@@ -342,11 +392,11 @@ char *format_node(struct node *node)
 
     /* TODO: Not sure why we need len + 1? I tried with just len, but it cut off the last character.
      * Find and research a better way to do this (this function is actually surprisingly fast).
-     * 
-     * Idea ---> Maybe I can just make a buffer with a massive size (e.g char buffer[MAX_SIZE]). If 
+     *
+     * Idea ---> Maybe I can just make a buffer with a massive size (e.g char buffer[MAX_SIZE]). If
      * a string is greater than that size, just shorten it or rely on it never being that big? This
      * seems like a BS method, but it is the only real workaround I could think of.
-     * 
+     *
      * Try MAX_SIZE 1000-9999
      */
 
@@ -468,7 +518,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Save and increment ids */
             previous = parent_id;
             parent_id = id++;
-            
+
             /* Visit children nodes of the expression index */
             print_ast(output, node->data.expression_index.expression, false);
             print_ast(output, node->data.expression_index.index, false);
@@ -481,7 +531,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Save and increment ids */
             previous = parent_id;
             parent_id = id++;
-            
+
             /* Visit children nodes of the name index */
             print_ast(output, node->data.name_index.expression, false);
             print_ast(output, node->data.name_index.index, false);
@@ -543,6 +593,46 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Visit children nodes of the assignment node */
             print_ast(output, node->data.assignment.variables, false);
             print_ast(output, node->data.assignment.values, false);
+
+            parent_id = previous;
+            break;
+        case NODE_WHILELOOP:
+            write_node(output, "while");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the assignment node */
+            print_ast(output, node->data.while_loop.condition, false);
+            print_ast(output, node->data.while_loop.body, false);
+
+            parent_id = previous;
+            break;
+        case NODE_REPEATLOOP:
+            write_node(output, "repeat");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the assignment node */
+            print_ast(output, node->data.repeat_loop.body, false);
+            print_ast(output, node->data.repeat_loop.condition, false);
+
+            parent_id = previous;
+            break;
+        case NODE_IF:
+            write_node(output, "if");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the assignment node */
+            print_ast(output, node->data.if_statement.condition, false);
+            print_ast(output, node->data.if_statement.body, false);
+            print_ast(output, node->data.if_statement.else_body, false);
 
             parent_id = previous;
             break;

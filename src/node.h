@@ -28,7 +28,10 @@ enum node_type {
     NODE_EXPRESSION_INDEX,
     NODE_EXPRESSION_STATEMENT,
     NODE_BLOCK,
-    NODE_ASSIGNMENT
+    NODE_ASSIGNMENT,
+    NODE_WHILELOOP,
+    NODE_REPEATLOOP,
+    NODE_IF
 };
 
 /* Binary operations */
@@ -115,9 +118,22 @@ struct node {
             struct node *statement; /* Next statement */
         } block;
         struct {
-            struct node *variables; /* First statement */
-            struct node *values;    /* Next statement */
+            struct node *variables;
+            struct node *values;
         } assignment;
+        struct {
+            struct node *condition;
+            struct node *body; /* Usually block */
+        } while_loop;
+        struct {
+            struct node *body; /* Usually block */
+            struct node *condition;
+        } repeat_loop;
+        struct {
+            struct node *condition;
+            struct node *body;
+            struct node *else_body;
+        } if_statement;
     } data;
 };
 
@@ -147,6 +163,10 @@ struct node *node_expression_index(YYLTYPE location, struct node *expression, st
 struct node *node_expression_statement(YYLTYPE location, struct node *expression);
 struct node *node_block(YYLTYPE location, struct node *init, struct node *statement);
 struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values);
+struct node *node_while_loop(YYLTYPE location, struct node *condition, struct node *body);
+struct node *node_repeat_loop(YYLTYPE location, struct node *body, struct node *condition);
+struct node *node_if_statement(YYLTYPE location, struct node *condition, struct node *body,
+                               struct node *else_body);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name);
