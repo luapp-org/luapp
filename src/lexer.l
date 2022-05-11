@@ -13,6 +13,7 @@
     #include "compiler.h"
     #include "parser.tab.h"
     #include "node.h"
+    #include "util/flexstr.h"
 
     /* Tell GCC to ignore the warning for now (must be a bug) */
     #pragma GCC diagnostic ignored "-Wstringop-overflow="
@@ -25,6 +26,7 @@
                            yyextra += yyleng; }
     
     char string[0];
+    flexstr_t s;
     char start = 0;
 %}
 
@@ -43,23 +45,24 @@ identifier      {letter}({letter}|{digit})*
 integer         {digit}+
 
 %%
-"[["                { BEGIN(LSTRING); clear(string); }
-<LSTRING>"\\t"      { strncat(string, "\t", 1); }
-<LSTRING>"\\n"      { strncat(string, "\n", 1); }
-<LSTRING>"\\a"      { strncat(string, "\a", 1); }
-<LSTRING>"\\b"      { strncat(string, "\b", 1); }
-<LSTRING>"\\f"      { strncat(string, "\f", 1); }
-<LSTRING>"\\r"      { strncat(string, "\r", 1); }
-<LSTRING>"\\v"      { strncat(string, "\v", 1); }
-<LSTRING>"\\"       { strncat(string, "\\", 1); }
+"[["                { BEGIN(LSTRING); fs_free(&s); }
+<LSTRING>"\\t"      { fs_addch(&s, '\t'); }
+<LSTRING>"\\n"      { fs_addch(&s, '\n'); }
+<LSTRING>"\\a"      { fs_addch(&s, '\a'); }
+<LSTRING>"\\b"      { fs_addch(&s, '\b'); }
+<LSTRING>"\\f"      { fs_addch(&s, '\f'); }
+<LSTRING>"\\r"      { fs_addch(&s, '\r'); }
+<LSTRING>"\\v"      { fs_addch(&s, '\v'); }
+<LSTRING>"\\"       { fs_addch(&s, '\\'); }
 <LSTRING>"]]"       { 
-                        *yylval = node_identifier(*yylloc, string, yyleng); 
+                        *yylval = node_identifier(*yylloc, fs_getstr(&s), yyleng); 
+                        fs_free(&s);
                         BEGIN(INITIAL); 
                         return STRING_T; 
                     }
 <LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
-<LSTRING>.          { strncat(string, &yytext[0], 1); }
-<LSTRING>\n         { strncat(string, "\n", 1); }
+<LSTRING>.          { fs_addch(&s, yytext[0]); }
+<LSTRING>\n         { fs_addch(&s, '\n'); }
 
 "\""                {   if (!start) {
                             start = '"'; 
@@ -69,12 +72,12 @@ integer         {digit}+
 <STRING>"\""        { 
                         if (start == '"') {
                             start = 0;
-                            *yylval = node_string(*yylloc, string, yyleng);
-                            clear(string); 
+                            *yylval = node_string(*yylloc, fs_getstr(&s), yyleng);
+                            fs_free(&s);
                             BEGIN(INITIAL); 
                             return STRING_T;
                         } else 
-                            strncat(string, &yytext[0], 1);
+                            fs_addch(&s, yytext[0]);
                     }
 "'"                 {   if (!start) {
                             start = '\''; 
@@ -84,35 +87,35 @@ integer         {digit}+
 <STRING>"'"        { 
                         if (start == '\'') {
                             start = 0;
-                            *yylval = node_string(*yylloc, string, yyleng);
-                            clear(string); 
+                            *yylval = node_string(*yylloc, fs_getstr(&s), yyleng);
+                            fs_free(&s); 
                             BEGIN(INITIAL); 
                             return STRING_T;
                         } else 
-                            strncat(string, &yytext[0], 1);
+                            fs_addch(&s, yytext[0]);
                     }
-<STRING>"\\t"       { strncat(string, "\t", 1); }
-<STRING>"\\n"       { strncat(string, "\n", 1); }
-<STRING>"\\a"       { strncat(string, "\a", 1); }
-<STRING>"\\b"       { strncat(string, "\b", 1); }
-<STRING>"\\f"       { strncat(string, "\f", 1); }
-<STRING>"\\r"       { strncat(string, "\r", 1); }
-<STRING>"\\v"       { strncat(string, "\v", 1); }
-<STRING>"\\"        { strncat(string, "\\", 1); }
+<STRING>"\\t"      { fs_addch(&s, '\t'); }
+<STRING>"\\n"      { fs_addch(&s, '\n'); }
+<STRING>"\\a"      { fs_addch(&s, '\a'); }
+<STRING>"\\b"      { fs_addch(&s, '\b'); }
+<STRING>"\\f"      { fs_addch(&s, '\f'); }
+<STRING>"\\r"      { fs_addch(&s, '\r'); }
+<STRING>"\\v"      { fs_addch(&s, '\v'); }
+<STRING>"\\"       { fs_addch(&s, '\\'); }
 <STRING>"\\\""      { 
                         if (start == '"') 
-                            strncat(string, "\"", 1);
+                            fs_addch(&s, '\"');
                          else 
-                            strncat(string, "\\\"", 2);
+                            fs_addstr(&s, "\\\"");
                     }
 <STRING>"\\\'"      { 
                         if (start == '\'') 
-                            strncat(string, "'", 1);
+                            fs_addch(&s, '\'');
                          else 
-                            strncat(string, "\\\'", 2);
+                            fs_addstr(&s, "\\\'");
                     }
 <STRING><<EOF>>     { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
-<STRING>.           { strncat(string, &yytext[0], 1); }
+<STRING>.           { fs_addch(&s, yytext[0]); }
 
 "--[["              { BEGIN(LCOMMENT); }
 <LCOMMENT>"]]--"    { BEGIN(INITIAL); }
@@ -189,6 +192,8 @@ void lex_init(yyscan_t *lexer, FILE *input) {
     yylex_init(lexer);
     yyset_in(input, *lexer);
     yyset_extra(1, *lexer);
+
+    fs_init(&s, 0);
 }
 
 /*  lex_destroy - frees the lexer instance 

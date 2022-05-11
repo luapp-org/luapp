@@ -24,5 +24,6 @@ struct YYLTYPE {
 void compiler_error(YYLTYPE location, const char *format, ...);
 const char *token_to_string(int token);
 void clear(char arr[]);
+void usage();
 
 #endif

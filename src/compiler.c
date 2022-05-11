@@ -28,3 +28,16 @@ void clear(char arr[])
     /* remove all of the characters in the string */
     memmove(arr, arr + length, length + 1);
 }
+
+/*  usage - prints the usage for the program
+ *      args: none
+ *      rets: none
+ */
+void usage()
+{
+    printf("luapp -s [lexer|parser|symbol|type|ir|codgen] -o [outputfile] [inputfile]\n\n");
+    printf(" -s : indicates the name of the stage to stop after.\n");
+    printf("      Defaults to the last stage.\n");
+    printf(" -o : name of the output file. Defaults to \"output.s\"\n\n");
+    printf("You should pass the name of the file to compile.\n");
+}

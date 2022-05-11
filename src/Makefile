@@ -4,7 +4,7 @@
 %.tab.c : %.y
 	bison -d $<
 
-OBJS = luapp.c lexer.yy.c parser.tab.c compiler.c node.c
+OBJS = luapp.c lexer.yy.c parser.tab.c compiler.c node.c util/flexstr.c
 
 # Builds all of the files and stores the out file in bin/
 make: $(OBJS)
