@@ -52,12 +52,12 @@ struct node *node_integer(YYLTYPE location, char *value)
  *      args: location, name of identifier, length of name
  *      rets: identifier node
  */
-struct node *node_identifier(YYLTYPE location, char *value, int length)
+struct node *node_identifier(YYLTYPE location, char *value)
 {
     struct node *node = node_create(location, NODE_IDENTIFIER);
 
     /* Set the name by appending all of the characters in value */
-    strncat(node->data.identifier.name, value, length);
+    node->data.identifier.name = strdup(value);
 
     return node;
 }
@@ -66,7 +66,7 @@ struct node *node_identifier(YYLTYPE location, char *value, int length)
  *      args: location, name of identifier, length of name
  *      rets: string node
  */
-struct node *node_string(YYLTYPE location, char *value, int length)
+struct node *node_string(YYLTYPE location, char *value)
 {
     struct node *node = node_create(location, NODE_STRING);
 

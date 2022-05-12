@@ -55,7 +55,7 @@ integer         {digit}+
 <LSTRING>"\\v"      { fs_addch(&s, '\v'); }
 <LSTRING>"\\"       { fs_addch(&s, '\\'); }
 <LSTRING>"]]"       { 
-                        *yylval = node_identifier(*yylloc, fs_getstr(&s), yyleng); 
+                        *yylval = node_identifier(*yylloc, fs_getstr(&s)); 
                         fs_free(&s);
                         BEGIN(INITIAL); 
                         return STRING_T; 
@@ -72,7 +72,7 @@ integer         {digit}+
 <STRING>"\""        { 
                         if (start == '"') {
                             start = 0;
-                            *yylval = node_string(*yylloc, fs_getstr(&s), yyleng);
+                            *yylval = node_string(*yylloc, fs_getstr(&s));
                             fs_free(&s);
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -87,7 +87,7 @@ integer         {digit}+
 <STRING>"'"        { 
                         if (start == '\'') {
                             start = 0;
-                            *yylval = node_string(*yylloc, fs_getstr(&s), yyleng);
+                            *yylval = node_string(*yylloc, fs_getstr(&s));
                             fs_free(&s); 
                             BEGIN(INITIAL); 
                             return STRING_T;
@@ -175,7 +175,7 @@ integer         {digit}+
 ".."                return CONCAT_T;
 "..."               return VARARG_T;
 
-{identifier}        { *yylval = node_identifier(*yylloc, yytext, yyleng); return IDENTIFIER_T; }
+{identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
 
 

@@ -68,7 +68,7 @@ struct node {
             bool overflow; /* Indicates double overflow */
         } integer;
         struct {
-            char name[0];
+            char *name;
         } identifier;
         struct {
             char *value;
@@ -142,8 +142,8 @@ static struct node *node_create(YYLTYPE location, enum node_type type);
 
 /* Node expression constructors */
 struct node *node_integer(YYLTYPE location, char *value);
-struct node *node_identifier(YYLTYPE location, char *value, int length);
-struct node *node_string(YYLTYPE location, char *value, int length);
+struct node *node_identifier(YYLTYPE location, char *value);
+struct node *node_string(YYLTYPE location, char *value);
 struct node *node_boolean(YYLTYPE location, bool value);
 struct node *node_nil(YYLTYPE location);
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
