@@ -187,8 +187,11 @@ variable_list
 
 else_body
     : ELSEIF_T expression THEN_T block else_body
+        { $$ = node_if_statement(@$, $2, $4, $5); }
     | ELSEIF_T expression THEN_T block END_T
+        { $$ = node_if_statement(@$, $2, $4, NULL); }
     | ELSE_T block END_T
+        { $$ = $2; }
 ;
 
 statement
@@ -202,8 +205,10 @@ statement
         { $$ = node_while_loop(@$, $2, $4); }
     | REPEAT_T block UNTIL_T expression END_T
         { $$ = node_repeat_loop(@$, $2, $4); }
-    | IF_T expression THEN_T block
+    | IF_T expression THEN_T block END_T
+        { $$ = node_if_statement(@$, $2, $4, NULL); }
     | IF_T expression THEN_T block else_body
+         { $$ = node_if_statement(@$, $2, $4, $5); }
 ;
 
 block 

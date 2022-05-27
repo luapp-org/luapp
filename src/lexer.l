@@ -45,7 +45,7 @@ identifier      {letter}({letter}|{digit})*
 integer         {digit}+
 
 %%
-"[["                { BEGIN(LSTRING); fs_free(&s); }
+"[["                { BEGIN(LSTRING); fs_init(&s, 0); }
 <LSTRING>"\\t"      { fs_addch(&s, '\t'); }
 <LSTRING>"\\n"      { fs_addch(&s, '\n'); }
 <LSTRING>"\\a"      { fs_addch(&s, '\a'); }
@@ -55,7 +55,7 @@ integer         {digit}+
 <LSTRING>"\\v"      { fs_addch(&s, '\v'); }
 <LSTRING>"\\"       { fs_addch(&s, '\\'); }
 <LSTRING>"]]"       { 
-                        *yylval = node_identifier(*yylloc, fs_getstr(&s)); 
+                        *yylval = node_string(*yylloc, fs_getstr(&s)); 
                         fs_free(&s);
                         BEGIN(INITIAL); 
                         return STRING_T; 
@@ -66,6 +66,7 @@ integer         {digit}+
 
 "\""                {   if (!start) {
                             start = '"'; 
+                            fs_init(&s, 0);
                             BEGIN(STRING); 
                         }   
                     }
@@ -81,6 +82,7 @@ integer         {digit}+
                     }
 "'"                 {   if (!start) {
                             start = '\''; 
+                            fs_init(&s, 0);
                             BEGIN(STRING); 
                         }   
                     }
@@ -192,8 +194,6 @@ void lex_init(yyscan_t *lexer, FILE *input) {
     yylex_init(lexer);
     yyset_in(input, *lexer);
     yyset_extra(1, *lexer);
-
-    fs_init(&s, 0);
 }
 
 /*  lex_destroy - frees the lexer instance 
@@ -221,10 +221,24 @@ void lex_print(yyscan_t *lexer, int *error_count, FILE *output) {
         } else {
             fprintf(output, "%-20s", token_to_string(token));
         }
+        
+        switch (token) {
+            case INTEGER_T:
+                break;
+            case STRING_T:
+                fprintf(output, "%-20s", val->data.string.value);
+                break;
+            case IDENTIFIER_T:
+                fprintf(output, "%-20s", val->data.identifier.name);
+                break;
+            default:
+                fprintf(output, "%-20s", "");
+                break;
+        }
 
         fprintf(output, "%04d:%04d-%04d:%04d", 
-                loc.first_line, loc.first_column, loc.last_line, loc.last_column);
-        
+            loc.first_line, loc.first_column, loc.last_line, loc.last_column);
+
         fputc('\n', output);
     }
 }

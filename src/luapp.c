@@ -59,6 +59,11 @@ int main(int argc, char **argv)
             case 's':
                 stage = optarg;
                 break;
+            case ':':
+            default: 
+                putchar('\n');
+                usage();
+                return 0;
         }
     }
 
