@@ -3,6 +3,7 @@
  */
 
 #include "node.h"
+#include "util/flexstr.h"
 
 /* Used for graphviz */
 static int parent_id = 0;
@@ -69,9 +70,49 @@ struct node *node_identifier(YYLTYPE location, char *value)
 struct node *node_string(YYLTYPE location, char *value)
 {
     struct node *node = node_create(location, NODE_STRING);
+    flexstr_t f;
+
+    /* Initialize the string */
+    fs_init(&f, 0);
+
+    for (int i = 0; value[i] != '\0'; i++) {
+        /* Is regular character? */
+        if (value[i] != '\\') {
+            fs_addch(&f, value[i]);
+            continue;
+        }
+        i++;
+        /* Handle all escape sequences */
+        switch (value[i]) {
+            case 't':
+                fs_addch(&f, '\t');
+                break;
+            case 'n':
+                fs_addch(&f, '\n');
+                break;
+            case 'a':
+                fs_addch(&f, '\a');
+                break;
+            case 'b':
+                fs_addch(&f, '\b');
+                break;
+            case 'f':
+                fs_addch(&f, '\f');
+                break;
+            case 'r':
+                fs_addch(&f, '\r');
+                break;
+            case 'v':
+                fs_addch(&f, '\v');
+                break;
+            case '\\':
+                fs_addch(&f, '\\');
+                break;
+        }
+    }
 
     /* Set the name by appending all of the characters in value */
-    node->data.string.value = strdup(value);
+    node->data.string.value = fs_getstr(&f);
 
     return node;
 }

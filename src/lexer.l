@@ -25,14 +25,12 @@
                            yylloc->last_column = yyextra + yyleng - 1; \
                            yyextra += yyleng; }
     
-    char string[0];
     flexstr_t s;
-    char start = 0;
+    int first_line, first_col;
 %}
 
 %x LCOMMENT
 %x COMMENT
-%x STRING
 %x LSTRING
 
 newline         \n
@@ -43,86 +41,36 @@ letter          [[:alpha:]]
 
 identifier      {letter}({letter}|{digit})*
 integer         {digit}+
+string          \"([^"\\\n]|\\(.|\n))*\"|'([^"\\\n]|\\(.|\n))*'
+lstring         \[\[(.*?|\n|\r)\]\]
 
 %%
-"[["                { BEGIN(LSTRING); fs_init(&s, 0); }
-<LSTRING>"\\t"      { fs_addch(&s, '\t'); }
-<LSTRING>"\\n"      { fs_addch(&s, '\n'); }
-<LSTRING>"\\a"      { fs_addch(&s, '\a'); }
-<LSTRING>"\\b"      { fs_addch(&s, '\b'); }
-<LSTRING>"\\f"      { fs_addch(&s, '\f'); }
-<LSTRING>"\\r"      { fs_addch(&s, '\r'); }
-<LSTRING>"\\v"      { fs_addch(&s, '\v'); }
-<LSTRING>"\\"       { fs_addch(&s, '\\'); }
-<LSTRING>"]]"       { 
-                        *yylval = node_string(*yylloc, fs_getstr(&s)); 
-                        fs_free(&s);
-                        BEGIN(INITIAL); 
-                        return STRING_T; 
-                    }
-<LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
-<LSTRING>.          { fs_addch(&s, yytext[0]); }
-<LSTRING>\n         { fs_addch(&s, '\n'); }
 
-"\""                {   if (!start) {
-                            start = '"'; 
-                            fs_init(&s, 0);
-                            BEGIN(STRING); 
-                        }   
-                    }
-<STRING>"\""        { 
-                        if (start == '"') {
-                            start = 0;
-                            *yylval = node_string(*yylloc, fs_getstr(&s));
-                            fs_free(&s);
-                            BEGIN(INITIAL); 
-                            return STRING_T;
-                        } else 
-                            fs_addch(&s, yytext[0]);
-                    }
-"'"                 {   if (!start) {
-                            start = '\''; 
-                            fs_init(&s, 0);
-                            BEGIN(STRING); 
-                        }   
-                    }
-<STRING>"'"        { 
-                        if (start == '\'') {
-                            start = 0;
-                            *yylval = node_string(*yylloc, fs_getstr(&s));
-                            fs_free(&s); 
-                            BEGIN(INITIAL); 
-                            return STRING_T;
-                        } else 
-                            fs_addch(&s, yytext[0]);
-                    }
-<STRING>"\\t"      { fs_addch(&s, '\t'); }
-<STRING>"\\n"      { fs_addch(&s, '\n'); }
-<STRING>"\\a"      { fs_addch(&s, '\a'); }
-<STRING>"\\b"      { fs_addch(&s, '\b'); }
-<STRING>"\\f"      { fs_addch(&s, '\f'); }
-<STRING>"\\r"      { fs_addch(&s, '\r'); }
-<STRING>"\\v"      { fs_addch(&s, '\v'); }
-<STRING>"\\"       { fs_addch(&s, '\\'); }
-<STRING>"\\\""      { 
-                        if (start == '"') 
-                            fs_addch(&s, '\"');
-                         else 
-                            fs_addstr(&s, "\\\"");
-                    }
-<STRING>"\\\'"      { 
-                        if (start == '\'') 
-                            fs_addch(&s, '\'');
-                         else 
-                            fs_addstr(&s, "\\\'");
-                    }
-<STRING><<EOF>>     { compiler_error(*yylloc_param, "unfinished string"); yyterminate(); }
-<STRING>.           { fs_addch(&s, yytext[0]); }
 
 "--[["              { BEGIN(LCOMMENT); }
 <LCOMMENT>"]]--"    { BEGIN(INITIAL); }
 <LCOMMENT>\n        { }
 <LCOMMENT>.         { }
+
+"[["                { 
+                        BEGIN(LSTRING); 
+                        first_line = yylineno; 
+                        first_col = yyextra;
+                    }
+<LSTRING>"]]"       { 
+                        BEGIN(INITIAL);
+
+                        yylloc->first_line = first_line;
+                        yylloc->last_line = yylineno;
+                        yylloc->first_column = first_col;
+                        yylloc->last_column = yyextra;
+
+                        *yylval = node_string(*yylloc, fs_getstr(&s)); 
+                        return STRING_T;
+                    }
+<LSTRING>.          { fs_addch(&s, yytext[0]); }
+<LSTRING>\n         { fs_addch(&s, '\n'); yyextra = 0; }
+<LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unexpected EOF", yytext); yyterminate(); }
 
 "--"                { BEGIN(COMMENT); }
 <COMMENT>\n         { BEGIN(INITIAL); }
@@ -179,6 +127,7 @@ integer         {digit}+
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
+{string}            { *yylval = node_string(*yylloc, yytext); return STRING_T; }
 
 
 {newline}           yyextra = 1;
@@ -194,6 +143,8 @@ void lex_init(yyscan_t *lexer, FILE *input) {
     yylex_init(lexer);
     yyset_in(input, *lexer);
     yyset_extra(1, *lexer);
+
+    fs_init(&s, 0);
 }
 
 /*  lex_destroy - frees the lexer instance 
