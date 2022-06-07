@@ -5,6 +5,7 @@ This is the Lua++ C lang build, currently private but will soon be public. This 
 1. Make sure that you have ```make``` installed.
 ```
 make
+./bin/luapp ...
 ```
 
 ### Lua++ syntax in extented BNF
