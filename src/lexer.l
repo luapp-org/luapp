@@ -127,7 +127,13 @@ lstring         \[\[(.*?|\n|\r)\]\]
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
-{string}            { *yylval = node_string(*yylloc, yytext); return STRING_T; }
+{string}            {
+                        /* Hacky: remove quotes */
+                        char *res = yytext + 1;
+                        res[strlen(res) - 1] = '\0';
+
+                        *yylval = node_string(*yylloc, res); return STRING_T; 
+                    }
 
 
 {newline}           yyextra = 1;
@@ -177,7 +183,7 @@ void lex_print(yyscan_t *lexer, int *error_count, FILE *output) {
             case INTEGER_T:
                 break;
             case STRING_T:
-                fprintf(output, "%-20s", val->data.string.value);
+                fprintf(output, "\"%-20s\"", val->data.string.value);
                 break;
             case IDENTIFIER_T:
                 fprintf(output, "%-20s", val->data.identifier.name);
