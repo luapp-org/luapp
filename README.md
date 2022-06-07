@@ -9,7 +9,7 @@ make
 ```
 
 ### Lua++ syntax in extented BNF
-This is just pasted from [lua.org](https://www.lua.org/manual/5.1/manual.html#8) for now, but I'll add some other syntax rules for OOP later.
+Most of this is from [lua.org](https://www.lua.org/manual/5.1/manual.html#8), but I have added some modifications. Those are marked in the codebase.
 ```
 chunk ::= {stat [`;´]} [laststat [`;´]]
 
