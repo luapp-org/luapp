@@ -194,6 +194,13 @@ else_body
         { $$ = $2; }
 ;
 
+/* DIFF: Added `single_assignment` to for loop syntax --> any variable can be incremented 
+ *      (Not in vanilla Lua 5.1)
+ */
+single_assignment 
+    : variable EQUAL_T expression
+        { $$ = node_assignment(@$, $1, $3); }
+
 statement
     : variable_list EQUAL_T expression_list
         { $$ = node_assignment(@$, $1, $3); }
@@ -209,6 +216,11 @@ statement
         { $$ = node_if_statement(@$, $2, $4, NULL); }
     | IF_T expression THEN_T block else_body
          { $$ = node_if_statement(@$, $2, $4, $5); }
+    | FOR_T single_assignment COMMA_T expression
+        { $$ = node_numerical_for_loop(@$, $2, $4, node_integer(@$, "1")); }
+    | FOR_T single_assignment COMMA_T expression COMMA_T expression
+        { $$ = node_numerical_for_loop(@$, $2, $4, $6); }
+
 ;
 
 block 

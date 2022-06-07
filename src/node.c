@@ -370,6 +370,24 @@ struct node *node_if_statement(YYLTYPE location, struct node *condition, struct 
     return node;
 }
 
+/*  node_numerical_for_loop - allocate a node to represent a numerical for loop
+ *      args: location, init variable, target value, increment value
+ *      rets: numerical for loop statement node
+ *
+ *  BNF -> for Name `=´ exp `,´ exp [`,´ exp] do block end
+ */
+struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
+                                     struct node *increment)
+{
+    struct node *node = node_create(location, NODE_NUMERICFORLOOP);
+
+    node->data.numerical_for_loop.init = init;
+    node->data.numerical_for_loop.target = target;
+    node->data.numerical_for_loop.increment = increment;
+
+    return node;
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -644,7 +662,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            /* Visit children nodes of the assignment node */
+            /* Visit children nodes of the while node */
             print_ast(output, node->data.while_loop.condition, false);
             print_ast(output, node->data.while_loop.body, false);
 
@@ -657,7 +675,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            /* Visit children nodes of the assignment node */
+            /* Visit children nodes of the repeat node */
             print_ast(output, node->data.repeat_loop.body, false);
             print_ast(output, node->data.repeat_loop.condition, false);
 
@@ -670,10 +688,24 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            /* Visit children nodes of the assignment node */
+            /* Visit children nodes of the if node */
             print_ast(output, node->data.if_statement.condition, false);
             print_ast(output, node->data.if_statement.body, false);
             print_ast(output, node->data.if_statement.else_body, false);
+
+            parent_id = previous;
+            break;
+        case NODE_NUMERICFORLOOP:
+            write_node(output, "for");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the for node */
+            print_ast(output, node->data.numerical_for_loop.init, false);
+            print_ast(output, node->data.numerical_for_loop.target, false);
+            print_ast(output, node->data.numerical_for_loop.increment, false);
 
             parent_id = previous;
             break;
