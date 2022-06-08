@@ -1,9 +1,0 @@
-{
-    "C_Cpp.errorSquiggles": "Enabled",
-    "editor.rulers": [
-        100
-    ],
-    "files.associations": {
-        "stdio.h": "c"
-    }
-}

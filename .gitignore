@@ -9,3 +9,6 @@ src/lexer.yy.h
 # Ignore all Bison generated files
 src/parser.tab.c
 src/parser.tab.h
+
+# Ignore all VS Code generated files
+.vscode/
