@@ -216,10 +216,10 @@ statement
         { $$ = node_if_statement(@$, $2, $4, NULL); }
     | IF_T expression THEN_T block else_body
          { $$ = node_if_statement(@$, $2, $4, $5); }
-    | FOR_T single_assignment COMMA_T expression
-        { $$ = node_numerical_for_loop(@$, $2, $4, node_integer(@$, "1")); }
-    | FOR_T single_assignment COMMA_T expression COMMA_T expression
-        { $$ = node_numerical_for_loop(@$, $2, $4, $6); }
+    | FOR_T single_assignment COMMA_T expression DO_T block END_T
+        { $$ = node_numerical_for_loop(@$, $2, $4, node_integer(@$, "1"), $6); }
+    | FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
+        { $$ = node_generic_for_loop(@$, $2, $4, $6, $8); }
 
 ;
 

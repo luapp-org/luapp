@@ -32,7 +32,8 @@ enum node_type {
     NODE_WHILELOOP,
     NODE_REPEATLOOP,
     NODE_IF,
-    NODE_NUMERICFORLOOP
+    NODE_NUMERICFORLOOP,
+    NODE_GENERICFORLOOP
 };
 
 /* Binary operations */
@@ -139,7 +140,14 @@ struct node {
             struct node *init;
             struct node *target;    /* Max/min value - depends on forloop type */
             struct node *increment; /* Increment/decrement - depends on forloop type */
+            struct node *body;
         } numerical_for_loop;
+        struct {
+            struct node *namelist;
+            struct node *exprlist;    /* Max/min value - depends on forloop type */
+
+            struct node *body;
+        } generic_for_loop;
     } data;
 };
 
@@ -174,7 +182,7 @@ struct node *node_repeat_loop(YYLTYPE location, struct node *body, struct node *
 struct node *node_if_statement(YYLTYPE location, struct node *condition, struct node *body,
                                struct node *else_body);
 struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
-                                     struct node *increment);
+                                     struct node *increment, struct node* body);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name);

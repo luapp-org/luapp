@@ -377,13 +377,14 @@ struct node *node_if_statement(YYLTYPE location, struct node *condition, struct 
  *  BNF -> for Name `=´ exp `,´ exp [`,´ exp] do block end
  */
 struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
-                                     struct node *increment)
+                                     struct node *increment, struct node *body)
 {
     struct node *node = node_create(location, NODE_NUMERICFORLOOP);
 
     node->data.numerical_for_loop.init = init;
     node->data.numerical_for_loop.target = target;
     node->data.numerical_for_loop.increment = increment;
+    node->data.numerical_for_loop.body = body;
 
     return node;
 }
@@ -706,6 +707,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.numerical_for_loop.init, false);
             print_ast(output, node->data.numerical_for_loop.target, false);
             print_ast(output, node->data.numerical_for_loop.increment, false);
+            print_ast(output, node->data.numerical_for_loop.body, false);
 
             parent_id = previous;
             break;
