@@ -193,6 +193,22 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
     return node;
 }
 
+/*  node_name_list - allocate a node to represent a name list
+ *      args: location, first name, next name (if any)
+ *      rets: name list node
+ *
+ *  BNF -> Name {`,´ Name}
+ */
+struct node *node_name_list(YYLTYPE location, struct node *init, struct node *name)
+{
+    struct node *node = node_create(location, NODE_EXPRESSION_LIST);
+
+    node->data.name_list.init = init;
+    node->data.name_list.name = name;
+
+    return node;
+}
+
 /*  node_variable_list - allocate a node to represent an variable list
  *      args: location, first variable, next variable
  *      rets: variable list node
@@ -389,6 +405,40 @@ struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct
     return node;
 }
 
+/*  node_generic_for_loop - allocate a node to represent a generic for loop
+ *      args: location, iterators, expressions 
+ *      rets: generic for loop statement node
+ *
+ *  BNF -> for namelist in explist do block end
+ */
+struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, struct node *exprlist,
+                                   struct node *body)
+{
+    struct node *node = node_create(location, NODE_GENERICFORLOOP);
+
+    node->data.generic_for_loop.namelist = namelist;
+    node->data.generic_for_loop.exprlist = exprlist;
+    node->data.generic_for_loop.body = body;
+
+    return node;
+}
+
+/*  node_local - allocate a node to represent a local assignment
+ *      args: location, var list, expressions 
+ *      rets: local statement node
+ *
+ *  BNF -> local namelist [`=´ explist]
+ */
+struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist)
+{
+    struct node *node = node_create(location, NODE_LOCAL);
+
+    node->data.local.namelist = namelist;
+    node->data.local.exprlist = exprlist;
+
+    return node;
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -552,6 +602,13 @@ void print_ast(FILE *output, struct node *node, bool first)
             if (node->data.expression_list.expression != NULL)
                 print_ast(output, node->data.expression_list.expression, false);
             break;
+        case NODE_NAME_LIST:
+            /* No graphviz needed */
+            print_ast(output, node->data.name_list.init, false);
+
+            if (node->data.name_list.name != NULL)
+                print_ast(output, node->data.name_list.name, false);
+            break;
         case NODE_VARIABLE_LIST:
             /* No graphviz needed */
             print_ast(output, node->data.variable_list.init, false);
@@ -708,6 +765,33 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.numerical_for_loop.target, false);
             print_ast(output, node->data.numerical_for_loop.increment, false);
             print_ast(output, node->data.numerical_for_loop.body, false);
+
+            parent_id = previous;
+            break;
+        case NODE_GENERICFORLOOP:
+            write_node(output, "for");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the for node */
+            print_ast(output, node->data.generic_for_loop.namelist, false);
+            print_ast(output, node->data.generic_for_loop.exprlist, false);
+            print_ast(output, node->data.generic_for_loop.body, false);
+
+            parent_id = previous;
+            break;
+        case NODE_LOCAL:
+            write_node(output, "local");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the for node */
+            print_ast(output, node->data.local.namelist, false);
+            print_ast(output, node->data.local.exprlist, false);
 
             parent_id = previous;
             break;

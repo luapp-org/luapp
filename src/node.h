@@ -21,6 +21,7 @@ enum node_type {
     NODE_BINARY_OPERATION,
     NODE_UNARY_OPERATION,
     NODE_EXPRESSION_LIST,
+    NODE_NAME_LIST,
     NODE_VARIABLE_LIST,
     NODE_CALL,
     NODE_EXPRESSION_GROUP,
@@ -33,7 +34,8 @@ enum node_type {
     NODE_REPEATLOOP,
     NODE_IF,
     NODE_NUMERICFORLOOP,
-    NODE_GENERICFORLOOP
+    NODE_GENERICFORLOOP,
+    NODE_LOCAL
 };
 
 /* Binary operations */
@@ -92,6 +94,10 @@ struct node {
             struct node *expression; /* Next expression */
         } expression_list;
         struct {
+            struct node *init;       /* First expression */
+            struct node *name; /* Next expression */
+        } name_list;
+        struct {
             struct node *init;     /* First expression */
             struct node *variable; /* Next expression */
         } variable_list;
@@ -144,10 +150,14 @@ struct node {
         } numerical_for_loop;
         struct {
             struct node *namelist;
-            struct node *exprlist;    /* Max/min value - depends on forloop type */
+            struct node *exprlist; 
 
             struct node *body;
         } generic_for_loop;
+        struct {
+            struct node *namelist;
+            struct node *exprlist; 
+        } local;
     } data;
 };
 
@@ -165,6 +175,7 @@ struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation 
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression);
 struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression);
+struct node *node_name_list(YYLTYPE location, struct node *init, struct node *name);
 struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable);
 struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
                        bool self_call);
@@ -182,7 +193,10 @@ struct node *node_repeat_loop(YYLTYPE location, struct node *body, struct node *
 struct node *node_if_statement(YYLTYPE location, struct node *condition, struct node *body,
                                struct node *else_body);
 struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
-                                     struct node *increment, struct node* body);
+                                     struct node *increment, struct node *body);
+struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, struct node *exprlist,
+                                   struct node *body);
+struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name);

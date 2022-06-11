@@ -139,6 +139,11 @@ expression_list
         { $$ = node_expression_list(@$, $1, $3); }
 ;
 
+name_list 
+    : IDENTIFIER_T
+    | name_list COMMA_T IDENTIFIER_T
+        { $$ = node_name_list(@$, $1, $3); }
+
 variable 
     : IDENTIFIER_T
     | prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T
@@ -218,8 +223,12 @@ statement
          { $$ = node_if_statement(@$, $2, $4, $5); }
     | FOR_T single_assignment COMMA_T expression DO_T block END_T
         { $$ = node_numerical_for_loop(@$, $2, $4, node_integer(@$, "1"), $6); }
-    | FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
-        { $$ = node_generic_for_loop(@$, $2, $4, $6, $8); }
+    | FOR_T name_list IN_T expression_list DO_T block END_T
+        { $$ = node_generic_for_loop(@$, $2, $4, $6); }
+    | LOCAL_T name_list 
+        { $$ = node_local(@$, $2, node_nil(@$)); }
+    | LOCAL_T name_list EQUAL_T expression_list
+        { $$ = node_local(@$, $2, $4); }
 
 ;
 
