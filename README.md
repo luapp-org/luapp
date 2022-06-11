@@ -35,7 +35,11 @@ varlist ::= var {`,´ var}
 
 var ::=  Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name 
 
-namelist ::= Name {`,´ Name}
+namelist ::= nametype {`,´ nametype}
+
+nametype ::= Name `:´ type
+
+type ::= number | string | boolean
 
 explist ::= {exp `,´} exp
 
