@@ -35,7 +35,9 @@ enum node_type {
     NODE_IF,
     NODE_NUMERICFORLOOP,
     NODE_GENERICFORLOOP,
-    NODE_LOCAL
+    NODE_LOCAL,
+    NODE_RETURN,
+    NODE_BREAK
 };
 
 /* Binary operations */
@@ -158,6 +160,9 @@ struct node {
             struct node *namelist;
             struct node *exprlist; 
         } local;
+        struct {
+            struct node *exprlist; 
+        } return_statement;
     } data;
 };
 
@@ -197,6 +202,8 @@ struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct
 struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, struct node *exprlist,
                                    struct node *body);
 struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
+struct node *node_return(YYLTYPE location, struct node *exprlist);
+struct node *node_break(YYLTYPE location);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name);

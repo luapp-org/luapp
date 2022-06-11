@@ -439,6 +439,33 @@ struct node *node_local(YYLTYPE location, struct node *namelist, struct node *ex
     return node;
 }
 
+/*  node_return - allocate a node to represent a return statement
+ *      args: location, expressions 
+ *      rets: return statement node
+ *
+ *  BNF -> return [explist]
+ */
+struct node *node_return(YYLTYPE location, struct node *exprlist)
+{
+    struct node *node = node_create(location, NODE_RETURN);
+
+    node->data.return_statement.exprlist = exprlist;
+
+    return node;
+}
+
+/*  node_break - allocate a node to represent a break statement
+ *      args: location 
+ *      rets: break statement node
+ *
+ *  BNF -> break
+ */
+struct node *node_break(YYLTYPE location)
+{
+    /* No data for this node, it's just a 'marker' */
+    return node_create(location, NODE_BREAK);
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -794,6 +821,22 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.local.exprlist, false);
 
             parent_id = previous;
+            break;
+        case NODE_RETURN:
+            write_node(output, "return");
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the for node */
+            print_ast(output, node->data.return_statement.exprlist, false);
+
+            parent_id = previous;
+            break;
+        case NODE_BREAK:
+            write_node(output, "break");
+            id++;
             break;
         default:
             break;

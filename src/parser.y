@@ -205,6 +205,7 @@ else_body
 single_assignment 
     : variable EQUAL_T expression
         { $$ = node_assignment(@$, $1, $3); }
+;
 
 statement
     : variable_list EQUAL_T expression_list
@@ -229,6 +230,8 @@ statement
         { $$ = node_local(@$, $2, node_nil(@$)); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
+    | last_statement
+        { $$ = $1; }
 
 ;
 
@@ -237,6 +240,15 @@ block
         { $$ = node_block(@$, $1, NULL); }
     | block statement
         { $$ = node_block(@$, $1, $2); }
+;
+
+last_statement 
+    :   RETURN_T expression_list
+        { $$ = node_return(@$, $2); }
+    |   RETURN_T
+        { $$ = node_return(@$, node_nil(@$)); }
+    | BREAK_T
+        { $$ = node_break(@$); }
 ;
 
 %%

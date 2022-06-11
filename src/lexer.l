@@ -60,6 +60,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 <LSTRING>"]]"       { 
                         BEGIN(INITIAL);
 
+                        /* Hacky method of updating line positions over multiple lines. */
                         yylloc->first_line = first_line;
                         yylloc->last_line = yylineno;
                         yylloc->first_column = first_col;
@@ -128,7 +129,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
 {string}            {
-                        /* Hacky: remove quotes */
+                        /* Hacky: remove quotes only for single line strings */
                         char *res = yytext + 1;
                         res[strlen(res) - 1] = '\0';
 
