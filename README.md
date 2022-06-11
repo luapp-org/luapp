@@ -37,6 +37,10 @@ var ::=  Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name
 
 namelist ::= Name {`,´ Name}
 
+nametype ::= Name `:´ type
+
+type ::= number | string | boolean
+
 explist ::= {exp `,´} exp
 
 exp ::=  nil | false | true | Number | String | `...´ | function | 
