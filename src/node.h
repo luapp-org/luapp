@@ -12,12 +12,15 @@ typedef void *yyscan_t;
 
 #include "compiler.h"
 
+struct type;
+
 enum node_type {
-    NODE_INTEGER,
+    NODE_NUMBER,
     NODE_IDENTIFIER,
     NODE_STRING,
     NODE_BOOLEAN,
     NODE_NIL,
+    NODE_TYPE_ANNOTATION,
     NODE_BINARY_OPERATION,
     NODE_UNARY_OPERATION,
     NODE_EXPRESSION_LIST,
@@ -72,7 +75,7 @@ struct node {
         struct {
             double value;
             bool overflow; /* Indicates double overflow */
-        } integer;
+        } number;
         struct {
             char *name;
         } identifier;
@@ -82,6 +85,10 @@ struct node {
         struct {
             bool value;
         } boolean;
+        struct {
+            struct node *identifier;
+            struct type *type;
+        } type_annotation;
         struct {
             enum node_binary_operation operation;
             struct node *left;  /* Left operand */
@@ -96,7 +103,7 @@ struct node {
             struct node *expression; /* Next expression */
         } expression_list;
         struct {
-            struct node *init;       /* First expression */
+            struct node *init; /* First expression */
             struct node *name; /* Next expression */
         } name_list;
         struct {
@@ -152,16 +159,16 @@ struct node {
         } numerical_for_loop;
         struct {
             struct node *namelist;
-            struct node *exprlist; 
+            struct node *exprlist;
 
             struct node *body;
         } generic_for_loop;
         struct {
             struct node *namelist;
-            struct node *exprlist; 
+            struct node *exprlist;
         } local;
         struct {
-            struct node *exprlist; 
+            struct node *exprlist;
         } return_statement;
     } data;
 };
@@ -170,11 +177,13 @@ struct node {
 static struct node *node_create(YYLTYPE location, enum node_type type);
 
 /* Node expression constructors */
-struct node *node_integer(YYLTYPE location, char *value);
+struct node *node_number(YYLTYPE location, char *value);
 struct node *node_identifier(YYLTYPE location, char *value);
 struct node *node_string(YYLTYPE location, char *value);
 struct node *node_boolean(YYLTYPE location, bool value);
 struct node *node_nil(YYLTYPE location);
+struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct type *type);
+
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
@@ -206,8 +215,8 @@ struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);
 
 /* Graphviz generation methods */
-void write_node(FILE *output, char *name);
-void write_parentless_node(FILE *output, char *name);
+void write_node(FILE *output, char *name, bool higlight);
+void write_parentless_node(FILE *output, char *name, bool higlight);
 char *format_node(struct node *node);
 void print_ast(FILE *output, struct node *node, bool first);
 

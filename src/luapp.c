@@ -31,7 +31,7 @@ static void print_summary(char *pass, int error_count, clock_t start)
 /*
  * Entrypoint for the compiler.
  *
- * luapp -s [lexer|parser|symbol|type|ir|codgen] -o [outputfile] [inputfile]
+ * luapp -s [lexer|parser|type|ir|codgen] -o [outputfile] [inputfile]
  *
  * -s : indicates the name of the stage to stop after.
  *      Defaults to the last stage.

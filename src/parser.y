@@ -16,6 +16,7 @@
 
     #include "compiler.h"
     #include "node.h"
+    #include "type.h"
 
     #ifndef YY_TYPEDEF_YY_SCANNER_T
     #define YY_TYPEDEF_YY_SCANNER_T
@@ -33,7 +34,7 @@
 
 /* Values */
 %token IDENTIFIER_T
-%token INTEGER_T
+%token NUMBER_T
 %token STRING_T
 
 /* Keywords */
@@ -58,6 +59,11 @@
 %token THEN_T
 %token UNTIL_T
 %token WHILE_T
+
+/* Type annotations */
+%token TNUMBER_T
+%token TSTRING_T
+%token TBOOLEAN_T
 
 /* Symbols */
 %token PLUS_T/*             +     */         
@@ -140,9 +146,19 @@ expression_list
 ;
 
 name_list 
-    : IDENTIFIER_T
-    | name_list COMMA_T IDENTIFIER_T
+    : name_type
+    | name_list COMMA_T name_type
         { $$ = node_name_list(@$, $1, $3); }
+;
+
+name_type 
+    : IDENTIFIER_T COLON_T TNUMBER_T
+        { $$ = node_type_annotation(@$, $1, type_basic(TYPE_BASIC_NUMBER)); }
+    | IDENTIFIER_T COLON_T TSTRING_T
+        { $$ = node_type_annotation(@$, $1, type_basic(TYPE_BASIC_STRING)); }
+    | IDENTIFIER_T COLON_T TBOOLEAN_T
+        { $$ = node_type_annotation(@$, $1, type_basic(TYPE_BASIC_BOOLEAN)); }
+;
 
 variable 
     : IDENTIFIER_T
@@ -175,7 +191,7 @@ call
 ;
 
 expression
-  : NIL_T  | FALSE_T | TRUE_T | INTEGER_T | STRING_T | VARARG_T
+  : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T
   | binary_operation | unary_operation | prefix_expression
 ;
 
@@ -223,7 +239,7 @@ statement
     | IF_T expression THEN_T block else_body
          { $$ = node_if_statement(@$, $2, $4, $5); }
     | FOR_T single_assignment COMMA_T expression DO_T block END_T
-        { $$ = node_numerical_for_loop(@$, $2, $4, node_integer(@$, "1"), $6); }
+        { $$ = node_numerical_for_loop(@$, $2, $4, node_number(@$, "1"), $6); }
     | FOR_T name_list IN_T expression_list DO_T block END_T
         { $$ = node_generic_for_loop(@$, $2, $4, $6); }
     | LOCAL_T name_list 

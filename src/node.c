@@ -4,6 +4,7 @@
 
 #include "node.h"
 #include "util/flexstr.h"
+#include "type.h"
 
 /* Used for graphviz */
 static int parent_id = 0;
@@ -28,23 +29,23 @@ static struct node *node_create(YYLTYPE location, enum node_type type)
     return node;
 }
 
-/*  node_integer - allocate a node to represent an integer
+/*  node_number - allocate a node to represent an number
  *      args: location, value as string
- *      rets: integer node
+ *      rets: number node
  */
-struct node *node_integer(YYLTYPE location, char *value)
+struct node *node_number(YYLTYPE location, char *value)
 {
-    struct node *node = node_create(location, NODE_INTEGER);
+    struct node *node = node_create(location, NODE_NUMBER);
     char *end;
 
     /* Convert value to a double and store _endptr in end */
-    node->data.integer.value = strtod(value, &end);
+    node->data.number.value = strtod(value, &end);
 
     /* Check for hexadecimal and convert to unsigned long in base 16 if so */
     if (*end == 'x' || *end == 'X')
-        node->data.integer.value = strtoul(value, &end, 16);
+        node->data.number.value = strtoul(value, &end, 16);
 
-    node->data.integer.overflow = *end == 0 ? false : true;
+    node->data.number.overflow = *end == 0 ? false : true;
 
     return node;
 }
@@ -138,6 +139,20 @@ struct node *node_nil(YYLTYPE location)
 {
     /* No data for this node, it's just a 'marker' */
     return node_create(location, NODE_NIL);
+}
+
+/*  node_nil - allocate a node to represent a type annotation
+ *      args: location, identifier, type
+ *      rets: type annotation node
+ */
+struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct type *type)
+{
+    struct node *node = node_create(location, NODE_TYPE_ANNOTATION);
+
+    node->data.type_annotation.identifier = identifier;
+    node->data.type_annotation.type = type;
+
+    return node;
 }
 
 /*  node_binary_operation - allocate a node to represent a binary operation
@@ -406,7 +421,7 @@ struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct
 }
 
 /*  node_generic_for_loop - allocate a node to represent a generic for loop
- *      args: location, iterators, expressions 
+ *      args: location, iterators, expressions
  *      rets: generic for loop statement node
  *
  *  BNF -> for namelist in explist do block end
@@ -424,7 +439,7 @@ struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, stru
 }
 
 /*  node_local - allocate a node to represent a local assignment
- *      args: location, var list, expressions 
+ *      args: location, var list, expressions
  *      rets: local statement node
  *
  *  BNF -> local namelist [`=´ explist]
@@ -440,7 +455,7 @@ struct node *node_local(YYLTYPE location, struct node *namelist, struct node *ex
 }
 
 /*  node_return - allocate a node to represent a return statement
- *      args: location, expressions 
+ *      args: location, expressions
  *      rets: return statement node
  *
  *  BNF -> return [explist]
@@ -455,7 +470,7 @@ struct node *node_return(YYLTYPE location, struct node *exprlist)
 }
 
 /*  node_break - allocate a node to represent a break statement
- *      args: location 
+ *      args: location
  *      rets: break statement node
  *
  *  BNF -> break
@@ -477,9 +492,9 @@ static const char *unary_operations[] = {"-", "not", "#", NULL};
  *      args: output file, name of the node
  *      rets: none
  */
-void write_node(FILE *output, char *name)
+void write_node(FILE *output, char *name, bool highlight)
 {
-    write_parentless_node(output, name);
+    write_parentless_node(output, name, highlight);
     fprintf(output, "\tn%i->n%i\n", parent_id, id);
 }
 
@@ -487,9 +502,15 @@ void write_node(FILE *output, char *name)
  *      args: output file, name of the node
  *      rets: none
  */
-void write_parentless_node(FILE *output, char *name)
+void write_parentless_node(FILE *output, char *name, bool highlight)
 {
-    fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
+    if (highlight) {
+        fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
+        fprintf(output, "\tn%i[color=green3]\n", id);
+        fprintf(output, "\tn%i[fontcolor=green3]\n", id);
+    }
+    else
+        fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
 }
 
 /*  format_node - formats the 'data' value of the given node
@@ -506,8 +527,8 @@ char *format_node(struct node *node)
 
     /* Get the size of the formatted string */
     switch (node->type) {
-        case NODE_INTEGER:
-            len = (size_t)snprintf(NULL, 0, "integer\\n\\\"%lf\\\"", node->data.integer.value);
+        case NODE_NUMBER:
+            len = (size_t)snprintf(NULL, 0, "number\\n\\\"%lf\\\"", node->data.number.value);
             break;
         case NODE_IDENTIFIER:
             len = (size_t)snprintf(NULL, 0, "identifier\\n\\\"%s\\\"", node->data.identifier.name);
@@ -539,8 +560,8 @@ char *format_node(struct node *node)
 
     /* Format the string and store it in the newly allocated memory in str */
     switch (node->type) {
-        case NODE_INTEGER:
-            snprintf(str, len + 1, "integer\\n\\\"%lf\\\"", node->data.integer.value);
+        case NODE_NUMBER:
+            snprintf(str, len + 1, "number\\n\\\"%lf\\\"", node->data.number.value);
             break;
         case NODE_IDENTIFIER:
             snprintf(str, len + 1, "identifier\\n\\\"%s\\\"", node->data.identifier.name);
@@ -564,7 +585,7 @@ char *format_node(struct node *node)
 void print_ast(FILE *output, struct node *node, bool first)
 {
     int previous;
-    char buff[22];
+    char buff[50];
     char *valbuff;
 
     /* Don't use assert. This is how we detect empty nodes (e.g. print() -- no arguments) */
@@ -575,26 +596,42 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_BOOLEAN:
         case NODE_STRING:
         case NODE_IDENTIFIER:
-        case NODE_INTEGER:
+        case NODE_NUMBER:
             valbuff = format_node(node);
 
             /* Write the formatted value */
-            write_node(output, valbuff);
+            write_node(output, valbuff, false);
             id++;
 
             /* Free all the memory we allocated for the buffer */
             free(valbuff);
             break;
         case NODE_NIL:
-            write_node(output, "nil");
+            write_node(output, "nil", false);
             id++;
+            break;
+        case NODE_TYPE_ANNOTATION:
+            /* Fromat name of node: "binary operation \n op" */
+            write_node(output, "type annotation", false);
+
+            /* Save and increment the id of the current node */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Print expressions (left and right) */
+            print_ast(output, node->data.type_annotation.identifier, false);
+            
+            write_node(output, type_to_string(node->data.type_annotation.type), true);
+            id++;
+
+            parent_id = previous;
             break;
         case NODE_BINARY_OPERATION:
             /* Fromat name of node: "binary operation \n op" */
             sprintf(buff, "binary operation\\n%s",
                     binary_operations[node->data.binary_operation.operation]);
 
-            write_node(output, buff);
+            write_node(output, buff, false);
 
             /* Save and increment the id of the current node */
             previous = parent_id;
@@ -611,7 +648,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             sprintf(buff, "unary operation\\n%s",
                     unary_operations[node->data.unary_operation.operation]);
 
-            write_node(output, buff);
+            write_node(output, buff, false);
 
             /* Save and increment the id of the current node */
             previous = parent_id;
@@ -644,7 +681,7 @@ void print_ast(FILE *output, struct node *node, bool first)
                 print_ast(output, node->data.variable_list.variable, false);
             break;
         case NODE_CALL:
-            write_node(output, "call");
+            write_node(output, "call", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -657,7 +694,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_EXPRESSION_INDEX:
-            write_node(output, "expression index");
+            write_node(output, "expression index", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -670,7 +707,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_NAME_INDEX:
-            write_node(output, "name index");
+            write_node(output, "name index", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -683,7 +720,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_EXPRESSION_GROUP:
-            write_node(output, "expression group");
+            write_node(output, "expression group", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -707,7 +744,7 @@ void print_ast(FILE *output, struct node *node, bool first)
                 fprintf(output, "\tnode[fontname=Monospace]\n");
 
                 /* Write the parentless node and increment id */
-                write_parentless_node(output, "program");
+                write_parentless_node(output, "program", false);
                 id++;
             } else {
                 /* Save parent id for reset later */
@@ -728,7 +765,7 @@ void print_ast(FILE *output, struct node *node, bool first)
                 fprintf(output, "}\n");
             break;
         case NODE_ASSIGNMENT:
-            write_node(output, "assignment");
+            write_node(output, "assignment", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -741,7 +778,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_WHILELOOP:
-            write_node(output, "while");
+            write_node(output, "while", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -754,7 +791,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_REPEATLOOP:
-            write_node(output, "repeat");
+            write_node(output, "repeat", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -767,7 +804,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_IF:
-            write_node(output, "if");
+            write_node(output, "if", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -781,7 +818,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_NUMERICFORLOOP:
-            write_node(output, "for");
+            write_node(output, "for", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -796,7 +833,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_GENERICFORLOOP:
-            write_node(output, "for");
+            write_node(output, "for", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -810,7 +847,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_LOCAL:
-            write_node(output, "local");
+            write_node(output, "local", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -823,7 +860,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_RETURN:
-            write_node(output, "return");
+            write_node(output, "return", false);
 
             /* Save and increment ids */
             previous = parent_id;
@@ -835,7 +872,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_BREAK:
-            write_node(output, "break");
+            write_node(output, "break", false);
             id++;
             break;
         default:

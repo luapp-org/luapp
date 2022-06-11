@@ -40,7 +40,7 @@ digit           [[:digit:]]
 letter          [[:alpha:]]
 
 identifier      {letter}({letter}|{digit})*
-integer         {digit}+
+number          [+-]?([0-9]+\.?[0-9]*|\.[0-9]+)
 string          \"([^"\\\n]|\\(.|\n))*\"|'([^"\\\n]|\\(.|\n))*'
 lstring         \[\[(.*?|\n|\r)\]\]
 
@@ -99,6 +99,10 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "until"             return UNTIL_T;
 "while"             return WHILE_T;
 
+"number"            return TNUMBER_T;
+"string"            return TSTRING_T;
+"boolean"           return TBOOLEAN_T;
+
 \[                  return LEFT_SQUARE_T;
 \]                  return RIGHT_SQUARE_T;
 \+                  return PLUS_T;
@@ -127,7 +131,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "..."               return VARARG_T;
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
-{integer}           { *yylval = node_integer(*yylloc, yytext); return INTEGER_T; }
+{number}            { *yylval = node_number(*yylloc, yytext); return NUMBER_T; }
 {string}            {
                         /* Hacky: remove quotes only for single line strings */
                         char *res = yytext + 1;
@@ -181,7 +185,8 @@ void lex_print(yyscan_t *lexer, int *error_count, FILE *output) {
         }
         
         switch (token) {
-            case INTEGER_T:
+            case NUMBER_T:
+                fprintf(output, "%-20lf", val->data.number.value);
                 break;
             case STRING_T:
                 fprintf(output, "\"%-20s\"", val->data.string.value);
