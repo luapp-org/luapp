@@ -3,8 +3,8 @@
  */
 
 #include "node.h"
-#include "util/flexstr.h"
 #include "type.h"
+#include "util/flexstr.h"
 
 /* Used for graphviz */
 static int parent_id = 0;
@@ -148,7 +148,7 @@ struct node *node_nil(YYLTYPE location)
 struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct type *type)
 {
     struct node *node = node_create(location, NODE_TYPE_ANNOTATION);
-
+    
     node->data.type_annotation.identifier = identifier;
     node->data.type_annotation.type = type;
 
@@ -335,17 +335,19 @@ struct node *node_block(YYLTYPE location, struct node *init, struct node *statem
     return node;
 }
 
-/*  node_assignment - allocate a node to represent an assignment
- *      args: location, list of variable, list of values
+/*  node_assignment - allocate a node to represent an assignment node
+ *      args: location, list of variables, assignment type, list of values
  *      rets: assignment node
  *
- *  BNF -> varlist `=´ explist
+ *  BNF -> varlist assigntype explist
  */
-struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values)
+struct node *node_assignment(YYLTYPE location, struct node *variables,
+                             enum node_assignment_type type, struct node *values)
 {
     struct node *node = node_create(location, NODE_ASSIGNMENT);
 
     node->data.assignment.variables = variables;
+    node->data.assignment.type = type;
     node->data.assignment.values = values;
 
     return node;
@@ -488,6 +490,9 @@ static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   ".
 /* unary_operations -- the string values of all unary operations */
 static const char *unary_operations[] = {"-", "not", "#", NULL};
 
+/* assignment_types -- the string values of all assignment types */
+static const char *assignment_types[] = {"=", "+=", "-=", "*=", "/=", "%=", "^=", "..=", NULL};
+
 /*  write_node - writes a node to a file in graphviz format
  *      args: output file, name of the node
  *      rets: none
@@ -508,8 +513,7 @@ void write_parentless_node(FILE *output, char *name, bool highlight)
         fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
         fprintf(output, "\tn%i[color=green3]\n", id);
         fprintf(output, "\tn%i[fontcolor=green3]\n", id);
-    }
-    else
+    } else
         fprintf(output, "\tn%i[label=\"%s\"]\n", id, name);
 }
 
@@ -620,7 +624,7 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             /* Print expressions (left and right) */
             print_ast(output, node->data.type_annotation.identifier, false);
-            
+
             write_node(output, type_to_string(node->data.type_annotation.type), true);
             id++;
 
@@ -765,7 +769,11 @@ void print_ast(FILE *output, struct node *node, bool first)
                 fprintf(output, "}\n");
             break;
         case NODE_ASSIGNMENT:
-            write_node(output, "assignment", false);
+            /* Fromat name of node: "binary operation \n op" */
+            sprintf(buff, "assignment\\n%s",
+                    assignment_types[node->data.assignment.type]);
+
+            write_node(output, buff, false);
 
             /* Save and increment ids */
             previous = parent_id;

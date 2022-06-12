@@ -67,6 +67,18 @@ enum node_binary_operation {
 /* Unary operations (-, not, #) */
 enum node_unary_operation { UNOP_NEG, UNOP_NOT, UNOP_LEN };
 
+/* Assignment types */
+enum node_assignment_type {
+    ASSIGN,
+    ASSIGN_ADD,
+    ASSIGN_SUB,
+    ASSIGN_MUL,
+    ASSIGN_DIV,
+    ASSIGN_MOD,
+    ASSIGN_POW,
+    ASSIGN_CON
+};
+
 /* Node struct with data unions */
 struct node {
     enum node_type type;
@@ -136,6 +148,7 @@ struct node {
         } block;
         struct {
             struct node *variables;
+            enum node_assignment_type type;
             struct node *values;
         } assignment;
         struct {
@@ -201,7 +214,8 @@ struct node *node_expression_index(YYLTYPE location, struct node *expression, st
 /* Node statement constructors */
 struct node *node_expression_statement(YYLTYPE location, struct node *expression);
 struct node *node_block(YYLTYPE location, struct node *init, struct node *statement);
-struct node *node_assignment(YYLTYPE location, struct node *variables, struct node *values);
+struct node *node_assignment(YYLTYPE location, struct node *variables,
+                             enum node_assignment_type type, struct node *values);
 struct node *node_while_loop(YYLTYPE location, struct node *condition, struct node *body);
 struct node *node_repeat_loop(YYLTYPE location, struct node *body, struct node *condition);
 struct node *node_if_statement(YYLTYPE location, struct node *condition, struct node *body,

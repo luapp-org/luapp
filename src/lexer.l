@@ -129,6 +129,13 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "<="                return LESS_EQUAL_T;
 ".."                return CONCAT_T;
 "..."               return VARARG_T;
+"+="                return PLUS_EQUAL_T;
+"-="                return MINUS_EQUAL_T;
+"*="                return ASTERISK_EQUAL_T;
+"/="                return SLASH_EQUAL_T;
+"%="                return MOD_EQUAL_T;
+"^="                return CARROT_EQUAL_T;
+"..="               return CONCAT_EQUAL_T;
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {number}            { *yylval = node_number(*yylloc, yytext); return NUMBER_T; }

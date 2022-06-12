@@ -92,6 +92,13 @@
 %token LESS_EQUAL_T/*       <=    */
 %token CONCAT_T/*           ..    */
 %token VARARG_T/*           ...   */
+%token PLUS_EQUAL_T/*       +=    */
+%token MINUS_EQUAL_T/*      -=    */
+%token ASTERISK_EQUAL_T/*   *=    */
+%token SLASH_EQUAL_T/*      /=    */
+%token MOD_EQUAL_T/*        %=    */
+%token CARROT_EQUAL_T/*     ^=    */
+%token CONCAT_EQUAL_T/*     ..=    */
 
 %start program
 
@@ -220,12 +227,31 @@ else_body
  */
 single_assignment 
     : variable EQUAL_T expression
-        { $$ = node_assignment(@$, $1, $3); }
+        { $$ = node_assignment(@$, $1, ASSIGN, $3); }
+;
+
+assignment
+    : variable_list EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN, $3); }
+    | variable_list PLUS_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_ADD, $3); }
+    | variable_list MINUS_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_SUB, $3); }
+    | variable_list ASTERISK_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_MUL, $3); }
+    | variable_list SLASH_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_DIV, $3); }
+    | variable_list MOD_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_MOD, $3); }
+    | variable_list CARROT_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_POW, $3); }
+    | variable_list CONCAT_EQUAL_T expression_list
+        { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
 statement
-    : variable_list EQUAL_T expression_list
-        { $$ = node_assignment(@$, $1, $3); }
+    : assignment
+        { $$ = $1; }
     | call 
         { $$ = node_expression_statement(@$, $1); }
     | DO_T block END_T
