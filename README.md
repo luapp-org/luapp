@@ -15,7 +15,7 @@ chunk ::= {stat [`;´]} [laststat [`;´]]
 
 block ::= chunk
 
-stat ::=  varlist `=´ explist | 
+stat ::=  varlist assigntype explist | 
 	 functioncall | 
 	 do block end | 
 	 while exp do block end | 
@@ -71,4 +71,6 @@ binop ::= `+´ | `-´ | `*´ | `/´ | `^´ | `%´ | `..´ |
 	 and | or
 
 unop ::= `-´ | not | `#´
+
+assigntype ::= `=´ | `+=´ | `-=´ | `*=´ | `/=´ | `^=´ | `%=´
   ```
