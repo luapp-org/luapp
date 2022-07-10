@@ -26,6 +26,7 @@ enum node_type {
     NODE_EXPRESSION_LIST,
     NODE_NAME_LIST,
     NODE_VARIABLE_LIST,
+    NODE_PARAMETER_LIST,
     NODE_CALL,
     NODE_EXPRESSION_GROUP,
     NODE_NAME_INDEX,
@@ -40,7 +41,11 @@ enum node_type {
     NODE_GENERICFORLOOP,
     NODE_LOCAL,
     NODE_RETURN,
-    NODE_BREAK
+    NODE_BREAK,
+    NODE_FUNCTION_BODY,
+    NODE_VARARG,
+    NODE_TYPE_LIST,
+    NODE_TYPE
 };
 
 /* Binary operations */
@@ -99,7 +104,7 @@ struct node {
         } boolean;
         struct {
             struct node *identifier;
-            struct type *type;
+            struct node *type;
         } type_annotation;
         struct {
             enum node_binary_operation operation;
@@ -123,6 +128,10 @@ struct node {
             struct node *variable; /* Next expression */
         } variable_list;
         struct {
+            struct node *namelist;    
+            struct node *vararg; 
+        } parameter_list;
+        struct {
             struct node *expression;
         } expression_statement;
         struct {
@@ -136,7 +145,7 @@ struct node {
         struct {
             struct node *expression;
             struct node *index;
-            bool self_index; /* prefixexp `:´ Name  ->  only in self-calls*/
+            bool self_index; /* prefixexp `:´ Name  ->  only in self-calls */
         } name_index;
         struct {
             struct node *expression;
@@ -183,6 +192,18 @@ struct node {
         struct {
             struct node *exprlist;
         } return_statement;
+        struct {
+            struct node *exprlist;
+            struct node *type_list;
+            struct node *body;
+        } function_body;
+        struct {
+            struct node *init;
+            struct node *type;
+        } type_list;
+        struct {
+            struct type *type;
+        } type;
     } data;
 };
 
@@ -195,13 +216,15 @@ struct node *node_identifier(YYLTYPE location, char *value);
 struct node *node_string(YYLTYPE location, char *value);
 struct node *node_boolean(YYLTYPE location, bool value);
 struct node *node_nil(YYLTYPE location);
-struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct type *type);
-
+struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct node *type);
+struct node* node_type_list(YYLTYPE location, struct node* init, struct node* type);
+struct node* node_type(YYLTYPE location, struct type* type);
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
                                   struct node *expression);
 struct node *node_expression_list(YYLTYPE location, struct node *init, struct node *expression);
+struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct node *vararg);
 struct node *node_name_list(YYLTYPE location, struct node *init, struct node *name);
 struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable);
 struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
@@ -227,6 +250,9 @@ struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, stru
 struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
 struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);
+struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct node *type_list,
+                                struct node *body);
+struct node *node_vararg(YYLTYPE location);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);

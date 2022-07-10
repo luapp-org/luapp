@@ -145,12 +145,39 @@ struct node *node_nil(YYLTYPE location)
  *      args: location, identifier, type
  *      rets: type annotation node
  */
-struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct type *type)
+struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct node *type)
 {
     struct node *node = node_create(location, NODE_TYPE_ANNOTATION);
-    
+
     node->data.type_annotation.identifier = identifier;
     node->data.type_annotation.type = type;
+
+    return node;
+}
+
+/*  node_type_list - allocate a node to represent a type list
+ *      args: location, initial list, type
+ *      rets: type list node
+ */
+struct node* node_type_list(YYLTYPE location, struct node* init, struct node* type)
+{
+    struct node *node = node_create(location, NODE_TYPE_LIST);
+
+    node->data.type_list.init = init;
+    node->data.type_list.type = type;
+
+    return node;
+}
+
+/*  node_type - allocate a node to represent a type node
+ *      args: location, type
+ *      rets: type node
+ */
+struct node* node_type(YYLTYPE location, struct type* type)
+{
+    struct node *node = node_create(location, NODE_TYPE);
+
+    node->data.type.type = type;
 
     return node;
 }
@@ -483,6 +510,40 @@ struct node *node_break(YYLTYPE location)
     return node_create(location, NODE_BREAK);
 }
 
+/*  node_function_body - allocate a node to represent a function body
+ *      args: location, parameters, list of return types, function body
+ *      rets: function body node
+ *
+ *  BNF -> `(´ [parlist] `)´ `:´ typelist block end
+ */
+struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct node *type_list,
+                                struct node *body)
+{
+    struct node *node = node_create(location, NODE_FUNCTION_BODY);
+    
+    node->data.function_body.exprlist = exprlist;
+    node->data.function_body.type_list = type_list;
+    node->data.function_body.body = body;
+
+    return node;
+}
+
+/*  node_function_body - allocate a node to represent a parameter list
+ *      args: location, parameters, vararg
+ *      rets: parameter list node
+ *
+ *  BNF -> parlist ::= namelist [`,´ `...´] | `...´
+ */
+struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct node *vararg)
+{
+    struct node *node = node_create(location, NODE_PARAMETER_LIST);
+
+    node->data.parameter_list.namelist = namelist;
+    node->data.parameter_list.vararg = vararg;
+
+    return node;
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -622,13 +683,15 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            /* Print expressions (left and right) */
+            /* Print expressions */
             print_ast(output, node->data.type_annotation.identifier, false);
-
-            write_node(output, type_to_string(node->data.type_annotation.type), true);
-            id++;
+            print_ast(output, node->data.type_annotation.type, false);
 
             parent_id = previous;
+            break;
+        case NODE_TYPE:
+            write_node(output, type_to_string(node->data.type.type), true);
+            id++;
             break;
         case NODE_BINARY_OPERATION:
             /* Fromat name of node: "binary operation \n op" */
@@ -683,6 +746,18 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             if (node->data.variable_list.variable != NULL)
                 print_ast(output, node->data.variable_list.variable, false);
+            break;
+        case NODE_TYPE_LIST:
+            /* No graphviz needed */
+            print_ast(output, node->data.type_list.init, false);
+
+            if (node->data.type_list.type != NULL)
+                print_ast(output, node->data.type_list.type, false);
+            break;
+        case NODE_PARAMETER_LIST:
+            /* No graphviz needed */
+            print_ast(output, node->data.parameter_list.namelist, false);
+            print_ast(output, node->data.parameter_list.vararg, false);
             break;
         case NODE_CALL:
             write_node(output, "call", false);
@@ -770,8 +845,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             break;
         case NODE_ASSIGNMENT:
             /* Fromat name of node: "binary operation \n op" */
-            sprintf(buff, "assignment\\n%s",
-                    assignment_types[node->data.assignment.type]);
+            sprintf(buff, "assignment\\n%s", assignment_types[node->data.assignment.type]);
 
             write_node(output, buff, false);
 
@@ -882,6 +956,20 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_BREAK:
             write_node(output, "break", false);
             id++;
+            break;
+        case NODE_FUNCTION_BODY:
+            write_node(output, "function_body", false);
+            printf("FUNCTION BODY\n");
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            /* Visit children nodes of the for node */
+            print_ast(output, node->data.function_body.exprlist, false);
+            print_ast(output, node->data.function_body.type_list, false);
+            print_ast(output, node->data.function_body.body, false);
+
+            parent_id = previous;
             break;
         default:
             break;

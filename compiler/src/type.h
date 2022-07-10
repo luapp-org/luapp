@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-enum type_kind { TYPE_PRIMITIVE, TYPE_CUSTOM };
+enum type_kind { TYPE_PRIMITIVE, TYPE_LIST, TYPE_CUSTOM };
 
 /* Maybe add other types..? */
 enum type_primitive_kind {
@@ -24,11 +24,16 @@ struct type {
             /* Kind of basic data type */
             enum type_primitive_kind kind;
         } primitive;
+        struct {
+            struct type *first; /* Primitive */
+            struct type *next;  /* Primitive or List */
+        } list;
     } data;
 };
 
 struct type *type_basic(enum type_primitive_kind kind);
+struct type *type_list(struct type *first, struct type *next);
 
-char *type_to_string(struct type* type);
+char *type_to_string(struct type *type);
 
 #endif
