@@ -3,6 +3,8 @@ This is the Lua++ C lang build, currently private but will soon be public. This 
 
 ### How to compile and run
 1. Make sure that you have ```make``` installed.
+2. Venture into the folder of the project that you would like to compile (e.g. ``compiler/``).
+3. Build and run it like so:
 ```
 make
 ./bin/luapp ...
