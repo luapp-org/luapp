@@ -47,7 +47,9 @@ args ::=  `(´ [explist] `)´ | tableconstructor | String
 
 function ::= function funcbody
 
-funcbody ::= `(´ [parlist] `)´ block end
+typelist ::= type {`,´ type}
+
+funcbody ::= `(´ [parlist] `)´ `:´ typelist block end
 
 parlist ::= namelist [`,´ `...´] | `...´
 
