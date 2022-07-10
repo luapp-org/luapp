@@ -293,6 +293,14 @@ assignment
         { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
+function_name 
+    :   IDENTIFIER_T 
+    |   IDENTIFIER_T DOT_T IDENTIFIER_T
+        { $$ = node_name_index(@$, $1, $3, false); }
+    |   IDENTIFIER_T DOT_T IDENTIFIER_T
+        { $$ = node_name_index(@$, $1, $3, false); }
+;
+
 statement
     : assignment
         { $$ = $1; }
@@ -316,6 +324,7 @@ statement
         { $$ = node_local(@$, $2, node_nil(@$)); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
+    | FUNCTION_T 
     | last_statement
         { $$ = $1; }
 
