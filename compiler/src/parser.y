@@ -148,12 +148,8 @@ unary_operation
 
 expression_list 
     : expression
-        {
-            printf("START expression_list\n");
-        }
     | expression_list COMMA_T expression
         {
-            printf("expression_list\n");
             $$ = node_expression_list(@$, $1, $3); 
         }
 ;

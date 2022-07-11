@@ -657,7 +657,7 @@ void print_ast(FILE *output, struct node *node, bool first)
     /* Don't use assert. This is how we detect empty nodes (e.g. print() -- no arguments) */
     if (node == NULL)
         return;
-    printf("%d\n", node->type);
+
     switch (node->type) {
         case NODE_BOOLEAN:
         case NODE_STRING:
@@ -967,7 +967,6 @@ void print_ast(FILE *output, struct node *node, bool first)
             break;
         case NODE_FUNCTION_BODY:
             write_node(output, "function_body", false);
-            printf("FUNCTION BODY\n");
             /* Save and increment ids */
             previous = parent_id;
             parent_id = id++;
