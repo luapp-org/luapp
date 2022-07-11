@@ -3,76 +3,11 @@ This is the Lua++ C lang build, currently private but will soon be public. This 
 
 ### How to compile and run
 1. Make sure that you have ```make``` installed.
+2. Venture into the folder of the project that you would like to compile (e.g. ``compiler/``).
+3. Build and run it like so:
 ```
 make
 ./bin/luapp ...
 ```
 
-### Lua++ syntax in extented BNF
-Most of this is from [lua.org](https://www.lua.org/manual/5.1/manual.html#8), but I have added some modifications. Those are marked in the codebase.
-```
-chunk ::= {stat [`;´]} [laststat [`;´]]
 
-block ::= chunk
-
-stat ::=  varlist assigntype explist | 
-	 functioncall | 
-	 do block end | 
-	 while exp do block end | 
-	 repeat block until exp | 
-	 if exp then block {elseif exp then block} [else block] end | 
-	 for var `=´ exp `,´ exp [`,´ exp] do block end | 
-	 for namelist in explist do block end | 
-	 function funcname funcbody | 
-	 local function Name funcbody | 
-	 local namelist [`=´ explist] 
-
-laststat ::= return [explist] | break
-
-funcname ::= Name {`.´ Name} [`:´ Name]
-
-varlist ::= var {`,´ var}
-
-var ::=  Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name 
-
-namelist ::= nametype {`,´ nametype}
-
-nametype ::= Name `:´ type
-
-type ::= number | string | boolean
-
-explist ::= {exp `,´} exp
-
-exp ::=  nil | false | true | Number | String | `...´ | function | 
-	 prefixexp | tableconstructor | exp binop exp | unop exp 
-
-prefixexp ::= var | functioncall | `(´ exp `)´
-
-functioncall ::=  prefixexp args | prefixexp `:´ Name args 
-
-args ::=  `(´ [explist] `)´ | tableconstructor | String 
-
-function ::= function funcbody
-
-typelist ::= type {`,´ type}
-
-funcbody ::= `(´ [parlist] `)´ `:´ typelist block end
-
-parlist ::= namelist [`,´ `...´] | `...´
-
-tableconstructor ::= `{´ [fieldlist] `}´
-
-fieldlist ::= field {fieldsep field} [fieldsep]
-
-field ::= `[´ exp `]´ `=´ exp | Name `=´ exp | exp
-
-fieldsep ::= `,´ | `;´
-
-binop ::= `+´ | `-´ | `*´ | `/´ | `^´ | `%´ | `..´ | 
-	 `<´ | `<=´ | `>´ | `>=´ | `==´ | `~=´ | 
-	 and | or
-
-unop ::= `-´ | not | `#´
-
-assigntype ::= `=´ | `+=´ | `-=´ | `*=´ | `/=´ | `^=´ | `%=´ | `..=´
-  ```
