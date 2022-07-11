@@ -8,4 +8,28 @@ digraph G
 	n1->n2
 	n3[label="function_body"]
 	n1->n3
+	n4[label="parameter_list"]
+	n3->n4
+	n5[label="type annotation"]
+	n4->n5
+	n6[label="identifier\n\"a\""]
+	n5->n6
+	n7[label="number"]
+	n7[color=green3]
+	n7[fontcolor=green3]
+	n5->n7
+	n8[label="type annotation"]
+	n4->n8
+	n9[label="identifier\n\"b\""]
+	n8->n9
+	n10[label="string"]
+	n10[color=green3]
+	n10[fontcolor=green3]
+	n8->n10
+	n12[label="call"]
+	n3->n12
+	n13[label="identifier\n\"print\""]
+	n12->n13
+	n14[label="string\n\"body\""]
+	n12->n14
 }

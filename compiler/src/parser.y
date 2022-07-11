@@ -148,8 +148,14 @@ unary_operation
 
 expression_list 
     : expression
+        {
+            printf("START expression_list\n");
+        }
     | expression_list COMMA_T expression
-        { $$ = node_expression_list(@$, $1, $3); }
+        {
+            printf("expression_list\n");
+            $$ = node_expression_list(@$, $1, $3); 
+        }
 ;
 
 parameter_list 
@@ -163,8 +169,15 @@ parameter_list
 
 name_list 
     : name_type
+        { 
+            
+            $$ = $1; 
+        }
     | name_list COMMA_T name_type
-        { $$ = node_name_list(@$, $1, $3); }
+        { 
+            
+            $$ = node_name_list(@$, $1, $3); 
+        }
 ;
 
 type_list 
@@ -259,7 +272,9 @@ function_body
     : LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, $2, $5, $6); }
     | LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
-        { $$ = node_function_body(@$, $2, NULL, $4); }
+        { 
+            $$ = node_function_body(@$, $2, NULL, $4); 
+        }
     | LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, NULL, $4, $5); }
     | LEFT_PARAN_T RIGHT_PARAN_T block END_T
@@ -293,14 +308,6 @@ assignment
         { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
-function_name 
-    :   IDENTIFIER_T 
-    |   IDENTIFIER_T DOT_T IDENTIFIER_T
-        { $$ = node_name_index(@$, $1, $3, false); }
-    |   IDENTIFIER_T DOT_T IDENTIFIER_T
-        { $$ = node_name_index(@$, $1, $3, false); }
-;
-
 statement
     : assignment
         { $$ = $1; }
@@ -332,6 +339,7 @@ statement
 
 block 
     : %empty
+        { $$ = NULL; }
     | statement
         { $$ = node_block(@$, $1, NULL); }
     | block statement

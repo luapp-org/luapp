@@ -243,7 +243,7 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
  */
 struct node *node_name_list(YYLTYPE location, struct node *init, struct node *name)
 {
-    struct node *node = node_create(location, NODE_EXPRESSION_LIST);
+    struct node *node = node_create(location, NODE_NAME_LIST);
 
     node->data.name_list.init = init;
     node->data.name_list.name = name;
@@ -539,6 +539,7 @@ struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct
     struct node *node = node_create(location, NODE_PARAMETER_LIST);
 
     node->data.parameter_list.namelist = namelist;
+
     node->data.parameter_list.vararg = vararg;
 
     return node;
@@ -656,7 +657,7 @@ void print_ast(FILE *output, struct node *node, bool first)
     /* Don't use assert. This is how we detect empty nodes (e.g. print() -- no arguments) */
     if (node == NULL)
         return;
-
+    printf("%d\n", node->type);
     switch (node->type) {
         case NODE_BOOLEAN:
         case NODE_STRING:
@@ -736,7 +737,7 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_NAME_LIST:
             /* No graphviz needed */
             print_ast(output, node->data.name_list.init, false);
-
+            
             if (node->data.name_list.name != NULL)
                 print_ast(output, node->data.name_list.name, false);
             break;
@@ -755,9 +756,16 @@ void print_ast(FILE *output, struct node *node, bool first)
                 print_ast(output, node->data.type_list.type, false);
             break;
         case NODE_PARAMETER_LIST:
-            /* No graphviz needed */
+            write_node(output, "parameter_list", false);
+
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
             print_ast(output, node->data.parameter_list.namelist, false);
             print_ast(output, node->data.parameter_list.vararg, false);
+
+            parent_id = previous;
             break;
         case NODE_CALL:
             write_node(output, "call", false);
@@ -964,10 +972,13 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
+            printf("BODY: %d\n",node->data.function_body.body == NULL );
+
             /* Visit children nodes of the for node */
             print_ast(output, node->data.function_body.exprlist, false);
             print_ast(output, node->data.function_body.type_list, false);
             print_ast(output, node->data.function_body.body, false);
+            
 
             parent_id = previous;
             break;
