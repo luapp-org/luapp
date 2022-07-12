@@ -87,6 +87,7 @@ enum node_assignment_type {
 /* Node struct with data unions */
 struct node {
     enum node_type type;
+    struct type *node_type;
     struct YYLTYPE location;
     union {
         struct {
@@ -201,9 +202,6 @@ struct node {
             struct node *init;
             struct node *type;
         } type_list;
-        struct {
-            struct type *type;
-        } type;
     } data;
 };
 

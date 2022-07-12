@@ -25,6 +25,7 @@ static struct node *node_create(YYLTYPE location, enum node_type type)
     /* Assign the member vars of node struct */
     node->type = type;
     node->location = location;
+    node->node_type = type_basic(TYPE_BASIC_ANY);
 
     return node;
 }
@@ -46,6 +47,7 @@ struct node *node_number(YYLTYPE location, char *value)
         node->data.number.value = strtoul(value, &end, 16);
 
     node->data.number.overflow = *end == 0 ? false : true;
+    node->node_type = type_basic(TYPE_BASIC_NUMBER);
 
     return node;
 }
@@ -114,6 +116,7 @@ struct node *node_string(YYLTYPE location, char *value)
 
     /* Set the name by appending all of the characters in value */
     node->data.string.value = fs_getstr(&f);
+    node->node_type = type_basic(TYPE_BASIC_STRING);
 
     return node;
 }
@@ -127,6 +130,7 @@ struct node *node_boolean(YYLTYPE location, bool value)
     struct node *node = node_create(location, NODE_BOOLEAN);
 
     node->data.boolean.value = value;
+    node->node_type = type_basic(TYPE_BASIC_BOOLEAN);
 
     return node;
 }
@@ -137,8 +141,11 @@ struct node *node_boolean(YYLTYPE location, bool value)
  */
 struct node *node_nil(YYLTYPE location)
 {
-    /* No data for this node, it's just a 'marker' */
-    return node_create(location, NODE_NIL);
+    struct node *node = node_create(location, NODE_NIL);
+
+    node->node_type = type_basic(TYPE_BASIC_NIL);
+
+    return node;
 }
 
 /*  node_nil - allocate a node to represent a type annotation
@@ -150,7 +157,7 @@ struct node *node_type_annotation(YYLTYPE location, struct node *identifier, str
     struct node *node = node_create(location, NODE_TYPE_ANNOTATION);
 
     node->data.type_annotation.identifier = identifier;
-    node->data.type_annotation.type = type;
+    node->node_type = type->node_type;
 
     return node;
 }
@@ -159,7 +166,7 @@ struct node *node_type_annotation(YYLTYPE location, struct node *identifier, str
  *      args: location, initial list, type
  *      rets: type list node
  */
-struct node* node_type_list(YYLTYPE location, struct node* init, struct node* type)
+struct node *node_type_list(YYLTYPE location, struct node *init, struct node *type)
 {
     struct node *node = node_create(location, NODE_TYPE_LIST);
 
@@ -173,11 +180,11 @@ struct node* node_type_list(YYLTYPE location, struct node* init, struct node* ty
  *      args: location, type
  *      rets: type node
  */
-struct node* node_type(YYLTYPE location, struct type* type)
+struct node *node_type(YYLTYPE location, struct type *type)
 {
     struct node *node = node_create(location, NODE_TYPE);
 
-    node->data.type.type = type;
+    node->node_type = type;
 
     return node;
 }
@@ -520,7 +527,7 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
                                 struct node *body)
 {
     struct node *node = node_create(location, NODE_FUNCTION_BODY);
-    
+
     node->data.function_body.exprlist = exprlist;
     node->data.function_body.type_list = type_list;
     node->data.function_body.body = body;
@@ -691,7 +698,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_TYPE:
-            write_node(output, type_to_string(node->data.type.type), true);
+            write_node(output, type_to_string(node->node_type), true);
             id++;
             break;
         case NODE_BINARY_OPERATION:
@@ -737,7 +744,7 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_NAME_LIST:
             /* No graphviz needed */
             print_ast(output, node->data.name_list.init, false);
-            
+
             if (node->data.name_list.name != NULL)
                 print_ast(output, node->data.name_list.name, false);
             break;
@@ -971,13 +978,12 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            printf("BODY: %d\n",node->data.function_body.body == NULL );
+            printf("BODY: %d\n", node->data.function_body.body == NULL);
 
             /* Visit children nodes of the for node */
             print_ast(output, node->data.function_body.exprlist, false);
             print_ast(output, node->data.function_body.type_list, false);
             print_ast(output, node->data.function_body.body, false);
-            
 
             parent_id = previous;
             break;

@@ -13,6 +13,7 @@
 #include "lexer.h"
 #include "node.h"
 #include "parser.h"
+#include "type.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors)
@@ -115,4 +116,20 @@ int main(int argc, char **argv)
         print_summary("Parser", error_count, start);
         return 0;
     }
+
+    struct type_context type_context = { true, 0 };
+    /* Run the parser, it's needed for all later passes */
+    type_ast_traversal(&type_context, tree);
+    error_count = type_context.error_count;
+
+    if (error_count) {
+        print_summary("Type checker", error_count, start);
+        return 1;
+    }
+
+    /* If the stage is "type" print the type tree */
+    if (!strcmp("type", stage)) {
+        print_summary("Type checker", error_count, start);
+        return 0;
+    }   
 }

@@ -4,13 +4,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-enum type_kind { TYPE_PRIMITIVE, TYPE_LIST, TYPE_CUSTOM };
+struct node;
+
+enum type_kind { TYPE_PRIMITIVE, TYPE_CUSTOM };
 
 /* Maybe add other types..? */
 enum type_primitive_kind {
     TYPE_BASIC_NUMBER,
     TYPE_BASIC_STRING,
     TYPE_BASIC_BOOLEAN,
+    TYPE_BASIC_NIL,
+    TYPE_BASIC_ANY,
     TYPE_BASIC_TABLE,
     TYPE_BASIC_ARRAY
 };
@@ -24,15 +28,17 @@ struct type {
             /* Kind of basic data type */
             enum type_primitive_kind kind;
         } primitive;
-        struct {
-            struct type *first; /* Primitive */
-            struct type *next;  /* Primitive or List */
-        } list;
     } data;
 };
 
+struct type_context {
+    bool is_strict;
+    int error_count;
+};
+
 struct type *type_basic(enum type_primitive_kind kind);
-struct type *type_list(struct type *first, struct type *next);
+bool type_is(struct type *first, struct type *second);
+void type_ast_traversal(struct type_context *context, struct node *node);
 
 char *type_to_string(struct type *type);
 

@@ -1,9 +1,6 @@
 %.yy.c : %.l
 	flex --header-file=$(subst .yy.c,.yy.h,$@) -o $@ $<
 
-	mv lexer.yy.h  src/
-	mv lexer.yy.c  src/
-
 %.tab.c : %.y
 	bison -d $< 
 

@@ -148,9 +148,9 @@ unary_operation
 
 expression_list 
     : expression
-    | expression_list COMMA_T expression
+    | expression COMMA_T expression_list
         {
-            $$ = node_expression_list(@$, $1, $3); 
+            $$ = node_expression_list(@$, $3, $1); 
         }
 ;
 
@@ -165,21 +165,14 @@ parameter_list
 
 name_list 
     : name_type
-        { 
-            
-            $$ = $1; 
-        }
-    | name_list COMMA_T name_type
-        { 
-            
-            $$ = node_name_list(@$, $1, $3); 
-        }
+    | name_type COMMA_T name_list 
+        { $$ = node_name_list(@$, $3, $1); }
 ;
 
 type_list 
     : type
-    | type_list COMMA_T type
-        { $$ = node_type_list(@$, $1, $3); }
+    | type COMMA_T type_list
+        { $$ = node_type_list(@$, $3, $1); }
 ;
 
 type 
@@ -241,8 +234,8 @@ program
 
 variable_list 
     : variable
-    | variable_list COMMA_T variable
-        { $$ = node_variable_list(@$, $1, $3); }
+    | variable COMMA_T variable_list
+        { $$ = node_variable_list(@$, $3, $1); }
 ;
 
 else_body
