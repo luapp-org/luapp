@@ -45,7 +45,8 @@ enum node_type {
     NODE_FUNCTION_BODY,
     NODE_VARARG,
     NODE_TYPE_LIST,
-    NODE_TYPE
+    NODE_TYPE,
+    NODE_NAME_REFERENCE
 };
 
 /* Binary operations */
@@ -202,6 +203,9 @@ struct node {
             struct node *init;
             struct node *type;
         } type_list;
+        struct {
+            struct node *identifier;
+        } name_reference;
     } data;
 };
 
@@ -251,6 +255,7 @@ struct node *node_break(YYLTYPE location);
 struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct node *type_list,
                                 struct node *body);
 struct node *node_vararg(YYLTYPE location);
+struct node *node_name_reference(YYLTYPE location, struct node *nameref);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);

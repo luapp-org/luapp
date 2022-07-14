@@ -552,6 +552,21 @@ struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct
     return node;
 }
 
+/*  node_name_reference - allocate a node to represent a name reference
+ *      args: location, identifier
+ *      rets: name refrence node
+ *
+ *  BNF -> name
+ */
+struct node *node_name_reference(YYLTYPE location, struct node *nameref)
+{
+    struct node *node = node_create(location, NODE_NAME_REFERENCE);
+
+    node->data.name_reference.identifier = nameref;
+
+    return node;
+}
+
 /* binary_operations -- the string values of all binary operations */
 static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
                                           "<", ">=", "<=", "==", "~=", "and", "or", NULL};
@@ -986,6 +1001,9 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.function_body.body, false);
 
             parent_id = previous;
+            break;
+        case NODE_NAME_REFERENCE:
+            print_ast(output, node->data.name_reference.identifier, false);
             break;
         default:
             break;

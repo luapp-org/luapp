@@ -163,6 +163,11 @@ void type_ast_traversal(struct type_context *context, struct node *node)
     switch (node->type) {
 
         case NODE_LOCAL:
+            /* Visit children */
+            type_ast_traversal(context, node->data.local.namelist);
+            type_ast_traversal(context, node->data.local.exprlist);
+
+            /* Handle everything */
             type_handle_local(context, node);
             break;
         case NODE_BLOCK:

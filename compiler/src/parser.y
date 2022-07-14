@@ -200,6 +200,7 @@ variable
 
 prefix_expression
     : variable
+        { $$ = node_name_reference(@$, $1); }
     | call
     | LEFT_PARAN_T expression RIGHT_PARAN_T
         { $$ = node_expression_group(@$, $2); }
