@@ -52,43 +52,24 @@ bool type_is(struct type *first, struct type *second)
 static void type_handle_local(struct type_context *context, struct node *local)
 {
     struct node *var = local->data.local.namelist;
-
-    /* Make sure that all vars are type annotations if in strict mode */
-    if (context->is_strict) {
-        while (true) {
-            /* We must have a name list, handle that. */
-            if (var->type == NODE_NAME_LIST) {
-                if (var->data.name_list.name->type != NODE_TYPE_ANNOTATION) {
-                    compiler_error(var->data.name_list.name->location,
-                                   "expected type annotation; compiler is in \"strict\" mode.");
-                    context->error_count++;
-                }
-                var = var->data.name_list.init;
-                continue;
-                /* We must have a single assignment, handle that. */
-            } else if (var->type != NODE_TYPE_ANNOTATION) {
-                compiler_error(var->location,
-                               "expected type annotation; compiler is in \"strict\" mode.");
-                context->error_count++;
-            }
-            break;
-        }
-
-        /* Reset namelist */
-        var = local->data.local.namelist;
-    }
-
     struct node *expr = local->data.local.exprlist;
 
     while (true) {
         /* We must have a name list and expression list, handle that. */
-        if (var->type == NODE_NAME_LIST && expr->type == NODE_EXPRESSION_LIST) {
+        if (expr && var->type == NODE_NAME_LIST && expr->type == NODE_EXPRESSION_LIST) {
             struct node *name = var->data.name_list.name;
             struct node *value = expr->data.expression_list.expression;
 
             /* Guess the type if no type is specified */
-            if (type_is(name->node_type, type_basic(TYPE_BASIC_ANY)))
+            if (type_is(name->node_type, type_basic(TYPE_BASIC_ANY))) {
+                if (context->is_strict) {
+                    compiler_error(name->location,
+                                   "expected type annotation; compiler is in \"strict\" mode.");
+                    context->error_count++;
+                }
+
                 name->node_type = value->node_type;
+            }
 
             if (!type_is(name->node_type, value->node_type)) {
                 compiler_error(name->location,
@@ -101,18 +82,69 @@ static void type_handle_local(struct type_context *context, struct node *local)
             var = var->data.name_list.init;
             expr = expr->data.expression_list.init;
             continue;
-        /* We have a singular namelist = expression */
+            /* We have a singular namelist = expression */
         } else if (var->type == NODE_NAME_LIST) {
             struct node *name = var->data.name_list.name;
-            printf("%s\n", type_to_string(name->node_type));
-        /* We must have a single assignment, handle that. */
-        } else {
-            if (!type_is(var->node_type, expr->node_type)) {
-                compiler_error(var->location,
-                               "type mismatch: variable of type \"%s\" can not be assigned a value "
-                               "of type \"%s\"",
-                               type_to_string(var->node_type), type_to_string(expr->node_type));
+
+            /* Guess the type if no type is specified */
+            if (type_is(name->node_type, type_basic(TYPE_BASIC_ANY))) {
+                if (context->is_strict) {
+                    compiler_error(var->location,
+                                   "expected type annotation; compiler is in \"strict\" mode.");
+                    context->error_count++;
+                }
+
+                if (expr)
+                    name->node_type = expr->node_type;
+                else
+                    name->node_type = type_basic(TYPE_BASIC_NIL);
+            }
+
+            if (!expr && context->is_strict) {
+                compiler_error(name->location, "local variable is inherently \"nil\".");
                 context->error_count++;
+            } else if (expr) {
+                if (!type_is(name->node_type, expr->node_type)) {
+                    compiler_error(
+                        name->location,
+                        "type mismatch: variable of type \"%s\" can not be assigned a value "
+                        "of type \"%s\"",
+                        type_to_string(name->node_type), type_to_string(expr->node_type));
+                    context->error_count++;
+                }
+            }
+
+            var = var->data.name_list.init;
+            expr = NULL;
+            continue;
+            /* We must have a single assignment, handle that. */
+        } else {
+            /* Guess the type if no type is specified */
+            if (type_is(var->node_type, type_basic(TYPE_BASIC_ANY))) {
+                if (context->is_strict) {
+                    compiler_error(var->location,
+                                   "expected type annotation; compiler is in \"strict\" mode.");
+                    context->error_count++;
+                }
+
+                if (expr)
+                    var->node_type = expr->node_type;
+                else 
+                    var->node_type = type_basic(TYPE_BASIC_NIL);
+            }
+
+            if (expr == NULL && context->is_strict) {           
+                compiler_error(var->location, "local variable is inherently \"nil\".");
+                context->error_count++;
+            } else if (expr) {
+                if (!type_is(var->node_type, expr->node_type)) {
+                    compiler_error(
+                        var->location,
+                        "type mismatch: variable of type \"%s\" can not be assigned a value "
+                        "of type \"%s\"",
+                        type_to_string(var->node_type), type_to_string(expr->node_type));
+                    context->error_count++;
+                }
             }
         }
         break;
