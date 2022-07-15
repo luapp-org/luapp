@@ -8,20 +8,19 @@
 #define KEY_COUNT (1024 * 1024)
 
 struct data_struct {
-    char key[KEY_MAX_LENGTH]; /* Identifier string name */
     struct type *type;        /* Type of the identifier (when defined) */
 };
 
-struct data_struct *create_data_entry(char *name, struct type *type)
-{
-    assert(strlen(name) < KEY_MAX_LENGTH);
+// struct data_struct *create_data_entry(char *name, struct type *type)
+// {
+//     assert(strlen(name) < KEY_MAX_LENGTH);
 
-    struct data_struct *data = smalloc(sizeof(struct data_struct));
-    snprintf(data->key, KEY_MAX_LENGTH, "%s", name);
-    data->type = type;
+//     struct data_struct *data = smalloc(sizeof(struct data_struct));
+//     snprintf(data->key, KEY_MAX_LENGTH, "%s", name);
+//     data->type = type;
 
-    return data;
-}
+//     return data;
+// }
 
 /* type_basic() -- creates a basic data type
  *      args: kind of data type
@@ -209,7 +208,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
 static void type_handle_name_reference(struct type_context *context, struct node *name_reference)
 {
     struct node *value = name_reference->data.name_reference.identifier;
-    struct data_struct *s;
+    struct type *s;
     int res = 0;
 
     switch (value->type) {
@@ -223,8 +222,10 @@ static void type_handle_name_reference(struct type_context *context, struct node
                 context->error_count++;
 
                 /* If the identifier has been defined */
-            } else if (res == MAP_OK)
-                value->node_type = s->type;
+            } else if (res == MAP_OK) {
+                value->node_type = s;
+                name_reference->node_type = s;
+            }
             break;
         case NODE_EXPRESSION_INDEX:
             /* code */
