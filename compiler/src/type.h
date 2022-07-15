@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "util/hashmap.h"
+
 struct node;
 
 enum type_kind { TYPE_PRIMITIVE, TYPE_CUSTOM };
@@ -15,6 +17,7 @@ enum type_primitive_kind {
     TYPE_BASIC_BOOLEAN,
     TYPE_BASIC_NIL,
     TYPE_BASIC_ANY,
+    TYPE_BASIC_FUNCTION,
     TYPE_BASIC_TABLE,
     TYPE_BASIC_ARRAY
 };
@@ -32,9 +35,14 @@ struct type {
 };
 
 struct type_context {
-    bool is_strict;
-    int error_count;
+    bool is_strict;  /* Strict context flag */
+    int error_count; /* Number of errors */
+
+    map_t type_map; /* Hashmap of all identifiers and types */
 };
+
+void type_init(struct type_context *context);
+void type_destroy(struct type_context *context);
 
 struct type *type_basic(enum type_primitive_kind kind);
 bool type_is(struct type *first, struct type *second);

@@ -1003,7 +1003,14 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_NAME_REFERENCE:
+            write_node(output, "name_reference", false);
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
             print_ast(output, node->data.name_reference.identifier, false);
+
+            parent_id = previous;
             break;
         default:
             break;

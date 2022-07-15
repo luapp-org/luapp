@@ -118,6 +118,8 @@ int main(int argc, char **argv)
     }
 
     struct type_context type_context = { true, 0 };
+    type_init(&type_context);
+
     /* Run the parser, it's needed for all later passes */
     type_ast_traversal(&type_context, tree);
     error_count = type_context.error_count;
@@ -131,5 +133,7 @@ int main(int argc, char **argv)
     if (!strcmp("type", stage)) {
         print_summary("Type checker", error_count, start);
         return 0;
-    }   
+    }
+
+    type_destroy(&type_context);   
 }
