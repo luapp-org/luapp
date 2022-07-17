@@ -8,7 +8,7 @@
 
 struct node;
 
-enum type_kind { TYPE_PRIMITIVE, TYPE_CUSTOM };
+enum type_kind { TYPE_PRIMITIVE, TYPE_ARRAY, TYPE_TABLE, TYPE_FUNCTION, TYPE_CUSTOM };
 
 /* Maybe add other types..? */
 enum type_primitive_kind {
@@ -17,9 +17,7 @@ enum type_primitive_kind {
     TYPE_BASIC_BOOLEAN,
     TYPE_BASIC_NIL,
     TYPE_BASIC_ANY,
-    TYPE_BASIC_FUNCTION,
-    TYPE_BASIC_TABLE,
-    TYPE_BASIC_ARRAY
+    TYPE_BASIC_FUNCTION
 };
 
 struct type {
@@ -31,6 +29,10 @@ struct type {
             /* Kind of basic data type */
             enum type_primitive_kind kind;
         } primitive;
+        struct {
+            /* Array kind --> Array<number> */
+            struct type *type;
+        } array;
     } data;
 };
 
@@ -45,6 +47,8 @@ void type_init(struct type_context *context);
 void type_destroy(struct type_context *context);
 
 struct type *type_basic(enum type_primitive_kind kind);
+struct type *type_array(struct type *type);
+
 bool type_is(struct type *first, struct type *second);
 void type_ast_traversal(struct type_context *context, struct node *node);
 

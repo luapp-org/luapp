@@ -157,8 +157,9 @@ struct node *node_type_annotation(YYLTYPE location, struct node *identifier, str
     struct node *node = node_create(location, NODE_TYPE_ANNOTATION);
 
     node->data.type_annotation.identifier = identifier;
+    node->data.type_annotation.type = type;
     node->node_type = type->node_type;
-
+    
     return node;
 }
 
@@ -185,6 +186,19 @@ struct node *node_type(YYLTYPE location, struct type *type)
     struct node *node = node_create(location, NODE_TYPE);
 
     node->node_type = type;
+
+    return node;
+}
+
+/*  node_type_array - allocate a node to represent an array type node
+ *      args: location, type
+ *      rets: array type node
+ */
+struct node *node_type_array(YYLTYPE location, struct node *type)
+{
+    struct node *node = node_create(location, NODE_ARRAY_TYPE);
+
+    node->node_type = type_array(type->node_type);
 
     return node;
 }
@@ -556,14 +570,30 @@ struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct
  *      args: location, identifier
  *      rets: name refrence node
  *
- *  BNF -> name
+ *  BNF -> Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name 
  */
 struct node *node_name_reference(YYLTYPE location, struct node *nameref)
 {
     struct node *node = node_create(location, NODE_NAME_REFERENCE);
 
     node->data.name_reference.identifier = nameref;
+    node->node_type = nameref->node_type;
 
+    return node;
+}
+
+/*  node_array_constructor - allocate a node to represent an array constructor
+ *      args: location, expression list
+ *      rets: array constructor
+ *
+ *  BNF -> Array `<´ type `>´
+ */
+struct node *node_array_constructor(YYLTYPE location, struct node *exprlist)
+{
+    struct node *node = node_create(location, NODE_ARRAY_CONSTRUCTOR);
+
+    node->data.array_constructor.exprlist = exprlist;
+    
     return node;
 }
 
@@ -713,6 +743,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_TYPE:
+        case NODE_ARRAY_TYPE:
             write_node(output, type_to_string(node->node_type), true);
             id++;
             break;
@@ -1009,6 +1040,16 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = id++;
 
             print_ast(output, node->data.name_reference.identifier, false);
+
+            parent_id = previous;
+            break;
+        case NODE_ARRAY_CONSTRUCTOR:
+            write_node(output, "array_constructor", false);
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            print_ast(output, node->data.array_constructor.exprlist, false);
 
             parent_id = previous;
             break;

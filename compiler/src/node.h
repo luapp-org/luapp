@@ -46,7 +46,9 @@ enum node_type {
     NODE_VARARG,
     NODE_TYPE_LIST,
     NODE_TYPE,
-    NODE_NAME_REFERENCE
+    NODE_ARRAY_TYPE,
+    NODE_NAME_REFERENCE,
+    NODE_ARRAY_CONSTRUCTOR /* local a: Array<number> = { 1, 2, 3, 4 } */
 };
 
 /* Binary operations */
@@ -130,8 +132,8 @@ struct node {
             struct node *variable; /* Next expression */
         } variable_list;
         struct {
-            struct node *namelist;    
-            struct node *vararg; 
+            struct node *namelist;
+            struct node *vararg;
         } parameter_list;
         struct {
             struct node *expression;
@@ -206,6 +208,9 @@ struct node {
         struct {
             struct node *identifier;
         } name_reference;
+        struct {
+            struct node *exprlist;
+        } array_constructor;
     } data;
 };
 
@@ -219,8 +224,9 @@ struct node *node_string(YYLTYPE location, char *value);
 struct node *node_boolean(YYLTYPE location, bool value);
 struct node *node_nil(YYLTYPE location);
 struct node *node_type_annotation(YYLTYPE location, struct node *identifier, struct node *type);
-struct node* node_type_list(YYLTYPE location, struct node* init, struct node* type);
-struct node* node_type(YYLTYPE location, struct type* type);
+struct node *node_type_list(YYLTYPE location, struct node *init, struct node *type);
+struct node *node_type(YYLTYPE location, struct type *type);
+struct node *node_type_array(YYLTYPE location, struct node *type);
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
@@ -256,6 +262,7 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
                                 struct node *body);
 struct node *node_vararg(YYLTYPE location);
 struct node *node_name_reference(YYLTYPE location, struct node *nameref);
+struct node *node_array_constructor(YYLTYPE location, struct node *exprlist);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);

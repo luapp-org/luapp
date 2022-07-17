@@ -102,6 +102,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "number"            return TNUMBER_T;
 "string"            return TSTRING_T;
 "boolean"           return TBOOLEAN_T;
+"Array"             return TARRAY_T;
 
 \[                  return LEFT_SQUARE_T;
 \]                  return RIGHT_SQUARE_T;
@@ -121,6 +122,8 @@ lstring         \[\[(.*?|\n|\r)\]\]
 \%                  return PERCENT_T;
 \,                  return COMMA_T;
 "."                 return DOT_T;
+\{                  return LEFT_BRACKET_T;
+\}                  return RIGHT_BRACKET_T;
 \;                  /* do nothing */
 
 "=="                return DOUBLE_EQUAL_T;

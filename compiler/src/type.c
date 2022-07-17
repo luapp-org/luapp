@@ -8,7 +8,7 @@
 #define KEY_COUNT (1024 * 1024)
 
 struct data_struct {
-    struct type *type;        /* Type of the identifier (when defined) */
+    struct type *type; /* Type of the identifier (when defined) */
 };
 
 // struct data_struct *create_data_entry(char *name, struct type *type)
@@ -38,12 +38,31 @@ struct type *type_basic(enum type_primitive_kind kind)
     return t;
 }
 
+/* type_array() -- creates an array data type
+ *      args: array type
+ *      returns: created array
+ */
+struct type *type_array(struct type *type)
+{
+    struct type *t;
+
+    t = smalloc(sizeof(struct type));
+
+    t->kind = TYPE_ARRAY;
+    t->data.array.type = type;
+
+    return t;
+}
+
 /* type_to_string() -- converts the given type scruct to a string representation
  *      args: type
  *      returns: string version of type
  */
 char *type_to_string(struct type *type)
 {
+    static char buf[BUFSIZ];
+    bzero(buf, BUFSIZ); /* buffer needs to be empty */
+
     if (type->kind == TYPE_PRIMITIVE) {
         switch (type->data.primitive.kind) {
             case TYPE_BASIC_NUMBER:
@@ -57,6 +76,9 @@ char *type_to_string(struct type *type)
             case TYPE_BASIC_FUNCTION:
                 return "function";
         }
+    } else if (type->kind == TYPE_ARRAY) {
+        sprintf(buf, "Array<%s>", type_to_string(type->data.array.type));
+        return strdup(buf); // Free this somehow, I have no idea
     }
 
     return "unknown";
@@ -68,7 +90,17 @@ char *type_to_string(struct type *type)
  */
 bool type_is(struct type *first, struct type *second)
 {
-    return first->data.primitive.kind == second->data.primitive.kind;
+    if (first->kind == second->kind) {
+        switch (first->kind) {
+            case TYPE_PRIMITIVE:
+                return first->data.primitive.kind == second->data.primitive.kind;
+            case TYPE_ARRAY:
+                return type_is(first->data.array.type, second->data.array.type);
+            default:
+                return false;
+        }
+    }
+    return false;
 }
 
 /* type_init() -- initializes the type context by creating the type_map
@@ -188,11 +220,13 @@ static void type_handle_local(struct type_context *context, struct node *local)
                 context->error_count++;
             } else if (expr) {
                 if (!type_is(var->node_type, expr->node_type)) {
-                    compiler_error(
-                        var->location,
-                        "type mismatch: variable of type \"%s\" can not be assigned a value "
-                        "of type \"%s\"",
-                        type_to_string(var->node_type), type_to_string(expr->node_type));
+                    char *varstr = type_to_string(var->node_type);
+                    char *exprstr = type_to_string(expr->node_type);
+
+                    compiler_error(var->location,
+                                   "type mismatch: variable of type \"%s\" can not be assigned a "
+                                   "value of type \"%s\"",
+                                   varstr, exprstr);
                     context->error_count++;
                 }
             }
@@ -236,6 +270,61 @@ static void type_handle_name_reference(struct type_context *context, struct node
     }
 }
 
+static void type_handle_binary_operation(struct type_context *context,
+                                         struct node *binary_operation)
+{
+    struct node *right = binary_operation->data.binary_operation.right;
+    struct node *left = binary_operation->data.binary_operation.left;
+
+    switch (binary_operation->data.binary_operation.operation) {
+        case BINOP_ADD:
+            if (!type_is(right->node_type, type_basic(TYPE_BASIC_NUMBER)) ||
+                !type_is(left->node_type, type_basic(TYPE_BASIC_NUMBER))) {
+                compiler_error(binary_operation->location,
+                               "unable to perform '+' on values of type \"%s\" and \"%s\"",
+                               type_to_string(right->node_type), type_to_string(left->node_type));
+                context->error_count++;
+            } else {
+                binary_operation->node_type = type_basic(TYPE_BASIC_NUMBER);
+            }
+            break;
+    }
+}
+
+static void type_handle_array_constructor(struct type_context *context,
+                                          struct node *array_constructor)
+{
+    struct node *expr = array_constructor->data.array_constructor.exprlist;
+    struct type *type = NULL;
+
+    while (true) {
+        switch (expr->type) {
+            case NODE_EXPRESSION_LIST:
+                if (type) {
+                    if (!type_is(expr->data.expression_list.expression->node_type, type)) {
+                        array_constructor->node_type = type_array(type_basic(TYPE_BASIC_ANY));
+                        return;
+                    }
+                } else
+                    type = expr->data.expression_list.expression->node_type;
+
+                expr = expr->data.expression_list.init;
+                break;
+            default:
+                if (type) {
+                    if (!type_is(expr->node_type, type)) {
+                        array_constructor->node_type = type_array(type_basic(TYPE_BASIC_ANY));
+                        return;
+                    }
+                    array_constructor->node_type = type_array(type);
+                } else
+                    array_constructor->node_type =
+                        type_array(expr->data.expression_list.expression->node_type);
+                return;
+        }
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node
  *      returns: none
@@ -259,6 +348,18 @@ void type_ast_traversal(struct type_context *context, struct node *node)
 
             /* Handle everything */
             type_handle_local(context, node);
+            break;
+        case NODE_ARRAY_CONSTRUCTOR:
+            type_ast_traversal(context, node->data.array_constructor.exprlist);
+
+            type_handle_array_constructor(context, node);
+
+            break;
+        case NODE_BINARY_OPERATION:
+            type_ast_traversal(context, node->data.binary_operation.left);
+            type_ast_traversal(context, node->data.binary_operation.right);
+
+            type_handle_binary_operation(context, node);
             break;
         case NODE_BLOCK:
             type_ast_traversal(context, node->data.block.init);

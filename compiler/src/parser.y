@@ -64,6 +64,7 @@
 %token TNUMBER_T
 %token TSTRING_T
 %token TBOOLEAN_T
+%token TARRAY_T
 
 /* Symbols */
 %token PLUS_T/*             +     */         
@@ -84,6 +85,8 @@
 %token POUND_T/*            #     */
 %token DOT_T/*              .     */
 %token COMMA_T/*            ,     */
+%token LEFT_BRACKET_T/*     {     */
+%token RIGHT_BRACKET_T/*    }     */
 
 /* Complex symbols */
 %token DOUBLE_EQUAL_T/*     ==    */
@@ -182,12 +185,21 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_STRING)); }
     | TBOOLEAN_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
+    | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
+        { $$ = node_type_array(@$, $3); }
 ;
 
 name_type 
     : IDENTIFIER_T COLON_T type
         { $$ = node_type_annotation(@$, $1, $3); }
     | IDENTIFIER_T
+;
+
+array_constructor 
+    : LEFT_BRACKET_T expression_list RIGHT_BRACKET_T
+        { $$ = node_array_constructor(@$, $2); }
+    | LEFT_BRACKET_T RIGHT_BRACKET_T
+        { $$ = node_array_constructor(@$, NULL); }
 ;
 
 variable 
@@ -223,7 +235,7 @@ call
 
 expression
   : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T
-  | binary_operation | unary_operation | prefix_expression 
+  | binary_operation | unary_operation | prefix_expression | array_constructor
   | FUNCTION_T function_body
     { $$ = $2; }
 ;
