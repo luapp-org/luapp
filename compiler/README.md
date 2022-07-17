@@ -53,6 +53,8 @@ funcbody ::= `(´ [parlist] `)´ `:´ typelist block end
 
 parlist ::= namelist [`,´ `...´] | `...´
 
+arrayconstructor = `{´ [exprlist] `}´
+
 tableconstructor ::= `{´ [fieldlist] `}´
 
 fieldlist ::= field {fieldsep field} [fieldsep]
