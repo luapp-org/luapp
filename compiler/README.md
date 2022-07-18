@@ -32,7 +32,7 @@ namelist ::= nametype {`,´ nametype}
 
 nametype ::= Name `:´ type
 
-type ::= number | string | boolean
+type ::= number | string | boolean | Array `<´ type `>´ | Table `<´ type `,´ type `>´
 
 explist ::= {exp `,´} exp
 
