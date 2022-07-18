@@ -54,6 +54,23 @@ struct type *type_array(struct type *type)
     return t;
 }
 
+/* type_table() -- creates a table type
+ *      args: array type
+ *      returns: created array
+ */
+struct type *type_table(struct type *key, struct type *value)
+{
+    struct type *t;
+
+    t = smalloc(sizeof(struct type));
+
+    t->kind = TYPE_TABLE;
+    t->data.table.key = key;
+    t->data.table.value = value;
+
+    return t;
+}
+
 /* type_to_string() -- converts the given type scruct to a string representation
  *      args: type
  *      returns: string version of type
@@ -73,11 +90,12 @@ char *type_to_string(struct type *type)
                 return "boolean";
             case TYPE_BASIC_ANY:
                 return "any";
-            case TYPE_BASIC_FUNCTION:
-                return "function";
         }
     } else if (type->kind == TYPE_ARRAY) {
         sprintf(buf, "Array<%s>", type_to_string(type->data.array.type));
+        return strdup(buf); // Free this somehow, I have no idea
+    } else if (type->kind == TYPE_TABLE) {
+        sprintf(buf, "Table<%s, %s>", type_to_string(type->data.table.key), type_to_string(type->data.table.value));
         return strdup(buf); // Free this somehow, I have no idea
     }
 
@@ -112,7 +130,7 @@ void type_init(struct type_context *context)
     context->type_map = hashmap_new();
 
     /* Add all environment identifiers */
-    hashmap_put(context->type_map, "print", type_basic(TYPE_BASIC_FUNCTION));
+    // hashmap_put(context->type_map, "print", type_basic(TYPE_BASIC_FUNCTION));
 }
 
 /* type_destroy() -- deallocates space for the type context
@@ -242,6 +260,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
 static void type_handle_name_reference(struct type_context *context, struct node *name_reference)
 {
     struct node *value = name_reference->data.name_reference.identifier;
+    struct node *expression, *index;
     struct type *s;
     int res = 0;
 
@@ -262,7 +281,31 @@ static void type_handle_name_reference(struct type_context *context, struct node
             }
             break;
         case NODE_EXPRESSION_INDEX:
-            /* code */
+            expression = value->data.expression_index.expression;
+            index = value->data.expression_index.index;
+
+            type_ast_traversal(context, expression);
+            type_ast_traversal(context, index);
+
+            switch (expression->node_type->kind) {
+                case TYPE_PRIMITIVE:
+                    compiler_error(expression->location,
+                                   "incorrect type usage: unable to index type \"%s\"",
+                                   type_to_string(expression->node_type));
+                    context->error_count++;
+                    break;
+                case TYPE_ARRAY:
+                    if (!type_is(index->node_type, type_basic(TYPE_BASIC_NUMBER))) {
+                        compiler_error(
+                            expression->location,
+                            "incorrect type usage: unable to index type \"%s\" with type \"%s\"",
+                            type_to_string(expression->node_type),
+                            type_to_string(index->node_type));
+                        context->error_count++;
+                    }
+                    name_reference->node_type = expression->node_type->data.array.type;
+                    break;
+            }
             break;
         case NODE_NAME_INDEX:
             /* code */
@@ -353,7 +396,6 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_ast_traversal(context, node->data.array_constructor.exprlist);
 
             type_handle_array_constructor(context, node);
-
             break;
         case NODE_BINARY_OPERATION:
             type_ast_traversal(context, node->data.binary_operation.left);

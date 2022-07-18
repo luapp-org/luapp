@@ -65,6 +65,7 @@
 %token TSTRING_T
 %token TBOOLEAN_T
 %token TARRAY_T
+%token TTABLE_T
 
 /* Symbols */
 %token PLUS_T/*             +     */         
@@ -187,6 +188,8 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
     | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
         { $$ = node_type_array(@$, $3); }
+    | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T 
+        { $$ = node_type_table(@$, $3, $5); }
 ;
 
 name_type 

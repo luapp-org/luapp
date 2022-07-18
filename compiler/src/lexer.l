@@ -103,6 +103,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "string"            return TSTRING_T;
 "boolean"           return TBOOLEAN_T;
 "Array"             return TARRAY_T;
+"Table"             return TTABLE_T;
 
 \[                  return LEFT_SQUARE_T;
 \]                  return RIGHT_SQUARE_T;

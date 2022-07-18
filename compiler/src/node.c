@@ -196,9 +196,22 @@ struct node *node_type(YYLTYPE location, struct type *type)
  */
 struct node *node_type_array(YYLTYPE location, struct node *type)
 {
-    struct node *node = node_create(location, NODE_ARRAY_TYPE);
+    struct node *node = node_create(location, NODE_TYPE_ARRAY);
 
     node->node_type = type_array(type->node_type);
+
+    return node;
+}
+
+/*  node_type_array - allocate a node to represent an array type node
+ *      args: location, type
+ *      rets: array type node
+ */
+struct node *node_type_table(YYLTYPE location, struct node *left, struct node *right)
+{
+    struct node *node = node_create(location, NODE_TYPE_TABLE);
+
+    node->node_type = type_table(left->node_type, right->node_type);
 
     return node;
 }
@@ -743,7 +756,8 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_TYPE:
-        case NODE_ARRAY_TYPE:
+        case NODE_TYPE_ARRAY:
+        case NODE_TYPE_TABLE:
             write_node(output, type_to_string(node->node_type), true);
             id++;
             break;

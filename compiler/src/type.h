@@ -16,8 +16,7 @@ enum type_primitive_kind {
     TYPE_BASIC_STRING,
     TYPE_BASIC_BOOLEAN,
     TYPE_BASIC_NIL,
-    TYPE_BASIC_ANY,
-    TYPE_BASIC_FUNCTION
+    TYPE_BASIC_ANY
 };
 
 struct type {
@@ -33,6 +32,11 @@ struct type {
             /* Array kind --> Array<number> */
             struct type *type;
         } array;
+        struct {
+            /* Array kind --> Array<number> */
+            struct type *key;
+            struct type *value;
+        } table;
     } data;
 };
 
@@ -48,6 +52,7 @@ void type_destroy(struct type_context *context);
 
 struct type *type_basic(enum type_primitive_kind kind);
 struct type *type_array(struct type *type);
+struct type *type_table(struct type *key, struct type *value);
 
 bool type_is(struct type *first, struct type *second);
 void type_ast_traversal(struct type_context *context, struct node *node);

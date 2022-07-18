@@ -46,7 +46,8 @@ enum node_type {
     NODE_VARARG,
     NODE_TYPE_LIST,
     NODE_TYPE,
-    NODE_ARRAY_TYPE,
+    NODE_TYPE_ARRAY,
+    NODE_TYPE_TABLE,
     NODE_NAME_REFERENCE,
     NODE_ARRAY_CONSTRUCTOR /* local a: Array<number> = { 1, 2, 3, 4 } */
 };
@@ -227,6 +228,7 @@ struct node *node_type_annotation(YYLTYPE location, struct node *identifier, str
 struct node *node_type_list(YYLTYPE location, struct node *init, struct node *type);
 struct node *node_type(YYLTYPE location, struct type *type);
 struct node *node_type_array(YYLTYPE location, struct node *type);
+struct node *node_type_table(YYLTYPE location, struct node *left, struct node *right);
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
