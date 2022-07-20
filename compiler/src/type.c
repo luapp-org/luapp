@@ -103,12 +103,25 @@ char *type_to_string(struct type *type)
     return "unknown";
 }
 
+/* type_is_primitive() -- determines whether a type is the given primitive type
+ *      args: type, primitive type
+ *      returns: yes or no
+ */
+bool type_is_primitive(struct type *type, enum type_primitive_kind kind)
+{
+    return type->kind == TYPE_PRIMITIVE && type->data.primitive.kind == kind;
+}
+
 /* type_is() -- determines whether two types are equal
  *      args: first type, second type
  *      returns: yes or no
  */
 bool type_is(struct type *first, struct type *second)
 {
+    /* If either options are ANY then return true */
+    if (type_is_primitive(first, TYPE_BASIC_ANY) || type_is_primitive(second, TYPE_BASIC_ANY))
+        return true;
+
     if (first->kind == second->kind) {
         switch (first->kind) {
             case TYPE_PRIMITIVE:
@@ -123,15 +136,6 @@ bool type_is(struct type *first, struct type *second)
         }
     }
     return false;
-}
-
-/* type_is_any() -- determines whether a type is of any type
- *      args: type
- *      returns: yes or no
- */
-bool type_is_any(struct type *type)
-{
-    return type->kind == TYPE_PRIMITIVE && type->data.primitive.kind == TYPE_BASIC_ANY;
 }
 
 /* type_init() -- initializes the type context by creating the type_map
@@ -164,7 +168,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             struct node *value = expr->data.expression_list.expression;
 
             /* Guess the type if no type is specified */
-            if (type_is(name->node_type, type_basic(TYPE_BASIC_ANY))) {
+            if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
                 if (context->is_strict) {
                     compiler_error(name->location,
                                    "expected type annotation; compiler is in \"strict\" mode.");
@@ -195,7 +199,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             struct node *name = var->data.name_list.name;
 
             /* Guess the type if no type is specified */
-            if (type_is(name->node_type, type_basic(TYPE_BASIC_ANY))) {
+            if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
                 if (context->is_strict) {
                     compiler_error(var->location,
                                    "expected type annotation; compiler is in \"strict\" mode.");
@@ -233,7 +237,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             /* We must have a single assignment, handle that. */
         } else {
             /* Guess the type if no type is specified */
-            if (type_is(var->node_type, type_basic(TYPE_BASIC_ANY))) {
+            if (type_is_primitive(var->node_type, TYPE_BASIC_ANY)) {
                 if (context->is_strict) {
                     compiler_error(var->location,
                                    "expected type annotation; compiler is in \"strict\" mode.");
@@ -308,7 +312,7 @@ static void type_handle_name_reference(struct type_context *context, struct node
                     context->error_count++;
                     break;
                 case TYPE_ARRAY:
-                    if (!type_is(index->node_type, type_basic(TYPE_BASIC_NUMBER))) {
+                    if (!type_is_primitive(index->node_type, TYPE_BASIC_NUMBER)) {
                         compiler_error(
                             expression->location,
                             "incorrect type usage: unable to index type \"%s\" with type \"%s\"",
@@ -316,7 +320,20 @@ static void type_handle_name_reference(struct type_context *context, struct node
                             type_to_string(index->node_type));
                         context->error_count++;
                     }
+                    free(name_reference->node_type);
                     name_reference->node_type = expression->node_type->data.array.type;
+                    break;
+                case TYPE_TABLE:
+                    if (!type_is(index->node_type, expression->node_type->data.table.key)) {
+                        compiler_error(
+                            expression->location,
+                            "incorrect type usage: unable to index type \"%s\" with type \"%s\"",
+                            type_to_string(expression->node_type),
+                            type_to_string(index->node_type));
+                        context->error_count++;
+                    }
+                    free(name_reference->node_type);
+                    name_reference->node_type = expression->node_type->data.table.value;
                     break;
             }
             break;
@@ -358,6 +375,7 @@ static void type_handle_array_constructor(struct type_context *context,
             case NODE_EXPRESSION_LIST:
                 if (type) {
                     if (!type_is(expr->data.expression_list.expression->node_type, type)) {
+                        free(array_constructor->node_type);
                         array_constructor->node_type = type_array(type_basic(TYPE_BASIC_ANY));
                         return;
                     }
@@ -367,6 +385,7 @@ static void type_handle_array_constructor(struct type_context *context,
                 expr = expr->data.expression_list.init;
                 break;
             default:
+                free(array_constructor->node_type);
                 if (type) {
                     if (!type_is(expr->node_type, type)) {
                         array_constructor->node_type = type_array(type_basic(TYPE_BASIC_ANY));
@@ -387,48 +406,51 @@ static void type_handle_table_constructor(struct type_context *context,
     struct node *expr = table_constructor->data.table_constructor.pairlist;
     struct type *keytype = NULL;
     struct type *valuetype = NULL;
+    struct node *pair = NULL;
 
     while (true) {
-        if (keytype && valuetype && type_is_any(keytype) && type_is_any(valuetype)) {
-            table_constructor->node_type = type_table(keytype, valuetype);
-            return;
-        }
-
         switch (expr->type) {
             case NODE_EXPRESSION_LIST:
+                pair = expr->data.expression_list.expression;
+
                 if (keytype && valuetype) {
-                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.key
-                                     ->node_type,
-                                 keytype))
+                    if (!type_is(pair->data.key_value_pair.key->node_type, keytype)) {
+                        free(keytype);
                         keytype = type_basic(TYPE_BASIC_ANY);
-                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.value
-                                     ->node_type,
-                                 valuetype))
+                    }
+                    if (!type_is(pair->data.key_value_pair.value->node_type, valuetype)) {
+                        free(valuetype);
                         valuetype = type_basic(TYPE_BASIC_ANY);
+                    }
                 } else {
-                    keytype =
-                        expr->data.expression_list.expression->data.key_value_pair.key->node_type;
-                    valuetype =
-                        expr->data.expression_list.expression->data.key_value_pair.value->node_type;
+                    keytype = pair->data.key_value_pair.key->node_type;
+                    valuetype = pair->data.key_value_pair.value->node_type;
                 }
 
                 expr = expr->data.expression_list.init;
                 break;
             default:
                 if (keytype && valuetype) {
-                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.key
-                                     ->node_type,
-                                 keytype))
+                    // Free existing type, as we will override it
+                    free(table_constructor->node_type);
+
+                    if (!type_is(expr->data.key_value_pair.key->node_type, keytype)) {
+                        free(keytype);
                         keytype = type_basic(TYPE_BASIC_ANY);
-                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.value
-                                     ->node_type,
-                                 valuetype))
+                    }
+                    if (!type_is(expr->data.key_value_pair.value->node_type, valuetype)) {
+                        free(valuetype);
                         valuetype = type_basic(TYPE_BASIC_ANY);
+                    }
                     table_constructor->node_type = type_table(keytype, valuetype);
-                } else
+                } else {
+                    // Free existing type, as we will override it
+                    free(table_constructor->node_type);
+
                     table_constructor->node_type =
                         type_table(expr->data.key_value_pair.key->node_type,
                                    expr->data.key_value_pair.value->node_type);
+                }
                 return;
         }
     }
