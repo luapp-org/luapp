@@ -495,23 +495,23 @@ static void type_handle_assignment(struct type_context *context, struct node *as
         }
         /* first is list second is NULL -> continue first */
         else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
-            type_handle_single_assignment(context, vars->data.variable_list.variable,
-                                          values);
+            type_handle_single_assignment(context, vars->data.variable_list.variable, values);
 
             vars = vars->data.variable_list.init;
             values = NULL;
         }
         /* first is NULL second is list -> continue second */
         else if ((values) && values->type == NODE_EXPRESSION_LIST) {
-            type_handle_single_assignment(context, vars,
-                                          values->data.expression_list.expression);
+            type_handle_single_assignment(context, vars, values->data.expression_list.expression);
 
             values = values->data.expression_list.init;
             vars = NULL;
         }
         /* Both are singular or NULL */
-        else
+        else {
+            type_handle_single_assignment(context, vars, values);
             return;
+        }
     }
 }
 
@@ -550,6 +550,10 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_ast_traversal(context, node->data.assignment.values);
 
             type_handle_assignment(context, node);
+            break;
+        case NODE_VARIABLE_LIST:
+            type_ast_traversal(context, node->data.variable_list.init);
+            type_ast_traversal(context, node->data.variable_list.variable);
             break;
         case NODE_ARRAY_CONSTRUCTOR:
             type_ast_traversal(context, node->data.array_constructor.exprlist);

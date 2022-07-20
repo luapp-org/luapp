@@ -269,6 +269,7 @@ program
 
 variable_list 
     : variable
+        { $$ = node_name_reference(@$, $1); }
     | variable COMMA_T variable_list
         { $$ = node_variable_list(@$, $3, $1); }
 ;
