@@ -171,7 +171,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
                 if (context->is_strict) {
                     compiler_error(name->location,
-                                   "expected type annotation; compiler is in \"strict\" mode.");
+                                   "expected type annotation; compiler is in \"strict\" mode");
                     context->error_count++;
                 }
 
@@ -202,7 +202,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
                 if (context->is_strict) {
                     compiler_error(var->location,
-                                   "expected type annotation; compiler is in \"strict\" mode.");
+                                   "expected type annotation; compiler is in \"strict\" mode");
                     context->error_count++;
                 }
 
@@ -213,7 +213,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             }
 
             if (!expr && context->is_strict) {
-                compiler_error(name->location, "local variable is inherently \"nil\".");
+                compiler_error(name->location, "local variable is inherently \"nil\"");
                 context->error_count++;
             } else if (expr) {
                 if (!type_is(name->node_type, expr->node_type)) {
@@ -456,8 +456,63 @@ static void type_handle_table_constructor(struct type_context *context,
     }
 }
 
-static void type_handle_assignment(struct type_context *context, struct node *assignment) {
+static void type_handle_single_assignment(struct type_context *context, struct node *variable,
+                                          struct node *value)
+{
+    if (variable && value) {
+        if (!type_is(variable->node_type, value->node_type)) {
+            compiler_error(
+                variable->location,
+                "type mismatch: unable to assign variable with type \"%s\" a value of type \"%s\"",
+                type_to_string(variable->node_type), type_to_string(value->node_type));
+            context->error_count++;
+        }
+    } else if (variable && context->is_strict) {
+        compiler_error(variable->location, "variable is inherently \"nil\"");
+        context->error_count++;
+    } else if (value) {
+        compiler_error(value->location, "expression is not assigned to a variable");
+        context->error_count++;
+    }
+}
 
+static void type_handle_assignment(struct type_context *context, struct node *assignment)
+{
+    struct node *vars = assignment->data.assignment.variables;
+    struct node *values = assignment->data.assignment.values;
+
+    while (true) {
+
+        /* Both are lists -> check first values of each */
+        if ((vars && values) && vars->type == NODE_VARIABLE_LIST &&
+            values->type == NODE_EXPRESSION_LIST) {
+
+            type_handle_single_assignment(context, vars->data.variable_list.variable,
+                                          values->data.expression_list.expression);
+
+            vars = vars->data.variable_list.init;
+            values = values->data.expression_list.init;
+        }
+        /* first is list second is NULL -> continue first */
+        else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
+            type_handle_single_assignment(context, vars->data.variable_list.variable,
+                                          values);
+
+            vars = vars->data.variable_list.init;
+            values = NULL;
+        }
+        /* first is NULL second is list -> continue second */
+        else if ((values) && values->type == NODE_EXPRESSION_LIST) {
+            type_handle_single_assignment(context, vars,
+                                          values->data.expression_list.expression);
+
+            values = values->data.expression_list.init;
+            vars = NULL;
+        }
+        /* Both are singular or NULL */
+        else
+            return;
+    }
 }
 
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
@@ -474,7 +529,13 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_ast_traversal(context, node->data.expression_statement.expression);
             break;
         case NODE_NAME_REFERENCE:
+            type_ast_traversal(context, node->data.name_reference.identifier);
+
             type_handle_name_reference(context, node);
+            break;
+        case NODE_EXPRESSION_INDEX:
+            type_ast_traversal(context, node->data.expression_index.expression);
+            type_ast_traversal(context, node->data.expression_index.index);
             break;
         case NODE_LOCAL:
             /* Visit children */
