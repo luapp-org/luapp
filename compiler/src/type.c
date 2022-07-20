@@ -154,7 +154,7 @@ void type_init(struct type_context *context)
  *      args: context
  *      returns: none
  */
-void type_destroy(struct type_context *context) { hashmap_free(context); }
+void type_destroy(struct type_context *context) { hashmap_free(context->type_map); }
 
 static void type_handle_local(struct type_context *context, struct node *local)
 {
@@ -456,6 +456,10 @@ static void type_handle_table_constructor(struct type_context *context,
     }
 }
 
+static void type_handle_assignment(struct type_context *context, struct node *assignment) {
+
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node
  *      returns: none
@@ -479,6 +483,12 @@ void type_ast_traversal(struct type_context *context, struct node *node)
 
             /* Handle everything */
             type_handle_local(context, node);
+            break;
+        case NODE_ASSIGNMENT:
+            type_ast_traversal(context, node->data.assignment.variables);
+            type_ast_traversal(context, node->data.assignment.values);
+
+            type_handle_assignment(context, node);
             break;
         case NODE_ARRAY_CONSTRUCTOR:
             type_ast_traversal(context, node->data.array_constructor.exprlist);

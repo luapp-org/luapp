@@ -29,11 +29,11 @@ struct type {
             enum type_primitive_kind kind;
         } primitive;
         struct {
-            /* Array kind --> Array<number> */
+            /* Array kind --> Array<type> */
             struct type *type;
         } array;
         struct {
-            /* Array kind --> Array<number> */
+            /* Table kind --> Table<type, type> */
             struct type *key;
             struct type *value;
         } table;
