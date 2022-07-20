@@ -48,10 +48,11 @@ enum node_type {
     NODE_TYPE,
     NODE_TYPE_ARRAY,
     NODE_TYPE_TABLE,
+    NODE_TYPE_FUNCTION,
     NODE_NAME_REFERENCE,
     NODE_ARRAY_CONSTRUCTOR, /* local a: Array<number> = { 1, 2, 3, 4 } */
     NODE_KEY_VALUE_PAIR,
-    NODE_TABLE_CONSTRUCTOR
+    NODE_TABLE_CONSTRUCTOR,
 };
 
 /* Binary operations */

@@ -168,7 +168,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             struct node *value = expr->data.expression_list.expression;
 
             /* Guess the type if no type is specified */
-            if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
+            if (name->type != NODE_TYPE_ANNOTATION) {
                 if (context->is_strict) {
                     compiler_error(name->location,
                                    "expected type annotation; compiler is in \"strict\" mode");
@@ -199,7 +199,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             struct node *name = var->data.name_list.name;
 
             /* Guess the type if no type is specified */
-            if (type_is_primitive(name->node_type, TYPE_BASIC_ANY)) {
+            if (name->type != NODE_TYPE_ANNOTATION) {
                 if (context->is_strict) {
                     compiler_error(var->location,
                                    "expected type annotation; compiler is in \"strict\" mode");

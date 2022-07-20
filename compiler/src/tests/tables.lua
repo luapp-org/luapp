@@ -1,7 +1,7 @@
-local a: Table<string, number> = { 
+local a: Table<string, any> = { 
     ["key"] = 123,
     ["key2"] = 124
 }
 
--- This should not work
+-- This should work, since table has all values as any type
 a["key"] = true

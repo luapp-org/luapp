@@ -64,6 +64,7 @@
 %token TNUMBER_T
 %token TSTRING_T
 %token TBOOLEAN_T
+%token TANY_T
 %token TARRAY_T
 %token TTABLE_T
 
@@ -186,6 +187,8 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_STRING)); }
     | TBOOLEAN_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
+    | TANY_T
+        { $$ = node_type(@$, type_basic(TYPE_BASIC_ANY)); }
     | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
         { $$ = node_type_array(@$, $3); }
     | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T 
