@@ -205,6 +205,24 @@ array_constructor
         { $$ = node_array_constructor(@$, NULL); }
 ;
 
+pair
+    : LEFT_SQUARE_T expression RIGHT_SQUARE_T EQUAL_T expression
+        { $$ = node_key_value_pair(@$, $2, $5); }
+;
+
+pair_list
+    : pair
+    | pair COMMA_T pair_list
+        { $$ = node_expression_list(@$, $1, $3); }
+;
+
+table_constructor 
+    : LEFT_BRACKET_T pair_list RIGHT_BRACKET_T
+        { $$ = node_table_constructor(@$, $2); }
+    | LEFT_BRACKET_T RIGHT_BRACKET_T
+        { $$ = node_table_constructor(@$, NULL); }
+;
+
 variable 
     : IDENTIFIER_T
     | prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T
@@ -239,6 +257,7 @@ call
 expression
   : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T
   | binary_operation | unary_operation | prefix_expression | array_constructor
+  | table_constructor 
   | FUNCTION_T function_body
     { $$ = $2; }
 ;
@@ -263,14 +282,14 @@ else_body
         { $$ = $2; }
 ;
 
-function_name 
+/* function_name 
     : IDENTIFIER_T
     | IDENTIFIER_T DO_T IDENTIFIER_T
         { $$ = node_name_index(@$, $1, $3, false); }
     | IDENTIFIER_T COLON_T IDENTIFIER_T
         { $$ = node_name_index(@$, $1, $3, true); }
     | IDENTIFIER_T DO_T IDENTIFIER_T COLON_T IDENTIFIER_T
-        { $$ = node_name_index(@$, $1, node_name_index(@$, $3, $4, true), false); }
+        { $$ = node_name_index(@$, $1, node_name_index(@$, $3, $4, true), false); } */
 ;
 
 function_body 

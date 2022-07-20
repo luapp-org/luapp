@@ -95,7 +95,8 @@ char *type_to_string(struct type *type)
         sprintf(buf, "Array<%s>", type_to_string(type->data.array.type));
         return strdup(buf); // Free this somehow, I have no idea
     } else if (type->kind == TYPE_TABLE) {
-        sprintf(buf, "Table<%s, %s>", type_to_string(type->data.table.key), type_to_string(type->data.table.value));
+        sprintf(buf, "Table<%s, %s>", type_to_string(type->data.table.key),
+                type_to_string(type->data.table.value));
         return strdup(buf); // Free this somehow, I have no idea
     }
 
@@ -114,11 +115,23 @@ bool type_is(struct type *first, struct type *second)
                 return first->data.primitive.kind == second->data.primitive.kind;
             case TYPE_ARRAY:
                 return type_is(first->data.array.type, second->data.array.type);
+            case TYPE_TABLE:
+                return type_is(first->data.table.key, second->data.table.key) &&
+                       type_is(first->data.table.value, second->data.table.value);
             default:
                 return false;
         }
     }
     return false;
+}
+
+/* type_is_any() -- determines whether a type is of any type
+ *      args: type
+ *      returns: yes or no
+ */
+bool type_is_any(struct type *type)
+{
+    return type->kind == TYPE_PRIMITIVE && type->data.primitive.kind == TYPE_BASIC_ANY;
 }
 
 /* type_init() -- initializes the type context by creating the type_map
@@ -368,6 +381,59 @@ static void type_handle_array_constructor(struct type_context *context,
     }
 }
 
+static void type_handle_table_constructor(struct type_context *context,
+                                          struct node *table_constructor)
+{
+    struct node *expr = table_constructor->data.table_constructor.pairlist;
+    struct type *keytype = NULL;
+    struct type *valuetype = NULL;
+
+    while (true) {
+        if (keytype && valuetype && type_is_any(keytype) && type_is_any(valuetype)) {
+            table_constructor->node_type = type_table(keytype, valuetype);
+            return;
+        }
+
+        switch (expr->type) {
+            case NODE_EXPRESSION_LIST:
+                if (keytype && valuetype) {
+                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.key
+                                     ->node_type,
+                                 keytype))
+                        keytype = type_basic(TYPE_BASIC_ANY);
+                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.value
+                                     ->node_type,
+                                 valuetype))
+                        valuetype = type_basic(TYPE_BASIC_ANY);
+                } else {
+                    keytype =
+                        expr->data.expression_list.expression->data.key_value_pair.key->node_type;
+                    valuetype =
+                        expr->data.expression_list.expression->data.key_value_pair.value->node_type;
+                }
+
+                expr = expr->data.expression_list.init;
+                break;
+            default:
+                if (keytype && valuetype) {
+                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.key
+                                     ->node_type,
+                                 keytype))
+                        keytype = type_basic(TYPE_BASIC_ANY);
+                    if (!type_is(expr->data.expression_list.expression->data.key_value_pair.value
+                                     ->node_type,
+                                 valuetype))
+                        valuetype = type_basic(TYPE_BASIC_ANY);
+                    table_constructor->node_type = type_table(keytype, valuetype);
+                } else
+                    table_constructor->node_type =
+                        type_table(expr->data.key_value_pair.key->node_type,
+                                   expr->data.key_value_pair.value->node_type);
+                return;
+        }
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node
  *      returns: none
@@ -396,6 +462,15 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_ast_traversal(context, node->data.array_constructor.exprlist);
 
             type_handle_array_constructor(context, node);
+            break;
+        case NODE_TABLE_CONSTRUCTOR:
+            type_ast_traversal(context, node->data.table_constructor.pairlist);
+
+            type_handle_table_constructor(context, node);
+            break;
+        case NODE_KEY_VALUE_PAIR:
+            type_ast_traversal(context, node->data.key_value_pair.key);
+            type_ast_traversal(context, node->data.key_value_pair.value);
             break;
         case NODE_BINARY_OPERATION:
             type_ast_traversal(context, node->data.binary_operation.left);

@@ -159,7 +159,7 @@ struct node *node_type_annotation(YYLTYPE location, struct node *identifier, str
     node->data.type_annotation.identifier = identifier;
     node->data.type_annotation.type = type;
     node->node_type = type->node_type;
-    
+
     return node;
 }
 
@@ -583,7 +583,7 @@ struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct
  *      args: location, identifier
  *      rets: name refrence node
  *
- *  BNF -> Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name 
+ *  BNF -> Name | prefixexp `[´ exp `]´ | prefixexp `.´ Name
  */
 struct node *node_name_reference(YYLTYPE location, struct node *nameref)
 {
@@ -599,14 +599,45 @@ struct node *node_name_reference(YYLTYPE location, struct node *nameref)
  *      args: location, expression list
  *      rets: array constructor
  *
- *  BNF -> Array `<´ type `>´
+ *  BNF -> `{´ [exprlist] `}´
  */
 struct node *node_array_constructor(YYLTYPE location, struct node *exprlist)
 {
     struct node *node = node_create(location, NODE_ARRAY_CONSTRUCTOR);
 
     node->data.array_constructor.exprlist = exprlist;
-    
+
+    return node;
+}
+
+/*  node_table_constructor - allocate a node to represent a table constructor
+ *      args: location, pair list
+ *      rets: table constructor
+ *
+ *  BNF -> `{´ [pairlist] `}´
+ */
+struct node *node_table_constructor(YYLTYPE location, struct node *pairlist)
+{
+    struct node *node = node_create(location, NODE_TABLE_CONSTRUCTOR);
+
+    node->data.table_constructor.pairlist = pairlist;
+
+    return node;
+}
+
+/*  node_key_value_pair - allocate a node to represent key value pair
+ *      args: location, key, value
+ *      rets: key value pair
+ *
+ *  BNF -> `[´ exp `]´ `=´ exp
+ */
+struct node *node_key_value_pair(YYLTYPE location, struct node *key, struct node *value)
+{
+    struct node *node = node_create(location, NODE_KEY_VALUE_PAIR);
+
+    node->data.key_value_pair.key = key;
+    node->data.key_value_pair.value = value;
+
     return node;
 }
 
@@ -1065,6 +1096,27 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             print_ast(output, node->data.array_constructor.exprlist, false);
 
+            parent_id = previous;
+            break;
+        case NODE_KEY_VALUE_PAIR:
+            write_node(output, "key_value_pair", false);
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            print_ast(output, node->data.key_value_pair.key, false);
+            print_ast(output, node->data.key_value_pair.value, false);
+
+            parent_id = previous;
+            break;
+        case NODE_TABLE_CONSTRUCTOR:
+            write_node(output, "table_constructor", false);
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            print_ast(output, node->data.table_constructor.pairlist, false);
+            
             parent_id = previous;
             break;
         default:
