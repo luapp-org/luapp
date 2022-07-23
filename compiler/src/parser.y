@@ -193,6 +193,8 @@ type
         { $$ = node_type_array(@$, $3); }
     | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T 
         { $$ = node_type_table(@$, $3, $5); }
+    | LEFT_PARAN_T type_list RIGHT_PARAN_T COLON_T type_list
+        { $$ = node_type_function(@$, $2, $5); }
 ;
 
 name_type 

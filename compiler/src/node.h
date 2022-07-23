@@ -239,6 +239,7 @@ struct node *node_type_list(YYLTYPE location, struct node *init, struct node *ty
 struct node *node_type(YYLTYPE location, struct type *type);
 struct node *node_type_array(YYLTYPE location, struct node *type);
 struct node *node_type_table(YYLTYPE location, struct node *left, struct node *right);
+struct node *node_type_function(YYLTYPE location, struct node *args, struct node *rets);
 struct node *node_binary_operation(YYLTYPE location, enum node_binary_operation operation,
                                    struct node *left, struct node *right);
 struct node *node_unary_operation(YYLTYPE location, enum node_unary_operation operation,
@@ -278,11 +279,13 @@ struct node *node_local(YYLTYPE location, struct node *namelist, struct node *ex
 struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);
 
-
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);
 void write_parentless_node(FILE *output, char *name, bool higlight);
 char *format_node(struct node *node);
 void print_ast(FILE *output, struct node *node, bool first);
+
+/* Helper functions used in other code */
+char *node_to_string(struct node *node);
 
 #endif

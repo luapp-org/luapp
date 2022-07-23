@@ -216,6 +216,19 @@ struct node *node_type_table(YYLTYPE location, struct node *left, struct node *r
     return node;
 }
 
+/*  node_type_function - allocate a node to represent a function type
+ *      args: location, type args, return args
+ *      rets: function type node
+ */
+struct node *node_type_function(YYLTYPE location, struct node *args, struct node *rets)
+{
+    struct node *node = node_create(location, NODE_TYPE_FUNCTION);
+
+    node->node_type = type_function(args, rets);
+
+    return node;
+}
+
 /*  node_binary_operation - allocate a node to represent a binary operation
  *      args: location, operation, left operand, right operand
  *      rets: binary operation node
@@ -789,6 +802,7 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_TYPE:
         case NODE_TYPE_ARRAY:
         case NODE_TYPE_TABLE:
+        case NODE_TYPE_FUNCTION:
             write_node(output, type_to_string(node->node_type), true);
             id++;
             break;
@@ -1116,10 +1130,43 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = id++;
 
             print_ast(output, node->data.table_constructor.pairlist, false);
-            
+
             parent_id = previous;
             break;
         default:
             break;
+    }
+}
+
+/* node_to_string() -- convert the given node to a string representation.
+ *     args: ast node
+ *     rets: string representation
+ *
+ * Node: not all nodes are supported as this function is only required for certain
+ * node types.
+ */
+char *node_to_string(struct node *node)
+{
+    flexstr_t s;
+    fs_init(&s, 0);
+
+    switch (node->type) {
+        case NODE_TYPE_LIST:
+            for (node; node != NULL; node = node->data.type_list.init) {
+                /* Must be any other type (number, string, boolean, Table, Array, or function) */
+                if (node->type != NODE_TYPE_LIST) {
+                    fs_addstr(&s, type_to_string(node->node_type));
+                    return fs_getstr(&s);
+                }
+                /* We must have a type list, so just process the first one */
+                else {
+                    fs_addstr(&s, type_to_string(node->data.type_list.type->node_type));
+                    fs_addstr(&s, ", ");
+                }
+            }
+        case NODE_TYPE:
+            return type_to_string(node->node_type);
+        default:
+            return "none";
     }
 }

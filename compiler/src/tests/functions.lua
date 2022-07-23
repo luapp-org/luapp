@@ -1,3 +1,2 @@
-local myFunction: (number, string): any = function(num: number, str: string) 
-    
-end
+-- This should break and throw an error
+local myFunction: (number, string): any = 1

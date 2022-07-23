@@ -7,20 +7,6 @@
 #define KEY_MAX_LENGTH (256)
 #define KEY_COUNT (1024 * 1024)
 
-struct data_struct {
-    struct type *type; /* Type of the identifier (when defined) */
-};
-
-// struct data_struct *create_data_entry(char *name, struct type *type)
-// {
-//     assert(strlen(name) < KEY_MAX_LENGTH);
-
-//     struct data_struct *data = smalloc(sizeof(struct data_struct));
-//     snprintf(data->key, KEY_MAX_LENGTH, "%s", name);
-//     data->type = type;
-
-//     return data;
-// }
 
 /* type_basic() -- creates a basic data type
  *      args: kind of data type
@@ -71,6 +57,23 @@ struct type *type_table(struct type *key, struct type *value)
     return t;
 }
 
+/* type_function() -- creates a function type
+ *      args: args type list, rets type list
+ *      returns: function type 
+ */
+struct type *type_function(struct node *args_list, struct node *rets_list)
+{
+    struct type *t;
+
+    t = smalloc(sizeof(struct type));
+
+    t->kind = TYPE_FUNCTION;
+    t->data.function.args_list = args_list;
+    t->data.function.rets_list = rets_list;
+
+    return t;
+}
+
 /* type_to_string() -- converts the given type scruct to a string representation
  *      args: type
  *      returns: string version of type
@@ -98,6 +101,16 @@ char *type_to_string(struct type *type)
         sprintf(buf, "Table<%s, %s>", type_to_string(type->data.table.key),
                 type_to_string(type->data.table.value));
         return strdup(buf); // Free this somehow, I have no idea
+    } else if (type->kind == TYPE_FUNCTION) {
+        flexstr_t str;
+        fs_init(&str, 0);
+
+        fs_addstr(&str, "Function(");
+        fs_addstr(&str, node_to_string(type->data.function.args_list));
+        fs_addstr(&str, "): ");
+        fs_addstr(&str, node_to_string(type->data.function.rets_list));
+
+        return fs_getstr(&str);
     }
 
     return "unknown";
