@@ -225,6 +225,17 @@ struct node {
     } data;
 };
 
+/* binary_operations -- the string values of all binary operations */
+static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
+                                          "<", ">=", "<=", "==", "~=", "and", "or", NULL};
+
+/* unary_operations -- the string values of all unary operations */
+static const char *unary_operations[] = {"-", "not", "#", NULL};
+
+/* assignment_types -- the string values of all assignment types */
+static const char *assignment_types[] = {"=", "+=", "-=", "*=", "/=", "%=", "^=", "..=", NULL};
+
+
 /* Node create method constructor */
 static struct node *node_create(YYLTYPE location, enum node_type type);
 

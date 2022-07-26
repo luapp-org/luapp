@@ -1,4 +1,4 @@
-local a: Table<string, any> = { 
+local a: Table<string, number> = { 
     ["key"] = 123,
     ["key2"] = 124
 }

@@ -7,7 +7,6 @@
 #define KEY_MAX_LENGTH (256)
 #define KEY_COUNT (1024 * 1024)
 
-
 /* type_basic() -- creates a basic data type
  *      args: kind of data type
  *      returns: created type
@@ -59,7 +58,7 @@ struct type *type_table(struct type *key, struct type *value)
 
 /* type_function() -- creates a function type
  *      args: args type list, rets type list
- *      returns: function type 
+ *      returns: function type
  */
 struct type *type_function(struct node *args_list, struct node *rets_list)
 {
@@ -155,13 +154,7 @@ bool type_is(struct type *first, struct type *second)
  *      args: context
  *      returns: none
  */
-void type_init(struct type_context *context)
-{
-    context->type_map = hashmap_new();
-
-    /* Add all environment identifiers */
-    // hashmap_put(context->type_map, "print", type_basic(TYPE_BASIC_FUNCTION));
-}
+void type_init(struct type_context *context) { context->type_map = hashmap_new(); }
 
 /* type_destroy() -- deallocates space for the type context
  *      args: context
@@ -293,6 +286,7 @@ static void type_handle_name_reference(struct type_context *context, struct node
     struct node *expression, *index;
     struct type *s;
     int res = 0;
+    bool types_equal;
 
     switch (value->type) {
         case NODE_IDENTIFIER:
@@ -324,20 +318,14 @@ static void type_handle_name_reference(struct type_context *context, struct node
                                    type_to_string(expression->node_type));
                     context->error_count++;
                     break;
-                case TYPE_ARRAY:
-                    if (!type_is_primitive(index->node_type, TYPE_BASIC_NUMBER)) {
-                        compiler_error(
-                            expression->location,
-                            "incorrect type usage: unable to index type \"%s\" with type \"%s\"",
-                            type_to_string(expression->node_type),
-                            type_to_string(index->node_type));
-                        context->error_count++;
-                    }
-                    free(name_reference->node_type);
-                    name_reference->node_type = expression->node_type->data.array.type;
-                    break;
                 case TYPE_TABLE:
-                    if (!type_is(index->node_type, expression->node_type->data.table.key)) {
+                case TYPE_ARRAY:
+                    types_equal =
+                        expression->node_type->kind == TYPE_ARRAY
+                            ? type_is_primitive(index->node_type, TYPE_BASIC_NUMBER)
+                            : type_is(index->node_type, expression->node_type->data.table.key);
+
+                    if (!types_equal) {
                         compiler_error(
                             expression->location,
                             "incorrect type usage: unable to index type \"%s\" with type \"%s\"",
@@ -346,12 +334,14 @@ static void type_handle_name_reference(struct type_context *context, struct node
                         context->error_count++;
                     }
                     free(name_reference->node_type);
-                    name_reference->node_type = expression->node_type->data.table.value;
+                    name_reference->node_type = expression->node_type->kind == TYPE_ARRAY
+                                                    ? expression->node_type->data.array.type
+                                                    : expression->node_type->data.table.value;
                     break;
             }
             break;
         case NODE_NAME_INDEX:
-            /* code */
+            /* later, for classes */
             break;
     }
 }
@@ -364,10 +354,19 @@ static void type_handle_binary_operation(struct type_context *context,
 
     switch (binary_operation->data.binary_operation.operation) {
         case BINOP_ADD:
-            if (!type_is(right->node_type, type_basic(TYPE_BASIC_NUMBER)) ||
-                !type_is(left->node_type, type_basic(TYPE_BASIC_NUMBER))) {
+        case BINOP_SUB:
+        case BINOP_MUL:
+        case BINOP_DIV:
+        case BINOP_MOD:
+        case BINOP_POW:
+            /* Free the default type assigned */
+            free(binary_operation->node_type);
+
+            if (!type_is_primitive(right->node_type, TYPE_BASIC_NUMBER) ||
+                !type_is_primitive(left->node_type, TYPE_BASIC_NUMBER)) {
                 compiler_error(binary_operation->location,
-                               "unable to perform '+' on values of type \"%s\" and \"%s\"",
+                               "unable to perform '%c' on values of type \"%s\" and \"%s\"",
+                               binary_operations[binary_operation->data.binary_operation.operation],
                                type_to_string(right->node_type), type_to_string(left->node_type));
                 context->error_count++;
             } else {

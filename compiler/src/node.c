@@ -654,16 +654,6 @@ struct node *node_key_value_pair(YYLTYPE location, struct node *key, struct node
     return node;
 }
 
-/* binary_operations -- the string values of all binary operations */
-static const char *binary_operations[] = {"*", "/",  "+",  "-",  "^",  "%",   "..", ">",
-                                          "<", ">=", "<=", "==", "~=", "and", "or", NULL};
-
-/* unary_operations -- the string values of all unary operations */
-static const char *unary_operations[] = {"-", "not", "#", NULL};
-
-/* assignment_types -- the string values of all assignment types */
-static const char *assignment_types[] = {"=", "+=", "-=", "*=", "/=", "%=", "^=", "..=", NULL};
-
 /*  write_node - writes a node to a file in graphviz format
  *      args: output file, name of the node
  *      rets: none
