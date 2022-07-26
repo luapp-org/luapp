@@ -188,9 +188,7 @@ struct node {
             struct node *body;
         } numerical_for_loop;
         struct {
-            struct node *namelist;
-            struct node *exprlist;
-
+            struct node *local;
             struct node *body;
         } generic_for_loop;
         struct {
@@ -284,7 +282,7 @@ struct node *node_if_statement(YYLTYPE location, struct node *condition, struct 
                                struct node *else_body);
 struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
                                      struct node *increment, struct node *body);
-struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, struct node *exprlist,
+struct node *node_generic_for_loop(YYLTYPE location, struct node *local, struct node *body,
                                    struct node *body);
 struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
 struct node *node_return(YYLTYPE location, struct node *exprlist);

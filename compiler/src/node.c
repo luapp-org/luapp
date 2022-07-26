@@ -502,13 +502,11 @@ struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct
  *
  *  BNF -> for namelist in explist do block end
  */
-struct node *node_generic_for_loop(YYLTYPE location, struct node *namelist, struct node *exprlist,
-                                   struct node *body)
+struct node *node_generic_for_loop(YYLTYPE location, struct node *local, struct node *body)
 {
     struct node *node = node_create(location, NODE_GENERICFORLOOP);
 
-    node->data.generic_for_loop.namelist = namelist;
-    node->data.generic_for_loop.exprlist = exprlist;
+    node->data.generic_for_loop.local = local;
     node->data.generic_for_loop.body = body;
 
     return node;
@@ -1032,8 +1030,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = id++;
 
             /* Visit children nodes of the for node */
-            print_ast(output, node->data.generic_for_loop.namelist, false);
-            print_ast(output, node->data.generic_for_loop.exprlist, false);
+            print_ast(output, node->data.generic_for_loop.local, false);
             print_ast(output, node->data.generic_for_loop.body, false);
 
             parent_id = previous;
