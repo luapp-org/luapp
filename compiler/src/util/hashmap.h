@@ -78,4 +78,6 @@ extern void hashmap_free(map_t in);
  */
 extern int hashmap_length(map_t in);
 
+extern int hashmap_get_struct_size();
+
 #endif

@@ -233,7 +233,6 @@ static const char *unary_operations[] = {"-", "not", "#", NULL};
 /* assignment_types -- the string values of all assignment types */
 static const char *assignment_types[] = {"=", "+=", "-=", "*=", "/=", "%=", "^=", "..=", NULL};
 
-
 /* Node create method constructor */
 static struct node *node_create(YYLTYPE location, enum node_type type);
 
@@ -282,8 +281,7 @@ struct node *node_if_statement(YYLTYPE location, struct node *condition, struct 
                                struct node *else_body);
 struct node *node_numerical_for_loop(YYLTYPE location, struct node *init, struct node *target,
                                      struct node *increment, struct node *body);
-struct node *node_generic_for_loop(YYLTYPE location, struct node *local, struct node *body,
-                                   struct node *body);
+struct node *node_generic_for_loop(YYLTYPE location, struct node *local, struct node *body);
 struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
 struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);

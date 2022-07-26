@@ -356,7 +356,7 @@ statement
     | FOR_T single_assignment COMMA_T expression DO_T block END_T
         { $$ = node_numerical_for_loop(@$, $2, $4, node_number(@$, "1"), $6); }
     | FOR_T name_list IN_T expression_list DO_T block END_T
-        { $$ = node_generic_for_loop(@$, $2, $4, $6); }
+        { $$ = node_generic_for_loop(@$, node_local(@$, $2, $4), $6); }
     | LOCAL_T name_list 
         { $$ = node_local(@$, $2, node_nil(@$)); }
     | LOCAL_T name_list EQUAL_T expression_list

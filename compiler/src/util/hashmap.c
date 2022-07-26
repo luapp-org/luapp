@@ -25,6 +25,11 @@ typedef struct _hashmap_map {
     hashmap_element *data;
 } hashmap_map;
 
+int hashmap_get_struct_size()
+{
+    return sizeof(hashmap_map);
+}
+
 /*
  * Return an empty hashmap, or NULL on failure.
  */

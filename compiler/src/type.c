@@ -150,6 +150,19 @@ bool type_is(struct type *first, struct type *second)
     return false;
 }
 
+void type_add(struct type_context *context, struct node *identifier, struct type *t)
+{
+    void *s;
+    if (hashmap_get(context->type_map, identifier->data.identifier.name, &s) == MAP_OK) {
+        compiler_error(identifier->location, "this variable has already been defined");
+        context->error_count++;
+        return;
+    }
+
+    int res = hashmap_put(context->type_map, identifier->data.identifier.name, t);
+    assert(res == MAP_OK);
+}
+
 /* type_init() -- initializes the type context by creating the type_map
  *      args: context
  *      returns: none
@@ -527,6 +540,87 @@ static void type_handle_assignment(struct type_context *context, struct node *as
     }
 }
 
+static void type_handle_generic_for_assign(struct type_context *context, struct node *variable,
+                                           struct node *value)
+{
+    if (variable->type != NODE_TYPE_ANNOTATION) {
+        if (context->is_strict) {
+            compiler_error(variable->location,
+                           "expected type annotation; compiler is in \"strict\" mode");
+            context->error_count++;
+        } else {
+            type_add(context, variable->data.type_annotation.identifier, variable->node_type);
+        }
+    } else
+        type_add(context, variable, variable->node_type);
+
+    if (variable && value) {
+        struct type *t = NULL;
+
+        /* Determine what type we have */
+        switch (value->node_type->kind) {
+            case TYPE_ARRAY:
+                t = value->node_type->data.array.type;
+                break;
+            default:
+                compiler_error(variable->location, "unable to iterate \"%s\"",
+                               type_to_string(value->node_type));
+                context->error_count++;
+                return;
+        }
+        if (!type_is(variable->node_type, t)) {
+            compiler_error(variable->location,
+                           "type mismatch: unable to iterate \"%s\" with \"%s\"",
+                           type_to_string(variable->node_type), type_to_string(value->node_type));
+            context->error_count++;
+        }
+    } else if (variable && context->is_strict) {
+        compiler_error(variable->location, "variable is inherently \"nil\"");
+        context->error_count++;
+    } else if (value) {
+        compiler_error(value->location, "expression is not assigned to a variable");
+        context->error_count++;
+    }
+}
+
+static void type_handle_generic_for_loop(struct type_context *context, struct node *local)
+{
+    struct node *vars = local->data.local.namelist;
+    struct node *values = local->data.local.exprlist;
+
+    while (true) {
+        /* Both are lists -> check first values of each */
+        if ((vars && values) && vars->type == NODE_VARIABLE_LIST &&
+            values->type == NODE_EXPRESSION_LIST) {
+
+            type_handle_generic_for_assign(context, vars->data.variable_list.variable,
+                                           values->data.expression_list.expression);
+
+            vars = vars->data.variable_list.init;
+            values = values->data.expression_list.init;
+        }
+        /* first is list second is NULL -> continue first */
+        else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
+            type_handle_generic_for_assign(context, vars->data.variable_list.variable, values);
+
+            vars = vars->data.variable_list.init;
+            values = NULL;
+        }
+        /* first is NULL second is list -> continue second */
+        else if ((values) && values->type == NODE_EXPRESSION_LIST) {
+            type_handle_generic_for_assign(context, vars, values->data.expression_list.expression);
+
+            values = values->data.expression_list.init;
+            vars = NULL;
+        }
+        /* Both are singular or NULL */
+        else {
+            type_handle_generic_for_assign(context, vars, values);
+            return;
+        }
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node
  *      returns: none
@@ -535,6 +629,8 @@ void type_ast_traversal(struct type_context *context, struct node *node)
 {
     if (!node)
         return;
+
+    struct type_context new_context = {true, 0};
 
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
@@ -590,6 +686,23 @@ void type_ast_traversal(struct type_context *context, struct node *node)
         case NODE_BLOCK:
             type_ast_traversal(context, node->data.block.init);
             type_ast_traversal(context, node->data.block.statement);
+            break;
+        case NODE_GENERICFORLOOP:
+            printf("Size before = %d\n", hashmap_length(context->type_map));
+            /* Copy the old context */
+            void* s;
+            new_context.type_map = hashmap_new();
+            memcpy(new_context.type_map, context->type_map, sizeof(hashmap_get_struct_size()));
+            printf("Size of new map = %d\n", hashmap_length(new_context.type_map));
+
+            type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.namelist);
+            type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.exprlist);
+
+            type_handle_generic_for_loop(&new_context, node->data.generic_for_loop.local);
+
+            type_ast_traversal(&new_context, node->data.generic_for_loop.body);
+            printf("Size after = %d\n", hashmap_length(context->type_map));
+            free(new_context.type_map);
             break;
     }
 }
