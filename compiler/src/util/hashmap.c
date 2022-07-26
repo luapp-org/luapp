@@ -25,9 +25,42 @@ typedef struct _hashmap_map {
     hashmap_element *data;
 } hashmap_map;
 
-int hashmap_get_struct_size()
+int hashmap_get_struct_size() { return sizeof(hashmap_map); }
+
+map_t hashmap_duplicate(map_t src)
+{    
+    hashmap_map *s = (hashmap_map *)src;
+    hashmap_map *m = (hashmap_map *)malloc(sizeof(hashmap_map));
+    if (!m)
+        goto err;
+
+    // Allocate enough space for all of the empty cells
+    int nsize = s->table_size * sizeof(hashmap_element);
+    m->data = (hashmap_element *)malloc(nsize);
+    
+    if (!m->data)
+        goto err;
+
+    /* This will copy all of the empty cells */
+    for (int i = 0; i < s->table_size; i++)
+        m->data[i] = s->data[i];
+
+    m->table_size = s->table_size;
+    m->size = s->size;
+
+    return m;
+err:
+    if (m)
+        hashmap_free(m);
+    return NULL;
+}
+
+void hashmap_print(map_t map)
 {
-    return sizeof(hashmap_map);
+    hashmap_map *m = (hashmap_map *)map;
+
+    for (int i = 0; i < m->size; i++)
+        printf("\"%s\"\n", m->data[i].key);
 }
 
 /*

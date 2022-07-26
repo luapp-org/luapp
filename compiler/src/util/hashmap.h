@@ -73,6 +73,9 @@ extern int hashmap_get_one(map_t in, any_t *arg, int remove);
  */
 extern void hashmap_free(map_t in);
 
+extern map_t hashmap_duplicate(map_t src);
+extern void hashmap_print(map_t map);
+
 /*
  * Get the current size of a hashmap
  */

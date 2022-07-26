@@ -631,7 +631,7 @@ void type_ast_traversal(struct type_context *context, struct node *node)
         return;
 
     struct type_context new_context = {true, 0};
-
+    
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression);
@@ -688,12 +688,11 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_ast_traversal(context, node->data.block.statement);
             break;
         case NODE_GENERICFORLOOP:
-            printf("Size before = %d\n", hashmap_length(context->type_map));
+            //printf("Size before = %d\n", hashmap_length(context->type_map));
             /* Copy the old context */
-            void* s;
-            new_context.type_map = hashmap_new();
-            memcpy(new_context.type_map, context->type_map, sizeof(hashmap_get_struct_size()));
-            printf("Size of new map = %d\n", hashmap_length(new_context.type_map));
+            new_context.type_map = hashmap_duplicate(context->type_map);
+        
+            //printf("Size of new map = %d\n", hashmap_length(new_context.type_map));
 
             type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.namelist);
             type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.exprlist);
@@ -701,7 +700,7 @@ void type_ast_traversal(struct type_context *context, struct node *node)
             type_handle_generic_for_loop(&new_context, node->data.generic_for_loop.local);
 
             type_ast_traversal(&new_context, node->data.generic_for_loop.body);
-            printf("Size after = %d\n", hashmap_length(context->type_map));
+            //printf("Size after = %d\n", hashmap_length(context->type_map));
             free(new_context.type_map);
             break;
     }
