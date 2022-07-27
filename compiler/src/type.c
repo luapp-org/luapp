@@ -386,6 +386,33 @@ static void type_handle_binary_operation(struct type_context *context,
                 binary_operation->node_type = type_basic(TYPE_BASIC_NUMBER);
             }
             break;
+        case BINOP_GE:
+        case BINOP_LE:
+        case BINOP_GT:
+        case BINOP_LT:
+            if (!type_is(right->node_type, left->node_type)) {
+                compiler_error(binary_operation->location,
+                               "attempt to compare value of type \"%s\" with value of type \"%s\"",
+                               type_to_string(right->node_type), type_to_string(left->node_type));
+                context->error_count++;
+            }
+        case BINOP_CONCAT:
+        case BINOP_EQ:
+        case BINOP_NE:
+            free(binary_operation->node_type);
+            binary_operation->node_type =
+                type_basic(binary_operation->data.binary_operation.operation == BINOP_CONCAT
+                               ? TYPE_BASIC_STRING
+                               : TYPE_BASIC_BOOLEAN);
+            break;
+        /* Lua has some weird 'and' and 'or' operations */
+        case BINOP_AND:
+        case BINOP_OR:
+            free(binary_operation->node_type);
+            binary_operation->node_type =
+                binary_operation->data.binary_operation.operation == BINOP_AND ? right->node_type
+                                                                               : left->node_type;
+            break;
     }
 }
 
