@@ -2,7 +2,12 @@
 This is the Lua++ C lang build, currently private but will soon be public. This codebase is not specifically tweaked to a certain compiler, so any C/C++ compiler should be able to build this project easily. Personally, I recommend building it with ```gcc``` although ```clang``` or ```MSVSC``` would also work fine.
 
 ### How to compile and run
-1. Make sure that you have ```make``` installed.
+1. Make sure that you have ``make``, ``flex``, and ``bison`` installed. To install them on a Linux machine run the following code:
+```
+sudo apt update
+sudo apt install flex
+sudo apt install bison
+```
 2. Venture into the folder of the project that you would like to compile (e.g. ``compiler/``).
 3. Build and run it like so:
 ```
