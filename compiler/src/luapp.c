@@ -121,7 +121,7 @@ int main(int argc, char **argv)
     type_init(&type_context);
 
     /* Run the parser, it's needed for all later passes */
-    type_ast_traversal(&type_context, tree);
+    type_ast_traversal(&type_context, tree, true);
     error_count = type_context.error_count;
 
     if (error_count) {

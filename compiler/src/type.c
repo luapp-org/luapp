@@ -321,8 +321,8 @@ static void type_handle_name_reference(struct type_context *context, struct node
             expression = value->data.expression_index.expression;
             index = value->data.expression_index.index;
 
-            type_ast_traversal(context, expression);
-            type_ast_traversal(context, index);
+            type_ast_traversal(context, expression, false);
+            type_ast_traversal(context, index, false);
 
             switch (expression->node_type->kind) {
                 case TYPE_PRIMITIVE:
@@ -649,83 +649,92 @@ static void type_handle_generic_for_loop(struct type_context *context, struct no
 }
 
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
- *      args: context, node
+ *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
  */
-void type_ast_traversal(struct type_context *context, struct node *node)
+void type_ast_traversal(struct type_context *context, struct node *node, bool main)
 {
     if (!node)
         return;
 
-    struct type_context new_context = {true, 0};
+    struct type_context new_context = {context->is_strict, context->error_count};
 
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
-            type_ast_traversal(context, node->data.expression_statement.expression);
+            type_ast_traversal(context, node->data.expression_statement.expression, false);
             break;
         case NODE_NAME_REFERENCE:
-            type_ast_traversal(context, node->data.name_reference.identifier);
+            type_ast_traversal(context, node->data.name_reference.identifier, false);
 
             type_handle_name_reference(context, node);
             break;
         case NODE_EXPRESSION_INDEX:
-            type_ast_traversal(context, node->data.expression_index.expression);
-            type_ast_traversal(context, node->data.expression_index.index);
+            type_ast_traversal(context, node->data.expression_index.expression, false);
+            type_ast_traversal(context, node->data.expression_index.index, false);
             break;
         case NODE_LOCAL:
             /* Visit children */
-            type_ast_traversal(context, node->data.local.namelist);
-            type_ast_traversal(context, node->data.local.exprlist);
+            type_ast_traversal(context, node->data.local.namelist, false);
+            type_ast_traversal(context, node->data.local.exprlist, false);
 
             /* Handle everything */
             type_handle_local(context, node);
             break;
         case NODE_ASSIGNMENT:
-            type_ast_traversal(context, node->data.assignment.variables);
-            type_ast_traversal(context, node->data.assignment.values);
+            type_ast_traversal(context, node->data.assignment.variables, false);
+            type_ast_traversal(context, node->data.assignment.values, false);
 
             type_handle_assignment(context, node);
             break;
         case NODE_VARIABLE_LIST:
-            type_ast_traversal(context, node->data.variable_list.init);
-            type_ast_traversal(context, node->data.variable_list.variable);
+            type_ast_traversal(context, node->data.variable_list.init, false);
+            type_ast_traversal(context, node->data.variable_list.variable, false);
             break;
         case NODE_ARRAY_CONSTRUCTOR:
-            type_ast_traversal(context, node->data.array_constructor.exprlist);
+            type_ast_traversal(context, node->data.array_constructor.exprlist, false);
 
             type_handle_array_constructor(context, node);
             break;
         case NODE_TABLE_CONSTRUCTOR:
-            type_ast_traversal(context, node->data.table_constructor.pairlist);
+            type_ast_traversal(context, node->data.table_constructor.pairlist, false);
 
             type_handle_table_constructor(context, node);
             break;
         case NODE_KEY_VALUE_PAIR:
-            type_ast_traversal(context, node->data.key_value_pair.key);
-            type_ast_traversal(context, node->data.key_value_pair.value);
+            type_ast_traversal(context, node->data.key_value_pair.key, false);
+            type_ast_traversal(context, node->data.key_value_pair.value, false);
             break;
         case NODE_BINARY_OPERATION:
-            type_ast_traversal(context, node->data.binary_operation.left);
-            type_ast_traversal(context, node->data.binary_operation.right);
+            type_ast_traversal(context, node->data.binary_operation.left, false);
+            type_ast_traversal(context, node->data.binary_operation.right, false);
 
             type_handle_binary_operation(context, node);
             break;
         case NODE_BLOCK:
-            type_ast_traversal(context, node->data.block.init);
-            type_ast_traversal(context, node->data.block.statement);
+            if (main) {
+                type_ast_traversal(context, node->data.block.init, true);
+                type_ast_traversal(context, node->data.block.statement, false);
+            } else {
+                new_context.type_map = hashmap_duplicate(context->type_map);
+
+                type_ast_traversal(&new_context, node->data.block.init, true);
+                type_ast_traversal(&new_context, node->data.block.statement, false);
+
+                free(new_context.type_map);
+            }
             break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */
             new_context.type_map = hashmap_duplicate(context->type_map);
 
-            type_ast_traversal(&new_context,
-                               node->data.generic_for_loop.local->data.local.namelist);
-            type_ast_traversal(&new_context,
-                               node->data.generic_for_loop.local->data.local.exprlist);
+            type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.namelist,
+                               false);
+            type_ast_traversal(&new_context, node->data.generic_for_loop.local->data.local.exprlist,
+                               false);
 
             type_handle_generic_for_loop(&new_context, node->data.generic_for_loop.local);
 
-            type_ast_traversal(&new_context, node->data.generic_for_loop.body);
+            type_ast_traversal(&new_context, node->data.generic_for_loop.body, true);
 
             free(new_context.type_map);
             break;

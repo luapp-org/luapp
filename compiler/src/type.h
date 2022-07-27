@@ -60,7 +60,7 @@ struct type *type_table(struct type *key, struct type *value);
 struct type *type_function(struct node *args_list, struct node *rets_list);
 
 bool type_is(struct type *first, struct type *second);
-void type_ast_traversal(struct type_context *context, struct node *node);
+void type_ast_traversal(struct type_context *context, struct node *node, bool main);
 
 char *type_to_string(struct type *type);
 
