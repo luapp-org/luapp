@@ -362,7 +362,7 @@ statement
     | FOR_T name_list IN_T expression_list DO_T block END_T
         { $$ = node_generic_for_loop(@$, node_local(@$, $2, $4), $6); }
     | LOCAL_T name_list 
-        { $$ = node_local(@$, $2, node_nil(@$)); }
+        { $$ = node_local(@$, $2, NULL); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
     | FUNCTION_T 

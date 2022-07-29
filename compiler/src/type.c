@@ -163,6 +163,14 @@ void type_add(struct type_context *context, struct node *identifier, struct type
     assert(res == MAP_OK);
 }
 
+bool type_name_exists(struct type_context *context, char *name)
+{
+    struct type *t;
+    int res = hashmap_get(context->type_map, name, (void **)(&t));
+
+    return res == MAP_OK;
+}
+
 /* type_init() -- initializes the type context by creating the type_map
  *      args: context
  *      returns: none
@@ -175,123 +183,201 @@ void type_init(struct type_context *context) { context->type_map = hashmap_new()
  */
 void type_destroy(struct type_context *context) { hashmap_free(context->type_map); }
 
-static void type_handle_local(struct type_context *context, struct node *local)
+static void type_handle_local_assignment(struct type_context *context, struct node *name,
+                                         struct node *expr)
 {
-    struct node *var = local->data.local.namelist;
-    struct node *expr = local->data.local.exprlist;
+    struct node *identifier;
 
-    while (true) {
-        /* We must have a name list and expression list, handle that. */
-        if (expr && var->type == NODE_NAME_LIST && expr->type == NODE_EXPRESSION_LIST) {
-            struct node *name = var->data.name_list.name;
-            struct node *value = expr->data.expression_list.expression;
+    if (name && expr && name->type != NODE_TYPE_ANNOTATION) {
+        free(name->node_type);
+        name->node_type = expr->node_type;
 
-            /* Guess the type if no type is specified */
-            if (name->type != NODE_TYPE_ANNOTATION) {
-                if (context->is_strict) {
-                    compiler_error(name->location,
-                                   "expected type annotation; compiler is in \"strict\" mode");
-                    context->error_count++;
-                }
-
-                name->node_type = value->node_type;
-            }
-
-            if (!type_is(name->node_type, value->node_type)) {
-                compiler_error(name->location,
-                               "type mismatch: variable of type \"%s\" can not be assigned a value "
-                               "of type \"%s\"",
-                               type_to_string(name->node_type), type_to_string(value->node_type));
-                context->error_count++;
-            }
-
-            int res = hashmap_put(context->type_map,
-                                  name->data.type_annotation.identifier->data.identifier.name,
-                                  name->node_type);
-            assert(res == MAP_OK);
-
-            var = var->data.name_list.init;
-            expr = expr->data.expression_list.init;
-            continue;
-            /* We have a singular namelist = expression */
-        } else if (var->type == NODE_NAME_LIST) {
-            struct node *name = var->data.name_list.name;
-
-            /* Guess the type if no type is specified */
-            if (name->type != NODE_TYPE_ANNOTATION) {
-                if (context->is_strict) {
-                    compiler_error(var->location,
-                                   "expected type annotation; compiler is in \"strict\" mode");
-                    context->error_count++;
-                }
-
-                if (expr)
-                    name->node_type = expr->node_type;
-                else
-                    name->node_type = type_basic(TYPE_BASIC_NIL);
-            }
-
-            if (!expr && context->is_strict) {
-                compiler_error(name->location, "local variable is inherently \"nil\"");
-                context->error_count++;
-            } else if (expr) {
-                if (!type_is(name->node_type, expr->node_type)) {
-                    compiler_error(
-                        name->location,
-                        "type mismatch: variable of type \"%s\" can not be assigned a value "
-                        "of type \"%s\"",
-                        type_to_string(name->node_type), type_to_string(expr->node_type));
-                    context->error_count++;
-                }
-            }
-
-            int res = hashmap_put(context->type_map,
-                                  name->data.type_annotation.identifier->data.identifier.name,
-                                  name->node_type);
-            assert(res == MAP_OK);
-
-            var = var->data.name_list.init;
-            expr = NULL;
-            continue;
-            /* We must have a single assignment, handle that. */
-        } else {
-            /* Guess the type if no type is specified */
-            if (type_is_primitive(var->node_type, TYPE_BASIC_ANY)) {
-                if (context->is_strict) {
-                    compiler_error(var->location,
-                                   "expected type annotation; compiler is in \"strict\" mode.");
-                    context->error_count++;
-                }
-
-                if (expr)
-                    var->node_type = expr->node_type;
-                else
-                    var->node_type = type_basic(TYPE_BASIC_NIL);
-            }
-
-            if (expr == NULL && context->is_strict) {
-                compiler_error(var->location, "local variable is inherently \"nil\".");
-                context->error_count++;
-            } else if (expr) {
-                if (!type_is(var->node_type, expr->node_type)) {
-                    char *varstr = type_to_string(var->node_type);
-                    char *exprstr = type_to_string(expr->node_type);
-
-                    compiler_error(var->location,
-                                   "type mismatch: variable of type \"%s\" can not be assigned a "
-                                   "value of type \"%s\"",
-                                   varstr, exprstr);
-                    context->error_count++;
-                }
-            }
-            int res = hashmap_put(context->type_map,
-                                  var->data.type_annotation.identifier->data.identifier.name,
-                                  var->node_type);
-            assert(res == MAP_OK);
+        if (context->is_strict) {
+            compiler_error(name->location,
+                           "expected type annotation; compiler is in \"strict\" mode");
+            context->error_count++;
         }
-        break;
+        identifier = name;
+    } else if (name)
+        identifier = name->data.type_annotation.identifier;
+
+    if (name && expr) {
+        if (!type_is(name->node_type, expr->node_type)) {
+            compiler_error(
+                name->location,
+                "type mismatch: unable to assign variable with type \"%s\" a value of type \"%s\"",
+                type_to_string(name->node_type), type_to_string(expr->node_type));
+            context->error_count++;
+        }
+        type_add(context, identifier, name->node_type);
+    } else if (name) {
+        if (context->is_strict) {
+            compiler_error(name->location, "variable is inherently \"nil\"");
+            context->error_count++;
+        }
+        free(name->node_type);
+        name->node_type = type_basic(TYPE_BASIC_NIL);
+        type_add(context, identifier, name->node_type);
+    } else if (expr) {
+        compiler_error(expr->location, "expression is not assigned to a variable");
+        context->error_count++;
     }
 }
+
+static void type_handle_local(struct type_context *context, struct node *local)
+{
+    struct node *vars = local->data.local.namelist;
+    struct node *values = local->data.local.exprlist;
+
+    while (true) {
+
+        /* Both are lists -> check first values of each */
+        if ((vars && values) && vars->type == NODE_VARIABLE_LIST &&
+            values->type == NODE_EXPRESSION_LIST) {
+
+            type_handle_local_assignment(context, vars->data.name_list.name,
+                                          values->data.expression_list.expression);
+
+            vars = vars->data.name_list.init;
+            values = values->data.expression_list.init;
+        }
+        /* first is list second is NULL -> continue first */
+        else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
+            type_handle_local_assignment(context, vars->data.name_list.name, values);
+
+            vars = vars->data.variable_list.init;
+            values = NULL;
+        }
+        /* first is NULL second is list -> continue second */
+        else if ((values) && values->type == NODE_EXPRESSION_LIST) {
+            type_handle_local_assignment(context, vars, values->data.expression_list.expression);
+
+            values = values->data.expression_list.init;
+            vars = NULL;
+        }
+        /* Both are singular or NULL */
+        else {
+            type_handle_local_assignment(context, vars, values);
+            return;
+        }
+    }
+}
+// static void type_handle_local(struct type_context *context, struct node *local)
+// {
+//     struct node *var = local->data.local.namelist;
+//     struct node *expr = local->data.local.exprlist;
+
+//     while (true) {
+//         /* We must have a name list and expression list, handle that. */
+//         if (expr && var->type == NODE_NAME_LIST && expr->type == NODE_EXPRESSION_LIST) {
+//             struct node *name = var->data.name_list.name;
+//             struct node *value = expr->data.expression_list.expression;
+
+//             /* Guess the type if no type is specified */
+//             if (name->type != NODE_TYPE_ANNOTATION) {
+//                 if (context->is_strict) {
+//                     compiler_error(name->location,
+//                                    "expected type annotation; compiler is in \"strict\" mode");
+//                     context->error_count++;
+//                 }
+
+//                 name->node_type = value->node_type;
+//             }
+
+//             if (!type_is(name->node_type, value->node_type)) {
+//                 compiler_error(name->location,
+//                                "type mismatch: variable of type \"%s\" can not be assigned a
+//                                value " "of type \"%s\"", type_to_string(name->node_type),
+//                                type_to_string(value->node_type));
+//                 context->error_count++;
+//             }
+
+//             int res = hashmap_put(context->type_map,
+//                                   name->data.type_annotation.identifier->data.identifier.name,
+//                                   name->node_type);
+//             assert(res == MAP_OK);
+
+//             var = var->data.name_list.init;
+//             expr = expr->data.expression_list.init;
+//             continue;
+//             /* We have a singular namelist = expression */
+//         } else if (var->type == NODE_NAME_LIST) {
+//             struct node *name = var->data.name_list.name;
+
+//             /* Guess the type if no type is specified */
+//             if (name->type != NODE_TYPE_ANNOTATION) {
+//                 if (context->is_strict) {
+//                     compiler_error(var->location,
+//                                    "expected type annotation; compiler is in \"strict\" mode");
+//                     context->error_count++;
+//                 }
+
+//                 if (expr)
+//                     name->node_type = expr->node_type;
+//                 else
+//                     name->node_type = type_basic(TYPE_BASIC_NIL);
+//             }
+
+//             if (!expr && context->is_strict) {
+//                 compiler_error(name->location, "local variable is inherently \"nil\"");
+//                 context->error_count++;
+//             } else if (expr) {
+//                 if (!type_is(name->node_type, expr->node_type)) {
+//                     compiler_error(
+//                         name->location,
+//                         "type mismatch: variable of type \"%s\" can not be assigned a value "
+//                         "of type \"%s\"",
+//                         type_to_string(name->node_type), type_to_string(expr->node_type));
+//                     context->error_count++;
+//                 }
+//             }
+
+//             int res = hashmap_put(context->type_map,
+//                                   name->data.type_annotation.identifier->data.identifier.name,
+//                                   name->node_type);
+//             assert(res == MAP_OK);
+
+//             var = var->data.name_list.init;
+//             expr = NULL;
+//             continue;
+//             /* We must have a single assignment, handle that. */
+//         } else {
+//             /* Guess the type if no type is specified */
+//             if (type_is_primitive(var->node_type, TYPE_BASIC_ANY)) {
+//                 if (context->is_strict) {
+//                     compiler_error(var->location,
+//                                    "expected type annotation; compiler is in \"strict\" mode.");
+//                     context->error_count++;
+//                 }
+
+//                 if (expr)
+//                     var->node_type = expr->node_type;
+//                 else
+//                     var->node_type = type_basic(TYPE_BASIC_NIL);
+//             }
+
+//             if (expr == NULL && context->is_strict) {
+//                 compiler_error(var->location, "local variable is inherently \"nil\".");
+//                 context->error_count++;
+//             } else if (expr) {
+//                 if (!type_is(var->node_type, expr->node_type)) {
+//                     char *varstr = type_to_string(var->node_type);
+//                     char *exprstr = type_to_string(expr->node_type);
+
+//                     compiler_error(var->location,
+//                                    "type mismatch: variable of type \"%s\" can not be assigned a
+//                                    " "value of type \"%s\"", varstr, exprstr);
+//                     context->error_count++;
+//                 }
+//             }
+//             int res = hashmap_put(context->type_map,
+//                                   var->data.type_annotation.identifier->data.identifier.name,
+//                                   var->node_type);
+//             assert(res == MAP_OK);
+//         }
+//         break;
+//     }
+// }
 
 static void type_handle_name_reference(struct type_context *context, struct node *name_reference)
 {
