@@ -445,8 +445,7 @@ static void type_handle_array_constructor(struct type_context *context,
                     }
                     array_constructor->node_type = type_array(type);
                 } else
-                    array_constructor->node_type =
-                        type_array(expr->data.expression_list.expression->node_type);
+                    array_constructor->node_type = type_array(expr->node_type);
                 return;
         }
     }
@@ -648,6 +647,106 @@ static void type_handle_generic_for_loop(struct type_context *context, struct no
     }
 }
 
+static void type_handle_numeric_for_loop(struct type_context *context, struct node *for_loop)
+{
+    struct node *init = for_loop->data.numerical_for_loop.init;
+    const struct node *target = for_loop->data.numerical_for_loop.target;
+    const struct node *increment = for_loop->data.numerical_for_loop.increment;
+
+    /* We can assume that this is a single assignment due to lang grammar */
+    struct node *var = init->data.assignment.variables;
+    struct node *val = init->data.assignment.values;
+
+    if (var->type == NODE_TYPE_ANNOTATION) {
+        /* Check if types are equal */
+        if (!type_is(var->node_type, val->node_type)) {
+            compiler_error(
+                init->location,
+                "type mismatch: unable to assign variable or type \"%s\" a value of type \"%s\"",
+                type_to_string(var->node_type), type_to_string(val->node_type));
+            context->error_count++;
+        }
+
+        type_add(context, var->data.type_annotation.identifier, var->node_type);
+        return;
+    } else if (var->type == NODE_IDENTIFIER) {
+        /* See if this identifier exists */
+
+        struct type *t;
+        int res = hashmap_get(context->type_map, var->data.identifier.name, (void **)(&t));
+
+        if (res == MAP_MISSING) {
+            if (context->is_strict) {
+                compiler_error(var->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
+
+            free(var->node_type);
+            var->node_type = val->node_type;
+
+            type_add(context, var, var->node_type);
+        }
+
+        return;
+    }
+
+    type_ast_traversal(context, init, false);
+
+    /* Ensure that all types are numbers or else we have a problem! */
+    if (!type_is_primitive(var->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(var->location, "'for' variable must be a \"number\"");
+        context->error_count++;
+    }
+
+    if (!type_is_primitive(target->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(target->location, "'for' target value must be a \"number\"");
+        context->error_count++;
+    }
+
+    if (!type_is_primitive(increment->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(increment->location, "'for' step must be a \"number\"");
+        context->error_count++;
+    }
+}
+
+static void type_handle_unary(struct type_context *context, struct node *unary)
+{
+    struct node *expr = unary->data.unary_operation.expression;
+
+    switch (unary->data.unary_operation.operation) {
+        case UNOP_LEN:
+            /* expr can be array, table, or string */
+            if (!(expr->node_type->kind == TYPE_ARRAY || expr->node_type->kind == TYPE_TABLE ||
+                  type_is_primitive(expr->node_type, TYPE_BASIC_STRING))) {
+                compiler_error(unary->location,
+                               "unable to calculate length of value of \"%s\" type",
+                               type_to_string(expr->node_type));
+                context->error_count++;
+            }
+
+            free(unary->node_type);
+            unary->node_type = expr->node_type;
+            break;
+        case UNOP_NEG:
+            /* Can only be number */
+            if (!type_is_primitive(expr->node_type, TYPE_BASIC_NUMBER)) {
+                compiler_error(unary->location,
+                               "unable to perform arithmetic on value of \"%s\" type",
+                               type_to_string(expr->node_type));
+                context->error_count++;
+            }
+
+            free(unary->node_type);
+            unary->node_type = expr->node_type;
+            break;
+        case UNOP_NOT:
+            free(unary->node_type);
+            unary->node_type = type_basic(TYPE_BASIC_BOOLEAN);
+            break;
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
@@ -721,6 +820,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 type_ast_traversal(&new_context, node->data.block.statement, false);
 
                 free(new_context.type_map);
+                context->error_count = new_context.error_count;
             }
             break;
         case NODE_IF:
@@ -737,6 +837,19 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(context, node->data.while_loop.condition, false);
             type_ast_traversal(context, node->data.while_loop.body, false);
             break;
+        case NODE_NUMERICFORLOOP:
+            new_context.type_map = hashmap_duplicate(context->type_map);
+
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.increment, false);
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.target, false);
+
+            type_handle_numeric_for_loop(&new_context, node);
+
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.body, true);
+
+            free(new_context.type_map);
+            context->error_count = new_context.error_count;
+            break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */
             new_context.type_map = hashmap_duplicate(context->type_map);
@@ -751,6 +864,12 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(&new_context, node->data.generic_for_loop.body, true);
 
             free(new_context.type_map);
+            context->error_count = new_context.error_count;
+            break;
+        case NODE_UNARY_OPERATION:
+            type_ast_traversal(context, node->data.unary_operation.expression, false);
+
+            type_handle_unary(context, node);
             break;
     }
 }

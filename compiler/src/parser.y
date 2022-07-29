@@ -316,6 +316,8 @@ function_body
  */
 single_assignment 
     : variable EQUAL_T expression
+        { $$ = node_assignment(@$, node_name_reference(@$, $1), ASSIGN, $3); }
+    | name_type EQUAL_T expression // Allow name_type for variable creation
         { $$ = node_assignment(@$, $1, ASSIGN, $3); }
 ;
 
@@ -355,6 +357,8 @@ statement
          { $$ = node_if_statement(@$, $2, $4, $5); }
     | FOR_T single_assignment COMMA_T expression DO_T block END_T
         { $$ = node_numerical_for_loop(@$, $2, $4, node_number(@$, "1"), $6); }
+    | FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
+        { $$ = node_numerical_for_loop(@$, $2, $4, $6, $8); }
     | FOR_T name_list IN_T expression_list DO_T block END_T
         { $$ = node_generic_for_loop(@$, node_local(@$, $2, $4), $6); }
     | LOCAL_T name_list 
