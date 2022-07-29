@@ -133,7 +133,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 ">="                return GREATER_EQUAL_T;
 "<="                return LESS_EQUAL_T;
 ".."                return CONCAT_T;
-"..."               return VARARG_T;
+"..."               { *yylval = node_vararg(*yylloc); return VARARG_T; }
 "+="                return PLUS_EQUAL_T;
 "-="                return MINUS_EQUAL_T;
 "*="                return ASTERISK_EQUAL_T;
@@ -153,7 +153,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
                     }
 
 
-{newline}           { printf("NEW LINEEEEEEEEE\n"); yyextra = 1; }
+{newline}           { yyextra = 1; }
 {ws}
 .                   { compiler_error(*yylloc_param, "unrecognized charcter %s", yytext); yyterminate(); }
 %%

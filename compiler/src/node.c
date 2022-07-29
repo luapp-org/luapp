@@ -652,6 +652,21 @@ struct node *node_key_value_pair(YYLTYPE location, struct node *key, struct node
     return node;
 }
 
+/*  node_vararg - allocate a node to represent a vararg node ('...')
+ *      args: location
+ *      rets: vararg node
+ *
+ *  BNF -> `...´
+ */
+struct node *node_vararg(YYLTYPE location)
+{
+    struct node *node = node_create(location, NODE_VARARG);
+
+    node->node_type = type_basic(TYPE_BASIC_VARARG);
+
+    return node;
+}
+
 /*  write_node - writes a node to a file in graphviz format
  *      args: output file, name of the node
  *      rets: none
@@ -1119,6 +1134,9 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.table_constructor.pairlist, false);
 
             parent_id = previous;
+            break;
+        case NODE_VARARG:
+            write_node(output, "...", false);
             break;
         default:
             break;

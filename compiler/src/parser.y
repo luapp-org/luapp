@@ -154,9 +154,7 @@ unary_operation
 expression_list 
     : expression
     | expression COMMA_T expression_list
-        {
-            $$ = node_expression_list(@$, $3, $1); 
-        }
+        { $$ = node_expression_list(@$, $3, $1); }
 ;
 
 parameter_list 
