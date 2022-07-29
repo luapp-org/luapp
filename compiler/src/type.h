@@ -16,6 +16,15 @@ enum type_primitive_kind {
     TYPE_BASIC_STRING,
     TYPE_BASIC_BOOLEAN,
     TYPE_BASIC_NIL,
+    TYPE_BASIC_VARARG, /* Special type, it's type definition is the exact same as the grammar:
+                        *       local print: (format: string, ...): any = function(format: string, ...) end
+                        * This may seem quite strange at first, but this makes it a lot easier for
+                        * the compiler to type check in general. The code above may seem quite ugly
+                        * so here is a nicer function definition for printf:
+                        *       function printf(format: string, ...): any 
+                        *           -- system does stuff
+                        *       end
+                        */
     TYPE_BASIC_ANY
 };
 
