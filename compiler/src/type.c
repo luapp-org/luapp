@@ -723,6 +723,11 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 free(new_context.type_map);
             }
             break;
+        case NODE_IF:
+            type_ast_traversal(context, node->data.if_statement.condition, false);
+            type_ast_traversal(context, node->data.if_statement.body, false);
+            type_ast_traversal(context, node->data.if_statement.else_body, false);
+            break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */
             new_context.type_map = hashmap_duplicate(context->type_map);
