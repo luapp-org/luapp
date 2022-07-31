@@ -216,7 +216,9 @@ pair
 ;
 
 pair_list
-    : pair
+    : %empty
+        { $$ = NULL; }
+    | pair
     | pair COMMA_T pair_list
         { $$ = node_expression_list(@$, $1, $3); }
 ;
@@ -224,8 +226,6 @@ pair_list
 table_constructor 
     : LEFT_BRACKET_T pair_list RIGHT_BRACKET_T
         { $$ = node_table_constructor(@$, $2); }
-    | LEFT_BRACKET_T RIGHT_BRACKET_T
-        { $$ = node_table_constructor(@$, NULL); }
 ;
 
 variable 
@@ -302,9 +302,7 @@ function_body
     : LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, $2, $5, $6); }
     | LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
-        { 
-            $$ = node_function_body(@$, $2, NULL, $4); 
-        }
+        { $$ = node_function_body(@$, $2, NULL, $4); }
     | LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, NULL, $4, $5); }
     | LEFT_PARAN_T RIGHT_PARAN_T block END_T
@@ -365,7 +363,8 @@ statement
         { $$ = node_local(@$, $2, NULL); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
-    | FUNCTION_T 
+    | LOCAL_T FUNCTION_T IDENTIFIER_T function_body
+        { $$ = node_local(@$, $3, $4); }
     | last_statement
         { $$ = $1; }
 
