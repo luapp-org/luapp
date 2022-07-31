@@ -187,6 +187,8 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
     | TANY_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_ANY)); }
+    | VARARG_T
+        { $$ = node_type(@$, type_basic(TYPE_BASIC_VARARG)); }
     | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
         { $$ = node_type_array(@$, $3); }
     | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T 

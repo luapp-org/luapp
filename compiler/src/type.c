@@ -90,6 +90,8 @@ char *type_to_string(struct type *type)
                 return "string";
             case TYPE_BASIC_BOOLEAN:
                 return "boolean";
+            case TYPE_BASIC_VARARG:
+                return "vararg";
             case TYPE_BASIC_ANY:
                 return "any";
         }
