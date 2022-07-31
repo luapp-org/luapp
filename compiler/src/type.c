@@ -238,7 +238,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             values->type == NODE_EXPRESSION_LIST) {
 
             type_handle_local_assignment(context, vars->data.name_list.name,
-                                          values->data.expression_list.expression);
+                                         values->data.expression_list.expression);
 
             vars = vars->data.name_list.init;
             values = values->data.expression_list.init;
@@ -719,6 +719,41 @@ static void type_handle_unary(struct type_context *context, struct node *unary)
     }
 }
 
+static struct node *type_build_type_list(struct type_context *context, struct node *namelist, struct node *vararg)
+{
+    struct node *t = NULL;
+
+    if (namelist->type == NODE_NAME_LIST)
+        t = namelist->data.name_list.name;
+    else
+        t = namelist;
+
+    if (t->type != NODE_TYPE_ANNOTATION && context->is_strict) {
+        compiler_error(t->location, "expected type annotation; compiler is in \"strict\" mode %d",t->type);
+        context->error_count++;
+    }
+
+    if (namelist->type == NODE_NAME_LIST)
+        return node_type_list(namelist->location,
+                              type_build_type_list(context, namelist->data.name_list.init, vararg), t);
+    else
+        return node_type_list(namelist->location, t, vararg);
+}
+
+static void type_handle_function_body(struct type_context *context, struct node *funcbody)
+{
+    struct node *typelist = funcbody->data.function_body.type_list;
+    struct node *parameters = funcbody->data.function_body.exprlist;
+
+    struct node *vararg = parameters->data.parameter_list.vararg;
+    struct node *namelist = parameters->data.parameter_list.namelist;
+
+    if (funcbody->node_type)
+        free(funcbody->node_type);
+
+    funcbody->node_type = type_function(type_build_type_list(context, namelist, vararg), typelist);
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
@@ -842,6 +877,11 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(context, node->data.unary_operation.expression, false);
 
             type_handle_unary(context, node);
+            break;
+        case NODE_FUNCTION_BODY:
+            type_ast_traversal(context, node->data.function_body.exprlist, false);
+            type_ast_traversal(context, node->data.function_body.type_list, false);
+            type_handle_function_body(context, node);
             break;
     }
 }

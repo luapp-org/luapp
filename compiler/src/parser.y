@@ -364,7 +364,7 @@ statement
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
     | LOCAL_T FUNCTION_T IDENTIFIER_T function_body
-        { $$ = node_local(@$, $3, $4); }
+        { $$ = node_local(@$, node_type_annotation(@$, $3, node_type(@$, type_basic(TYPE_BASIC_ANY))), $4); }
     | last_statement
         { $$ = $1; }
 
