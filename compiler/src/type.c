@@ -73,7 +73,7 @@ struct type *type_function(struct node *args_list, struct node *rets_list)
     return t;
 }
 
-/* type_to_string() -- converts the given type scruct to a string representation
+/* type_to_string() -- converts the given type struct to a string representation
  *      args: type
  *      returns: string version of type
  */
@@ -126,6 +126,35 @@ bool type_is_primitive(struct type *type, enum type_primitive_kind kind)
     return type->kind == TYPE_PRIMITIVE && type->data.primitive.kind == kind;
 }
 
+/* type_node_is() -- determines whether two node type lists are equal
+ *      args: first list, second list
+ *      returns: yes or no
+ */
+bool type_node_is(struct node *first, struct node *second)
+{
+    while (true) {
+        /* Both are still lists */
+        if (first->type == NODE_TYPE_LIST && second->type == NODE_TYPE_LIST) {
+            /* Check both types */
+            if (!type_is(first->data.type_list.type->node_type,
+                         second->data.type_list.type->node_type)) {
+                return false;
+            }
+
+            first = first->data.type_list.init;
+            second = second->data.type_list.init;
+        }
+        /* Both are not lists but not NULL */
+        else if (first && second) {
+            if (!type_is(first->node_type, second->node_type))
+                return false;
+            return true;
+        } else
+            return false;
+    }
+    return true;
+}
+
 /* type_is() -- determines whether two types are equal
  *      args: first type, second type
  *      returns: yes or no
@@ -145,6 +174,11 @@ bool type_is(struct type *first, struct type *second)
             case TYPE_TABLE:
                 return type_is(first->data.table.key, second->data.table.key) &&
                        type_is(first->data.table.value, second->data.table.value);
+            case TYPE_FUNCTION:
+                return type_node_is(first->data.function.args_list,
+                                    second->data.function.args_list) &&
+                       type_node_is(first->data.function.rets_list,
+                                    second->data.function.rets_list);
             default:
                 return false;
         }
@@ -719,7 +753,8 @@ static void type_handle_unary(struct type_context *context, struct node *unary)
     }
 }
 
-static struct node *type_build_type_list(struct type_context *context, struct node *namelist, struct node *vararg)
+static struct node *type_build_type_list(struct type_context *context, struct node *namelist,
+                                         struct node *vararg)
 {
     struct node *t = NULL;
 
@@ -729,15 +764,21 @@ static struct node *type_build_type_list(struct type_context *context, struct no
         t = namelist;
 
     if (t->type != NODE_TYPE_ANNOTATION && context->is_strict) {
-        compiler_error(t->location, "expected type annotation; compiler is in \"strict\" mode %d",t->type);
+        compiler_error(t->location, "expected type annotation; compiler is in \"strict\" mode %d",
+                       t->type);
         context->error_count++;
     }
 
     if (namelist->type == NODE_NAME_LIST)
         return node_type_list(namelist->location,
-                              type_build_type_list(context, namelist->data.name_list.init, vararg), t);
-    else
-        return node_type_list(namelist->location, t, vararg);
+                              type_build_type_list(context, namelist->data.name_list.init, vararg),
+                              t);
+    else {
+        if (vararg)
+            return node_type_list(namelist->location, t, vararg);
+        else
+            return t;
+    }
 }
 
 static void type_handle_function_body(struct type_context *context, struct node *funcbody)
