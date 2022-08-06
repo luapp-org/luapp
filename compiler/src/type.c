@@ -191,6 +191,7 @@ void type_add(struct type_context *context, struct node *identifier, struct type
     void *s;
     if (hashmap_get(context->type_map, identifier->data.identifier.name, &s) == MAP_OK) {
         compiler_error(identifier->location, "this variable has already been defined");
+        hashmap_print(context->type_map);
         context->error_count++;
         return;
     }
@@ -793,6 +794,33 @@ static void type_handle_function_body(struct type_context *context, struct node 
         free(funcbody->node_type);
 
     funcbody->node_type = type_function(type_build_type_list(context, namelist, vararg), typelist);
+
+    while (true) {
+        struct node *p = NULL;
+
+        if (namelist == NULL)
+            break;
+        else if (namelist->type == NODE_NAME_LIST) {
+            p = namelist->data.name_list.name;
+        } else
+            p = namelist;
+
+        if (p->type != NODE_TYPE_ANNOTATION) {
+            if (context->is_strict) {
+                /* Scream */
+                compiler_error(p->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
+            type_add(context, p, p->node_type);
+        } else
+            type_add(context, p->data.type_annotation.identifier, p->node_type);
+
+        if (namelist->type == NODE_NAME_LIST)
+            namelist = namelist->data.name_list.init;
+        else
+            namelist = NULL;
+    }
 }
 
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
@@ -920,9 +948,15 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_handle_unary(context, node);
             break;
         case NODE_FUNCTION_BODY:
-            type_ast_traversal(context, node->data.function_body.exprlist, false);
-            type_ast_traversal(context, node->data.function_body.type_list, false);
-            type_handle_function_body(context, node);
+            new_context.type_map = hashmap_duplicate(context->type_map);
+
+            type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
+            type_ast_traversal(&new_context, node->data.function_body.type_list, false);
+            type_handle_function_body(&new_context, node);
+            type_ast_traversal(&new_context, node->data.function_body.body, false);
+
+            free(new_context.type_map);
+            context->error_count = new_context.error_count;
             break;
     }
 }
