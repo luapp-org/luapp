@@ -1,2 +1,5 @@
--- This should break and throw an error
-local myFunction: (number, string): any = 1
+-- The function definition is legal 
+local function func(a: number, b: string): boolean 
+    -- Error --> type mismatch
+    local c: boolean = a
+end

@@ -154,9 +154,7 @@ unary_operation
 expression_list 
     : expression
     | expression COMMA_T expression_list
-        {
-            $$ = node_expression_list(@$, $3, $1); 
-        }
+        { $$ = node_expression_list(@$, $3, $1); }
 ;
 
 parameter_list 
@@ -189,6 +187,8 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
     | TANY_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_ANY)); }
+    | VARARG_T
+        { $$ = node_type(@$, type_basic(TYPE_BASIC_VARARG)); }
     | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
         { $$ = node_type_array(@$, $3); }
     | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T 
@@ -216,7 +216,9 @@ pair
 ;
 
 pair_list
-    : pair
+    : %empty
+        { $$ = NULL; }
+    | pair
     | pair COMMA_T pair_list
         { $$ = node_expression_list(@$, $1, $3); }
 ;
@@ -224,8 +226,6 @@ pair_list
 table_constructor 
     : LEFT_BRACKET_T pair_list RIGHT_BRACKET_T
         { $$ = node_table_constructor(@$, $2); }
-    | LEFT_BRACKET_T RIGHT_BRACKET_T
-        { $$ = node_table_constructor(@$, NULL); }
 ;
 
 variable 
@@ -302,9 +302,7 @@ function_body
     : LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, $2, $5, $6); }
     | LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
-        { 
-            $$ = node_function_body(@$, $2, NULL, $4); 
-        }
+        { $$ = node_function_body(@$, $2, NULL, $4); }
     | LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, NULL, $4, $5); }
     | LEFT_PARAN_T RIGHT_PARAN_T block END_T
@@ -316,6 +314,8 @@ function_body
  */
 single_assignment 
     : variable EQUAL_T expression
+        { $$ = node_assignment(@$, node_name_reference(@$, $1), ASSIGN, $3); }
+    | name_type EQUAL_T expression // Allow name_type for variable creation
         { $$ = node_assignment(@$, $1, ASSIGN, $3); }
 ;
 
@@ -355,13 +355,16 @@ statement
          { $$ = node_if_statement(@$, $2, $4, $5); }
     | FOR_T single_assignment COMMA_T expression DO_T block END_T
         { $$ = node_numerical_for_loop(@$, $2, $4, node_number(@$, "1"), $6); }
+    | FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
+        { $$ = node_numerical_for_loop(@$, $2, $4, $6, $8); }
     | FOR_T name_list IN_T expression_list DO_T block END_T
         { $$ = node_generic_for_loop(@$, node_local(@$, $2, $4), $6); }
     | LOCAL_T name_list 
-        { $$ = node_local(@$, $2, node_nil(@$)); }
+        { $$ = node_local(@$, $2, NULL); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
-    | FUNCTION_T 
+    | LOCAL_T FUNCTION_T IDENTIFIER_T function_body
+        { $$ = node_local(@$, node_type_annotation(@$, $3, node_type(@$, type_basic(TYPE_BASIC_ANY))), $4); }
     | last_statement
         { $$ = $1; }
 

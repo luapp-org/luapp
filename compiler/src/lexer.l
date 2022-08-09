@@ -49,7 +49,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 
 "--[["              { BEGIN(LCOMMENT); }
 <LCOMMENT>"]]--"    { BEGIN(INITIAL); }
-<LCOMMENT>\n        { }
+<LCOMMENT>\n        { yyextra = 1; }
 <LCOMMENT>.         { }
 
 "[["                { 
@@ -70,11 +70,11 @@ lstring         \[\[(.*?|\n|\r)\]\]
                         return STRING_T;
                     }
 <LSTRING>.          { fs_addch(&s, yytext[0]); }
-<LSTRING>\n         { fs_addch(&s, '\n'); yyextra = 0; }
+<LSTRING>\n         { fs_addch(&s, '\n'); yyextra = 1; }
 <LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unexpected EOF", yytext); yyterminate(); }
 
 "--"                { BEGIN(COMMENT); }
-<COMMENT>\n         { BEGIN(INITIAL); }
+<COMMENT>\n         { yyextra = 1; BEGIN(INITIAL); }
 <COMMENT>.          { }
 
 "and"               return AND_T;
@@ -133,7 +133,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 ">="                return GREATER_EQUAL_T;
 "<="                return LESS_EQUAL_T;
 ".."                return CONCAT_T;
-"..."               return VARARG_T;
+"..."               { *yylval = node_vararg(*yylloc); return VARARG_T; }
 "+="                return PLUS_EQUAL_T;
 "-="                return MINUS_EQUAL_T;
 "*="                return ASTERISK_EQUAL_T;
@@ -153,7 +153,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
                     }
 
 
-{newline}           yyextra = 1;
+{newline}           { yyextra = 1; }
 {ws}
 .                   { compiler_error(*yylloc_param, "unrecognized charcter %s", yytext); yyterminate(); }
 %%
@@ -201,7 +201,7 @@ void lex_print(yyscan_t *lexer, int *error_count, FILE *output) {
                 fprintf(output, "%-20lf", val->data.number.value);
                 break;
             case STRING_T:
-                fprintf(output, "\"%-20s\"", val->data.string.value);
+                fprintf(output, "%-20s", val->data.string.value);
                 break;
             case IDENTIFIER_T:
                 fprintf(output, "%-20s", val->data.identifier.name);

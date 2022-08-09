@@ -73,7 +73,7 @@ struct type *type_function(struct node *args_list, struct node *rets_list)
     return t;
 }
 
-/* type_to_string() -- converts the given type scruct to a string representation
+/* type_to_string() -- converts the given type struct to a string representation
  *      args: type
  *      returns: string version of type
  */
@@ -90,6 +90,8 @@ char *type_to_string(struct type *type)
                 return "string";
             case TYPE_BASIC_BOOLEAN:
                 return "boolean";
+            case TYPE_BASIC_VARARG:
+                return "vararg";
             case TYPE_BASIC_ANY:
                 return "any";
         }
@@ -124,6 +126,35 @@ bool type_is_primitive(struct type *type, enum type_primitive_kind kind)
     return type->kind == TYPE_PRIMITIVE && type->data.primitive.kind == kind;
 }
 
+/* type_node_is() -- determines whether two node type lists are equal
+ *      args: first list, second list
+ *      returns: yes or no
+ */
+bool type_node_is(struct node *first, struct node *second)
+{
+    while (true) {
+        /* Both are still lists */
+        if (first->type == NODE_TYPE_LIST && second->type == NODE_TYPE_LIST) {
+            /* Check both types */
+            if (!type_is(first->data.type_list.type->node_type,
+                         second->data.type_list.type->node_type)) {
+                return false;
+            }
+
+            first = first->data.type_list.init;
+            second = second->data.type_list.init;
+        }
+        /* Both are not lists but not NULL */
+        else if (first && second) {
+            if (!type_is(first->node_type, second->node_type))
+                return false;
+            return true;
+        } else
+            return false;
+    }
+    return true;
+}
+
 /* type_is() -- determines whether two types are equal
  *      args: first type, second type
  *      returns: yes or no
@@ -143,6 +174,11 @@ bool type_is(struct type *first, struct type *second)
             case TYPE_TABLE:
                 return type_is(first->data.table.key, second->data.table.key) &&
                        type_is(first->data.table.value, second->data.table.value);
+            case TYPE_FUNCTION:
+                return type_node_is(first->data.function.args_list,
+                                    second->data.function.args_list) &&
+                       type_node_is(first->data.function.rets_list,
+                                    second->data.function.rets_list);
             default:
                 return false;
         }
@@ -161,11 +197,20 @@ static void type_add(struct type_context *context, struct node *identifier, stru
     void *s;
     if (hashmap_get(context->type_map, identifier->data.identifier.name, &s) == MAP_OK) {
         compiler_error(identifier->location, "this variable has already been defined");
+        hashmap_print(context->type_map);
         context->error_count++;
         return;
     }
 
     type_add_name(context, identifier->data.identifier.name, t);
+}
+
+bool type_name_exists(struct type_context *context, char *name)
+{
+    struct type *t;
+    int res = hashmap_get(context->type_map, name, (void **)(&t));
+
+    return res == MAP_OK;
 }
 
 /* type_init() -- initializes the type context by creating the type_map
@@ -185,121 +230,83 @@ void type_init(struct type_context *context)
  */
 void type_destroy(struct type_context *context) { hashmap_free(context->type_map); }
 
+static void type_handle_local_assignment(struct type_context *context, struct node *name,
+                                         struct node *expr)
+{
+    struct node *identifier;
+
+    if (name && expr && name->type != NODE_TYPE_ANNOTATION) {
+        free(name->node_type);
+        name->node_type = expr->node_type;
+
+        if (context->is_strict) {
+            compiler_error(name->location,
+                           "expected type annotation; compiler is in \"strict\" mode");
+            context->error_count++;
+        }
+        identifier = name;
+    } else if (name)
+        identifier = name->data.type_annotation.identifier;
+
+    if (name && expr) {
+        if (!type_is(name->node_type, expr->node_type)) {
+            compiler_error(
+                name->location,
+                "type mismatch: unable to assign variable with type \"%s\" a value of type \"%s\"",
+                type_to_string(name->node_type), type_to_string(expr->node_type));
+            context->error_count++;
+        }
+        type_add(context, identifier, name->node_type);
+    } else if (name) {
+        if (context->is_strict) {
+            compiler_error(name->location, "variable is inherently \"nil\"");
+            context->error_count++;
+        }
+        free(name->node_type);
+        name->node_type = type_basic(TYPE_BASIC_NIL);
+        type_add(context, identifier, name->node_type);
+    } else if (expr) {
+        compiler_error(expr->location, "expression is not assigned to a variable");
+        context->error_count++;
+    }
+}
+
 static void type_handle_local(struct type_context *context, struct node *local)
 {
-    struct node *var = local->data.local.namelist;
-    struct node *expr = local->data.local.exprlist;
+    struct node *vars = local->data.local.namelist;
+    struct node *values = local->data.local.exprlist;
 
     while (true) {
-        /* We must have a name list and expression list, handle that. */
-        if (expr && var->type == NODE_NAME_LIST && expr->type == NODE_EXPRESSION_LIST) {
-            struct node *name = var->data.name_list.name;
-            struct node *value = expr->data.expression_list.expression;
 
-            /* Guess the type if no type is specified */
-            if (name->type != NODE_TYPE_ANNOTATION) {
-                if (context->is_strict) {
-                    compiler_error(name->location,
-                                   "expected type annotation; compiler is in \"strict\" mode");
-                    context->error_count++;
-                }
+        /* Both are lists -> check first values of each */
+        if ((vars && values) && vars->type == NODE_VARIABLE_LIST &&
+            values->type == NODE_EXPRESSION_LIST) {
 
-                name->node_type = value->node_type;
-            }
+            type_handle_local_assignment(context, vars->data.name_list.name,
+                                         values->data.expression_list.expression);
 
-            if (!type_is(name->node_type, value->node_type)) {
-                compiler_error(name->location,
-                               "type mismatch: variable of type \"%s\" can not be assigned a value "
-                               "of type \"%s\"",
-                               type_to_string(name->node_type), type_to_string(value->node_type));
-                context->error_count++;
-            }
-
-            int res = hashmap_put(context->type_map,
-                                  name->data.type_annotation.identifier->data.identifier.name,
-                                  name->node_type);
-            assert(res == MAP_OK);
-
-            var = var->data.name_list.init;
-            expr = expr->data.expression_list.init;
-            continue;
-            /* We have a singular namelist = expression */
-        } else if (var->type == NODE_NAME_LIST) {
-            struct node *name = var->data.name_list.name;
-
-            /* Guess the type if no type is specified */
-            if (name->type != NODE_TYPE_ANNOTATION) {
-                if (context->is_strict) {
-                    compiler_error(var->location,
-                                   "expected type annotation; compiler is in \"strict\" mode");
-                    context->error_count++;
-                }
-
-                if (expr)
-                    name->node_type = expr->node_type;
-                else
-                    name->node_type = type_basic(TYPE_BASIC_NIL);
-            }
-
-            if (!expr && context->is_strict) {
-                compiler_error(name->location, "local variable is inherently \"nil\"");
-                context->error_count++;
-            } else if (expr) {
-                if (!type_is(name->node_type, expr->node_type)) {
-                    compiler_error(
-                        name->location,
-                        "type mismatch: variable of type \"%s\" can not be assigned a value "
-                        "of type \"%s\"",
-                        type_to_string(name->node_type), type_to_string(expr->node_type));
-                    context->error_count++;
-                }
-            }
-
-            int res = hashmap_put(context->type_map,
-                                  name->data.type_annotation.identifier->data.identifier.name,
-                                  name->node_type);
-            assert(res == MAP_OK);
-
-            var = var->data.name_list.init;
-            expr = NULL;
-            continue;
-            /* We must have a single assignment, handle that. */
-        } else {
-            /* Guess the type if no type is specified */
-            if (type_is_primitive(var->node_type, TYPE_BASIC_ANY)) {
-                if (context->is_strict) {
-                    compiler_error(var->location,
-                                   "expected type annotation; compiler is in \"strict\" mode.");
-                    context->error_count++;
-                }
-
-                if (expr)
-                    var->node_type = expr->node_type;
-                else
-                    var->node_type = type_basic(TYPE_BASIC_NIL);
-            }
-
-            if (expr == NULL && context->is_strict) {
-                compiler_error(var->location, "local variable is inherently \"nil\".");
-                context->error_count++;
-            } else if (expr) {
-                if (!type_is(var->node_type, expr->node_type)) {
-                    char *varstr = type_to_string(var->node_type);
-                    char *exprstr = type_to_string(expr->node_type);
-
-                    compiler_error(var->location,
-                                   "type mismatch: variable of type \"%s\" can not be assigned a "
-                                   "value of type \"%s\"",
-                                   varstr, exprstr);
-                    context->error_count++;
-                }
-            }
-            int res = hashmap_put(context->type_map,
-                                  var->data.type_annotation.identifier->data.identifier.name,
-                                  var->node_type);
-            assert(res == MAP_OK);
+            vars = vars->data.name_list.init;
+            values = values->data.expression_list.init;
         }
-        break;
+        /* first is list second is NULL -> continue first */
+        else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
+            type_handle_local_assignment(context, vars->data.name_list.name, values);
+
+            vars = vars->data.variable_list.init;
+            values = NULL;
+        }
+        /* first is NULL second is list -> continue second */
+        else if ((values) && values->type == NODE_EXPRESSION_LIST) {
+            type_handle_local_assignment(context, vars, values->data.expression_list.expression);
+
+            values = values->data.expression_list.init;
+            vars = NULL;
+        }
+        /* Both are singular or NULL */
+        else {
+            type_handle_local_assignment(context, vars, values);
+            return;
+        }
     }
 }
 
@@ -455,8 +462,7 @@ static void type_handle_array_constructor(struct type_context *context,
                     }
                     array_constructor->node_type = type_array(type);
                 } else
-                    array_constructor->node_type =
-                        type_array(expr->data.expression_list.expression->node_type);
+                    array_constructor->node_type = type_array(expr->node_type);
                 return;
         }
     }
@@ -658,6 +664,175 @@ static void type_handle_generic_for_loop(struct type_context *context, struct no
     }
 }
 
+static void type_handle_numeric_for_loop(struct type_context *context, struct node *for_loop)
+{
+    struct node *init = for_loop->data.numerical_for_loop.init;
+    const struct node *target = for_loop->data.numerical_for_loop.target;
+    const struct node *increment = for_loop->data.numerical_for_loop.increment;
+
+    /* We can assume that this is a single assignment due to lang grammar */
+    struct node *var = init->data.assignment.variables;
+    struct node *val = init->data.assignment.values;
+
+    if (var->type == NODE_TYPE_ANNOTATION) {
+        /* Check if types are equal */
+        if (!type_is(var->node_type, val->node_type)) {
+            compiler_error(
+                init->location,
+                "type mismatch: unable to assign variable or type \"%s\" a value of type \"%s\"",
+                type_to_string(var->node_type), type_to_string(val->node_type));
+            context->error_count++;
+        }
+
+        type_add(context, var->data.type_annotation.identifier, var->node_type);
+        return;
+    } else if (var->type == NODE_IDENTIFIER) {
+        /* See if this identifier exists */
+
+        struct type *t;
+        int res = hashmap_get(context->type_map, var->data.identifier.name, (void **)(&t));
+
+        if (res == MAP_MISSING) {
+            if (context->is_strict) {
+                compiler_error(var->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
+
+            free(var->node_type);
+            var->node_type = val->node_type;
+
+            type_add(context, var, var->node_type);
+        }
+
+        return;
+    }
+
+    type_ast_traversal(context, init, false);
+
+    /* Ensure that all types are numbers or else we have a problem! */
+    if (!type_is_primitive(var->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(var->location, "'for' variable must be a \"number\"");
+        context->error_count++;
+    }
+
+    if (!type_is_primitive(target->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(target->location, "'for' target value must be a \"number\"");
+        context->error_count++;
+    }
+
+    if (!type_is_primitive(increment->node_type, TYPE_BASIC_NUMBER)) {
+        compiler_error(increment->location, "'for' step must be a \"number\"");
+        context->error_count++;
+    }
+}
+
+static void type_handle_unary(struct type_context *context, struct node *unary)
+{
+    struct node *expr = unary->data.unary_operation.expression;
+
+    switch (unary->data.unary_operation.operation) {
+        case UNOP_LEN:
+            /* expr can be array, table, or string */
+            if (!(expr->node_type->kind == TYPE_ARRAY || expr->node_type->kind == TYPE_TABLE ||
+                  type_is_primitive(expr->node_type, TYPE_BASIC_STRING))) {
+                compiler_error(unary->location,
+                               "unable to calculate length of value of \"%s\" type",
+                               type_to_string(expr->node_type));
+                context->error_count++;
+            }
+
+            free(unary->node_type);
+            unary->node_type = expr->node_type;
+            break;
+        case UNOP_NEG:
+            /* Can only be number */
+            if (!type_is_primitive(expr->node_type, TYPE_BASIC_NUMBER)) {
+                compiler_error(unary->location,
+                               "unable to perform arithmetic on value of \"%s\" type",
+                               type_to_string(expr->node_type));
+                context->error_count++;
+            }
+
+            free(unary->node_type);
+            unary->node_type = expr->node_type;
+            break;
+        case UNOP_NOT:
+            free(unary->node_type);
+            unary->node_type = type_basic(TYPE_BASIC_BOOLEAN);
+            break;
+    }
+}
+
+static struct node *type_build_type_list(struct type_context *context, struct node *namelist,
+                                         struct node *vararg)
+{
+    struct node *t = NULL;
+
+    if (namelist->type == NODE_NAME_LIST)
+        t = namelist->data.name_list.name;
+    else
+        t = namelist;
+
+    if (t->type != NODE_TYPE_ANNOTATION && context->is_strict) {
+        compiler_error(t->location, "expected type annotation; compiler is in \"strict\" mode %d",
+                       t->type);
+        context->error_count++;
+    }
+
+    if (namelist->type == NODE_NAME_LIST)
+        return node_type_list(namelist->location,
+                              type_build_type_list(context, namelist->data.name_list.init, vararg),
+                              t);
+    else {
+        if (vararg)
+            return node_type_list(namelist->location, t, vararg);
+        else
+            return t;
+    }
+}
+
+static void type_handle_function_body(struct type_context *context, struct node *funcbody)
+{
+    struct node *typelist = funcbody->data.function_body.type_list;
+    struct node *parameters = funcbody->data.function_body.exprlist;
+
+    struct node *vararg = parameters->data.parameter_list.vararg;
+    struct node *namelist = parameters->data.parameter_list.namelist;
+
+    if (funcbody->node_type)
+        free(funcbody->node_type);
+
+    funcbody->node_type = type_function(type_build_type_list(context, namelist, vararg), typelist);
+
+    while (true) {
+        struct node *p = NULL;
+
+        if (namelist == NULL)
+            break;
+        else if (namelist->type == NODE_NAME_LIST) {
+            p = namelist->data.name_list.name;
+        } else
+            p = namelist;
+
+        if (p->type != NODE_TYPE_ANNOTATION) {
+            if (context->is_strict) {
+                /* Scream */
+                compiler_error(p->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
+            type_add(context, p, p->node_type);
+        } else
+            type_add(context, p->data.type_annotation.identifier, p->node_type);
+
+        if (namelist->type == NODE_NAME_LIST)
+            namelist = namelist->data.name_list.init;
+        else
+            namelist = NULL;
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
@@ -731,13 +906,43 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 type_ast_traversal(&new_context, node->data.block.statement, false);
 
                 free(new_context.type_map);
+                context->error_count = new_context.error_count;
             }
             break;
+<<<<<<< HEAD
         case NODE_CALL:
             type_ast_traversal(context, node->data.call.args, false);
             type_ast_traversal(context, node->data.call.prefix_expression, false);
 
             /* Check if everything is legal */
+=======
+        case NODE_IF:
+            type_ast_traversal(context, node->data.if_statement.condition, false);
+            type_ast_traversal(context, node->data.if_statement.body, false);
+            type_ast_traversal(context, node->data.if_statement.else_body, false);
+            break;
+        case NODE_REPEATLOOP:
+            type_ast_traversal(context, node->data.repeat_loop.body,
+                               true); // Variables defined in the body can be used in the condition.
+            type_ast_traversal(context, node->data.repeat_loop.condition, false);
+            break;
+        case NODE_WHILELOOP:
+            type_ast_traversal(context, node->data.while_loop.condition, false);
+            type_ast_traversal(context, node->data.while_loop.body, false);
+            break;
+        case NODE_NUMERICFORLOOP:
+            new_context.type_map = hashmap_duplicate(context->type_map);
+
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.increment, false);
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.target, false);
+
+            type_handle_numeric_for_loop(&new_context, node);
+
+            type_ast_traversal(&new_context, node->data.numerical_for_loop.body, true);
+
+            free(new_context.type_map);
+            context->error_count = new_context.error_count;
+>>>>>>> c4044994f449baed7b84cab49cbff9f965bc73e8
             break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */
@@ -753,6 +958,23 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(&new_context, node->data.generic_for_loop.body, true);
 
             free(new_context.type_map);
+            context->error_count = new_context.error_count;
+            break;
+        case NODE_UNARY_OPERATION:
+            type_ast_traversal(context, node->data.unary_operation.expression, false);
+
+            type_handle_unary(context, node);
+            break;
+        case NODE_FUNCTION_BODY:
+            new_context.type_map = hashmap_duplicate(context->type_map);
+
+            type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
+            type_ast_traversal(&new_context, node->data.function_body.type_list, false);
+            type_handle_function_body(&new_context, node);
+            type_ast_traversal(&new_context, node->data.function_body.body, false);
+
+            free(new_context.type_map);
+            context->error_count = new_context.error_count;
             break;
     }
 }
