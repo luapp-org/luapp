@@ -13,6 +13,7 @@
 #include "lexer.h"
 #include "node.h"
 #include "parser.h"
+#include "symbol.h"
 #include "type.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
@@ -45,6 +46,7 @@ int main(int argc, char **argv)
     int opt, error_count;
     char *stage, *dot;
     FILE *input, *output;
+    struct symbol_table symbol_table;
     yyscan_t lexer;
     time_t start;
     struct node *tree;
@@ -61,7 +63,7 @@ int main(int argc, char **argv)
                 stage = optarg;
                 break;
             case ':':
-            default: 
+            default:
                 putchar('\n');
                 usage();
                 return 0;
@@ -117,7 +119,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    struct type_context type_context = { true, 0 };
+    struct type_context type_context = {true, 0};
     type_init(&type_context);
 
     /* Run the parser, it's needed for all later passes */
@@ -126,14 +128,36 @@ int main(int argc, char **argv)
 
     if (error_count) {
         print_summary("Type checker", error_count, start);
+        type_destroy(&type_context);
         return 1;
     }
 
     /* If the stage is "type" print the type tree */
     if (!strcmp("type", stage)) {
         print_summary("Type checker", error_count, start);
+        type_destroy(&type_context);
         return 0;
     }
 
-    type_destroy(&type_context);   
+    type_destroy(&type_context);
+
+    symbol_initialize_table(&symbol_table);
+    struct symbol_context context = {&symbol_table, error_count};
+
+    symbol_ast_traversal(&context, tree);
+    error_count = context.error_count;
+
+    if (error_count) {
+        print_summary("Symbol table", error_count, start);
+        return 1;
+    }
+
+    /* If the stage is "symbol" print the table */
+    if (!strcmp("symbol", stage)) {
+        symbol_print_table(output, &symbol_table);
+        print_summary("Symbol table", error_count, start);
+        return 0;
+    }
+
+    return 0;
 }

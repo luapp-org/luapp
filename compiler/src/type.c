@@ -150,7 +150,13 @@ bool type_is(struct type *first, struct type *second)
     return false;
 }
 
-void type_add(struct type_context *context, struct node *identifier, struct type *t)
+static void type_add_name(struct type_context *context, char *name, struct type *t)
+{
+    int res = hashmap_put(context->type_map, name, t);
+    assert(res == MAP_OK);
+}
+
+static void type_add(struct type_context *context, struct node *identifier, struct type *t)
 {
     void *s;
     if (hashmap_get(context->type_map, identifier->data.identifier.name, &s) == MAP_OK) {
@@ -159,15 +165,19 @@ void type_add(struct type_context *context, struct node *identifier, struct type
         return;
     }
 
-    int res = hashmap_put(context->type_map, identifier->data.identifier.name, t);
-    assert(res == MAP_OK);
+    type_add_name(context, identifier->data.identifier.name, t);
 }
 
 /* type_init() -- initializes the type context by creating the type_map
  *      args: context
  *      returns: none
  */
-void type_init(struct type_context *context) { context->type_map = hashmap_new(); }
+void type_init(struct type_context *context)
+{
+    context->type_map = hashmap_new();
+
+    /* Todo add function calls! */
+}
 
 /* type_destroy() -- deallocates space for the type context
  *      args: context
@@ -722,6 +732,12 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
                 free(new_context.type_map);
             }
+            break;
+        case NODE_CALL:
+            type_ast_traversal(context, node->data.call.args, false);
+            type_ast_traversal(context, node->data.call.prefix_expression, false);
+
+            /* Check if everything is legal */
             break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */

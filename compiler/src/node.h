@@ -11,6 +11,7 @@ typedef void *yyscan_t;
 #include <stdbool.h>
 
 #include "compiler.h"
+#include "symbol.h"
 
 struct type;
 
@@ -103,9 +104,11 @@ struct node {
         } number;
         struct {
             char *name;
+            struct symbol *s;
         } identifier;
         struct {
             char *value;
+            struct symbol *s;
         } string;
         struct {
             bool value;
