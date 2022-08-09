@@ -909,13 +909,11 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 context->error_count = new_context.error_count;
             }
             break;
-<<<<<<< HEAD
         case NODE_CALL:
             type_ast_traversal(context, node->data.call.args, false);
             type_ast_traversal(context, node->data.call.prefix_expression, false);
 
             /* Check if everything is legal */
-=======
         case NODE_IF:
             type_ast_traversal(context, node->data.if_statement.condition, false);
             type_ast_traversal(context, node->data.if_statement.body, false);
@@ -942,7 +940,6 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             free(new_context.type_map);
             context->error_count = new_context.error_count;
->>>>>>> c4044994f449baed7b84cab49cbff9f965bc73e8
             break;
         case NODE_GENERICFORLOOP:
             /* Copy the old context (find better way to do this, the current way eats your ram) */
