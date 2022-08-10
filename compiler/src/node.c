@@ -1172,6 +1172,7 @@ char *node_to_string(struct node *node)
         case NODE_TYPE:
             return type_to_string(node->node_type);
         default:
+            printf("%d\n", node->type);
             return "none";
     }
 }

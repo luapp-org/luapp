@@ -92,6 +92,8 @@ char *type_to_string(struct type *type)
                 return "boolean";
             case TYPE_BASIC_VARARG:
                 return "vararg";
+            case TYPE_BASIC_NIL:
+                return "nil";
             case TYPE_BASIC_ANY:
                 return "any";
         }
@@ -161,6 +163,9 @@ bool type_node_is(struct node *first, struct node *second)
  */
 bool type_is(struct type *first, struct type *second)
 {
+    if (!first || !second)
+        return false;
+
     /* If either options are ANY then return true */
     if (type_is_primitive(first, TYPE_BASIC_ANY) || type_is_primitive(second, TYPE_BASIC_ANY))
         return true;
@@ -219,9 +224,14 @@ bool type_name_exists(struct type_context *context, char *name)
  */
 void type_init(struct type_context *context)
 {
+    struct YYLTYPE loc;
+
     context->type_map = hashmap_new();
 
     /* Todo add function calls! */
+    type_add_name(context, "print",
+                  type_function(node_type(loc, type_basic(TYPE_BASIC_VARARG)),
+                                node_type(loc, type_basic(TYPE_BASIC_NIL))));
 }
 
 /* type_destroy() -- deallocates space for the type context
@@ -250,11 +260,14 @@ static void type_handle_local_assignment(struct type_context *context, struct no
 
     if (name && expr) {
         if (!type_is(name->node_type, expr->node_type)) {
-            compiler_error(
-                name->location,
-                "type mismatch: unable to assign variable with type \"%s\" a value of type \"%s\"",
-                type_to_string(name->node_type), type_to_string(expr->node_type));
-            context->error_count++;
+            if (name->node_type) {
+                compiler_error(name->location,
+                               "type mismatch: unable to assign variable with type \"%s\" a value "
+                               "of type \"%s\"",
+                               type_to_string(name->node_type), type_to_string(expr->node_type));
+                context->error_count++;
+            } else 
+                name->node_type = expr->node_type;
         }
         type_add(context, identifier, name->node_type);
     } else if (name) {
@@ -787,8 +800,9 @@ static struct node *type_build_type_list(struct type_context *context, struct no
     else {
         if (vararg)
             return node_type_list(namelist->location, t, vararg);
-        else
-            return t;
+        else {
+            return node_type(t->location, t->node_type);
+        }
     }
 }
 
@@ -833,6 +847,69 @@ static void type_handle_function_body(struct type_context *context, struct node 
     }
 }
 
+static void type_handle_single_call(struct type_context *context, struct node *arg,
+                                    struct node *type, YYLTYPE location)
+{
+    if (arg && type) {
+        if (!type_is(arg->node_type, type->node_type) &&
+            !type_is_primitive(type->node_type, TYPE_BASIC_VARARG)) {
+            compiler_error(arg->location,
+                           "type mismatch: argument of type \"%s\" is incompatible with parameter "
+                           "of argument \"%s\"",
+                           type_to_string(arg->node_type), type_to_string(type->node_type));
+            context->error_count++;
+        }
+    } else if (arg) {
+        compiler_error(arg->location, "too many arguments in function call");
+        context->error_count++;
+    } else if (type && !type_is_primitive(type->node_type, TYPE_BASIC_VARARG)) {
+        compiler_error(location, "too few arguments in function call");
+        context->error_count++;
+    }
+}
+
+static void type_handle_call(struct type_context *context, struct node *call)
+{
+    struct node *f = call->data.call.prefix_expression;
+    struct node *args = call->data.call.args;
+
+    if (f->node_type->kind != TYPE_FUNCTION) {
+        compiler_error(f->location, "attempt to call a %s value", type_to_string(f->node_type));
+        context->error_count++;
+    } else {
+        struct node *fargs = f->node_type->data.function.args_list;
+
+        while (true) {
+            if (args && fargs && args->type == NODE_EXPRESSION_LIST &&
+                fargs->type == NODE_TYPE_LIST) {
+                type_handle_single_call(context, args->data.expression_list.expression,
+                                        fargs->data.type_list.type, call->location);
+
+                args = args->data.expression_list.init;
+                fargs = fargs->data.type_list.init;
+            } else if (args && args->type == NODE_EXPRESSION_LIST) {
+                type_handle_single_call(context, args->data.expression_list.expression, fargs,
+                                        call->location);
+
+                args = args->data.expression_list.init;
+
+                if (fargs && !type_is_primitive(fargs->node_type, TYPE_BASIC_VARARG))
+                    fargs = NULL;
+            } else if (args && args->type == NODE_EXPRESSION_LIST) {
+                type_handle_single_call(context, args, fargs->data.type_list.type, call->location);
+
+                fargs = fargs->data.type_list.init;
+
+                if (args && args->type != NODE_VARARG)
+                    args = NULL;
+            } else {
+                type_handle_single_call(context, args, fargs, call->location);
+                break;
+            }
+        }
+    }
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
@@ -842,6 +919,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
     if (!node)
         return;
 
+    int last_count;
     struct type_context new_context = {context->is_strict, context->error_count};
 
     switch (node->type) {
@@ -861,7 +939,6 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             /* Visit children */
             type_ast_traversal(context, node->data.local.namelist, false);
             type_ast_traversal(context, node->data.local.exprlist, false);
-
             /* Handle everything */
             type_handle_local(context, node);
             break;
@@ -910,10 +987,15 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             }
             break;
         case NODE_CALL:
+            last_count = context->error_count;
             type_ast_traversal(context, node->data.call.args, false);
             type_ast_traversal(context, node->data.call.prefix_expression, false);
 
+            if (context->error_count > last_count)
+                break;
+
             /* Check if everything is legal */
+            type_handle_call(context, node);
         case NODE_IF:
             type_ast_traversal(context, node->data.if_statement.condition, false);
             type_ast_traversal(context, node->data.if_statement.body, false);
@@ -969,7 +1051,6 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
             type_handle_function_body(&new_context, node);
             type_ast_traversal(&new_context, node->data.function_body.body, false);
-
             free(new_context.type_map);
             context->error_count = new_context.error_count;
             break;
