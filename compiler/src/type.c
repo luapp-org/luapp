@@ -191,31 +191,42 @@ bool type_is(struct type *first, struct type *second)
     return false;
 }
 
-static void type_add_name(struct type_context *context, char *name, struct type *t)
+static void type_add_name(map_t map, char *name, struct type *t)
 {
-    int res = hashmap_put(context->type_map, name, t);
+    int res = hashmap_put(map, name, t);
     assert(res == MAP_OK);
+}
+
+void get_type(struct type_context *context, char *name, struct type **t, bool *is_global)
+{
+    if (hashmap_get(context->type_map, name, (void **)(*(&t))) == MAP_OK)
+        *is_global = false;
+    else if (hashmap_get(context->global_type_map, name, (void **)(*(&t))) == MAP_OK)
+        *is_global = true;
+    else
+        *t = NULL;
+}
+
+bool type_name_exists(struct type_context *context, char *name)
+{
+    bool b;
+    struct type *t;
+    get_type(context, name, &t, &b);
+
+    return t != NULL;
 }
 
 static void type_add(struct type_context *context, struct node *identifier, struct type *t)
 {
     void *s;
-    if (hashmap_get(context->type_map, identifier->data.identifier.name, &s) == MAP_OK) {
+    if (type_name_exists(context, identifier->data.identifier.name)) {
         compiler_error(identifier->location, "this variable has already been defined");
         hashmap_print(context->type_map);
         context->error_count++;
         return;
     }
 
-    type_add_name(context, identifier->data.identifier.name, t);
-}
-
-bool type_name_exists(struct type_context *context, char *name)
-{
-    struct type *t;
-    int res = hashmap_get(context->type_map, name, (void **)(&t));
-
-    return res == MAP_OK;
+    type_add_name(context->type_map, identifier->data.identifier.name, t);
 }
 
 /* type_init() -- initializes the type context by creating the type_map
@@ -227,9 +238,10 @@ void type_init(struct type_context *context)
     struct YYLTYPE loc;
 
     context->type_map = hashmap_new();
+    context->global_type_map = hashmap_new();
 
     /* Todo add function calls! */
-    type_add_name(context, "print",
+    type_add_name(context->global_type_map, "print",
                   type_function(node_type(loc, type_basic(TYPE_BASIC_VARARG)),
                                 node_type(loc, type_basic(TYPE_BASIC_NIL))));
 }
@@ -238,7 +250,11 @@ void type_init(struct type_context *context)
  *      args: context
  *      returns: none
  */
-void type_destroy(struct type_context *context) { hashmap_free(context->type_map); }
+void type_destroy(struct type_context *context)
+{
+    hashmap_free(context->type_map);
+    hashmap_free(context->global_type_map);
+}
 
 static void type_handle_local_assignment(struct type_context *context, struct node *name,
                                          struct node *expr)
@@ -266,7 +282,7 @@ static void type_handle_local_assignment(struct type_context *context, struct no
                                "of type \"%s\"",
                                type_to_string(name->node_type), type_to_string(expr->node_type));
                 context->error_count++;
-            } else 
+            } else
                 name->node_type = expr->node_type;
         }
         type_add(context, identifier, name->node_type);
@@ -327,24 +343,25 @@ static void type_handle_name_reference(struct type_context *context, struct node
 {
     struct node *value = name_reference->data.name_reference.identifier;
     struct node *expression, *index;
-    struct type *s;
-    int res = 0;
+    struct type *t;
+    bool res = false;
     bool types_equal;
 
     switch (value->type) {
         case NODE_IDENTIFIER:
-            res = hashmap_get(context->type_map, value->data.identifier.name, (void **)(&s));
+            get_type(context, value->data.identifier.name, &t, &res);
 
             /* Ensure that this identifier exists in this context */
-            if (res == MAP_MISSING && context->is_strict) {
+            if (!t && context->is_strict) {
                 compiler_error(value->location, "\"%s\" is not defined in this context",
                                value->data.identifier.name);
                 context->error_count++;
 
                 /* If the identifier has been defined */
-            } else if (res == MAP_OK) {
-                value->node_type = s;
-                name_reference->node_type = s;
+            } else if (t) {
+                value->node_type = t;
+                value->data.identifier.is_global = res;
+                name_reference->node_type = t;
             }
             break;
         case NODE_EXPRESSION_INDEX:
@@ -703,9 +720,8 @@ static void type_handle_numeric_for_loop(struct type_context *context, struct no
         /* See if this identifier exists */
 
         struct type *t;
-        int res = hashmap_get(context->type_map, var->data.identifier.name, (void **)(&t));
 
-        if (res == MAP_MISSING) {
+        if (!type_name_exists(context, var->data.identifier.name)) {
             if (context->is_strict) {
                 compiler_error(var->location,
                                "expected type annotation; compiler is in \"strict\" mode");

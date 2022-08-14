@@ -17,11 +17,11 @@ enum type_primitive_kind {
     TYPE_BASIC_BOOLEAN,
     TYPE_BASIC_NIL,
     TYPE_BASIC_VARARG, /* Special type, it's type definition is the exact same as the grammar:
-                        *       local print: (format: string, ...): any = function(format: string, ...) end
-                        * This may seem quite strange at first, but this makes it a lot easier for
-                        * the compiler to type check in general. The code above may seem quite ugly
-                        * so here is a nicer function definition for printf:
-                        *       function printf(format: string, ...): any 
+                        *       local print: (format: string, ...): any = function(format: string,
+                        * ...) end This may seem quite strange at first, but this makes it a lot
+                        * easier for the compiler to type check in general. The code above may seem
+                        * quite ugly so here is a nicer function definition for printf: function
+                        * printf(format: string, ...): any
                         *           -- system does stuff
                         *       end
                         */
@@ -57,7 +57,8 @@ struct type_context {
     bool is_strict;  /* Strict context flag */
     int error_count; /* Number of errors */
 
-    map_t type_map; /* Hashmap of all identifiers and types */
+    map_t type_map;        /* Hashmap of all identifiers and types */
+    map_t global_type_map; /* Hashmap of all globals and their types */
 };
 
 void type_init(struct type_context *context);

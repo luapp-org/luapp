@@ -105,6 +105,7 @@ struct node {
         struct {
             char *name;
             struct symbol *s;
+            bool is_global;
         } identifier;
         struct {
             char *value;
