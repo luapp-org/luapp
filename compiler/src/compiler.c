@@ -18,6 +18,20 @@ void compiler_error(YYLTYPE location, const char *format, ...)
     printf("\n");
 }
 
+/*  unhandled_compiler_error - prints a compiler error to stdout based on params (no location)
+ *      args: format, args
+ *      rets: none
+ */
+void unhandled_compiler_error(const char *format, ...)
+{
+    va_list ap;
+    printf("Error: ");
+    va_start(ap, format);
+    vprintf(format, ap);
+    va_end(ap);
+    printf("\n");
+}
+
 /*  clear - clears the given string
  *      args: string
  *      rets: none

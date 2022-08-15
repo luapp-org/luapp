@@ -23,6 +23,8 @@ struct YYLTYPE {
 #endif
 
 void compiler_error(YYLTYPE location, const char *format, ...);
+void unhandled_compiler_error(const char *format, ...);
+
 const char *token_to_string(int token);
 void clear(char arr[]);
 void usage();

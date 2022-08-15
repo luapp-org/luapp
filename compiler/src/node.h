@@ -97,6 +97,7 @@ struct node {
     enum node_type type;
     struct type *node_type;
     struct YYLTYPE location;
+    struct ir_section *ir;
     union {
         struct {
             double value;
