@@ -1,5 +1,8 @@
 #include "ir.h"
 #include "limits.h"
+#include "node.h"
+#include "symbol.h"
+#include "type.h"
 #include "util/flexstr.h"
 
 /* ir_section() -- create a new list of IR instructions
@@ -75,8 +78,7 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
  */
 static struct ir_instruction *ir_instruction(enum ir_opcode op)
 {
-    struct ir_instruction *instruction;
-    instruction = smalloc(sizeof(struct ir_instruction));
+    struct ir_instruction *instruction = smalloc(sizeof(struct ir_instruction));
 
     instruction->op = op;
 
@@ -176,4 +178,66 @@ static void ir_free_register(struct ir_context *context, unsigned char count)
     context->top_register -= count;
 }
 
-struct ir_section *ir_build(struct ir_context *context, struct node *node) {}
+/* ir_constant() -- allocate memory for a new IR constant
+ *      args: type of constant
+ *      rets: constant
+ */
+static struct ir_constant *ir_constant(enum ir_constant_type type)
+{
+    struct ir_constant *c = smalloc(sizeof(struct ir_constant));
+
+    c->type = type;
+
+    c->prev = NULL;
+    c->next = NULL;
+
+    return c;
+}
+
+/* ir_constant_string() -- allocate memory for a new IR constant string
+ *      args: string value
+ *      rets: constant
+ */
+static struct ir_constant *ir_constant_string(char *value)
+{
+    struct ir_constant *c = ir_constant(CONSTANT_STRING);
+
+    c->data.string.value = value;
+
+    return c;
+}
+
+/* ir_constant_number() -- allocate memory for a new IR constant number
+ *      args: number value
+ *      rets: constant
+ */
+static struct ir_constant *ir_constant_number(double value)
+{
+    struct ir_constant *c = ir_constant(CONSTANT_NUMBER);
+
+    c->data.number.value = value;
+
+    return c;
+}
+
+struct ir_section *ir_build(struct ir_context *context, struct node *node)
+{
+    if (!node)
+        return;
+
+    switch (node->type) {
+        case NODE_BLOCK:
+            struct node *init = node->data.block.init;
+            struct node *statement = node->data.block.statement;
+
+            if (init == NULL) {
+                ir_build(context, statement);
+                node->ir = statement->ir;
+            } else {
+                ir_build(context, init);
+                ir_build(context, statement);
+                node->ir = ir_join(init, statement);
+            }
+            break;
+    }
+}
