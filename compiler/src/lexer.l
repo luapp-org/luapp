@@ -155,7 +155,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 
 {newline}           { yyextra = 1; }
 {ws}
-.                   { compiler_error(*yylloc_param, "unrecognized charcter %s", yytext); yyterminate(); }
+.                   { compiler_error(*yylloc_param, "unrecognized character %s", yytext); yyterminate(); }
 %%
 
 /*  lex_init - initializes the flex lexer
