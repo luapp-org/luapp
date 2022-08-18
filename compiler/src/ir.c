@@ -97,12 +97,11 @@ static struct ir_instruction *ir_instruction_ABC(enum ir_opcode op, int A, int B
     struct ir_instruction *instruction = ir_instruction(op);
 
     /* Set IR operands */
-    instruction->operands[0].type = OPERAND_A;
-    instruction->operands[0].data.A = A;
-    instruction->operands[1].type = OPERAND_A;
-    instruction->operands[1].data.A = B;
-    instruction->operands[2].type = OPERAND_A;
-    instruction->operands[2].data.A = C;
+    instruction->A = A;
+    instruction->B = B;
+    instruction->C = C;
+
+    instruction->mode = iABC;
 
     return instruction;
 }
@@ -116,10 +115,10 @@ static struct ir_instruction *ir_instruction_ABx(enum ir_opcode op, int A, unsig
     struct ir_instruction *instruction = ir_instruction(op);
 
     /* Set IR operands */
-    instruction->operands[0].type = OPERAND_A;
-    instruction->operands[0].data.A = A;
-    instruction->operands[1].type = OPERAND_B;
-    instruction->operands[1].data.B = Bx;
+    instruction->A = A;
+    instruction->Bx = Bx;
+
+    instruction->mode = iABx;
 
     return instruction;
 }
@@ -132,10 +131,10 @@ static struct ir_instruction *ir_instruction_AsBx(enum ir_opcode op, int A, shor
     struct ir_instruction *instruction = ir_instruction(op);
 
     /* Set IR operands */
-    instruction->operands[0].type = OPERAND_A;
-    instruction->operands[0].data.A = A;
-    instruction->operands[1].type = OPERAND_C;
-    instruction->operands[1].data.C = sBx;
+    instruction->A = A;
+    instruction->sBx = sBx;
+
+    instruction->mode = iAsBx;
 
     return instruction;
 }
@@ -220,24 +219,110 @@ static struct ir_constant *ir_constant_number(double value)
     return c;
 }
 
+/* ir_init() -- initializes the member variables of the IR context
+ *      args: context
+ *      rets: none
+ */
+
+void ir_init(struct ir_context *context)
+{
+    context->list = NULL;
+    context->stack_size = 0;
+    context->top_register = 0;
+}
+
+/* ir_build() -- will build a new IR section based on an AST node
+ *      args: context, AST node
+ *      rets: new ir section
+ */
 struct ir_section *ir_build(struct ir_context *context, struct node *node)
 {
     if (!node)
-        return;
+        return NULL;
 
     switch (node->type) {
-        case NODE_BLOCK:
+        case NODE_EXPRESSION_STATEMENT: {
+            ir_build(context, node->data.expression_statement.expression);
+
+            node->ir = ir_duplicate(node->data.expression_statement.expression->ir);            
+            break;
+        }
+        case NODE_CALL: {
+            struct ir_instruction *instruction;
+            struct node *function = node->data.call.prefix_expression;
+            struct node *args = node->data.call.args;
+
+            /* Save the old register for later use */
+            int old = context->top_register;
+
+            ir_build(context, function);
+            ir_build(context, args);
+
+            instruction = ir_instruction_ABC(IR_CALL, old, context->top_register, 1);
+
+            // node->ir = ir_join(function->ir, args->ir);
+            // ir_append(node->ir, instruction);
+            node->ir = ir_section(instruction, instruction);
+            break;
+        }
+        case NODE_BLOCK: {
             struct node *init = node->data.block.init;
             struct node *statement = node->data.block.statement;
 
-            if (init == NULL) {
-                ir_build(context, statement);
-                node->ir = statement->ir;
+            if (statement == NULL) {
+                ir_build(context, init);
+                node->ir = init->ir;
             } else {
                 ir_build(context, init);
                 ir_build(context, statement);
-                node->ir = ir_join(init, statement);
+                node->ir = ir_join(init->ir, statement->ir);
             }
             break;
+        }
+    }
+
+    return node->ir;
+}
+
+/* ir_print_context() -- will print all of the contents of the IR context
+ *      args: output, context
+ *      rets: none
+ */
+void ir_print_context(FILE *output, struct ir_context *context) {}
+
+static void ir_print_instruction(FILE *output, struct ir_instruction *instruction)
+{
+    if (instruction->mode == SUB)
+        fprintf(output, "%5s", " ");
+    else
+        fprintf(output, "%5s", opcode_names[instruction->op]);
+
+    switch (instruction->mode) {
+        case iABC:
+            fprintf(output, "%10d %d %d", instruction->A, instruction->B, instruction->C);
+            break;
+        case iABx:
+            fprintf(output, "%10d %hu", instruction->A, instruction->Bx);
+            break;
+        case iAsBx:
+            fprintf(output, "%10d %d", instruction->A, instruction->sBx);
+            break;
+        default:
+            fprintf(output, "%10d", instruction->value);
+            break;
+    }
+}
+
+/* ir_print_section() -- will an IR section to the console
+ *      args: output, section
+ *      rets: none
+ */
+void ir_print_section(FILE *output, struct ir_section *section)
+{
+    int count = 1;
+    for (struct ir_instruction *iter = section->first; iter != NULL; iter = iter->next) {
+        fprintf(output, "[%04d]     ", count++);
+        ir_print_instruction(output, iter);
+        fputc('\n', output);
     }
 }

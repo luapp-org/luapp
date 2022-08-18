@@ -15,6 +15,7 @@
 #include "parser.h"
 #include "symbol.h"
 #include "type.h"
+#include "ir.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors)
@@ -159,5 +160,22 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    struct ir_context ir_context = {0, &symbol_table};
+    ir_init(&ir_context);
+
+    struct ir_section *section = ir_build(&ir_context, tree);
+    error_count = context.error_count;
+
+    if (error_count) {
+        print_summary("IR", error_count, start);
+        return 1;
+    }
+
+    /* If the stage is "ir" then print the instructions */
+    if (!strcmp("ir", stage)) {
+        ir_print_section(output, section);
+        print_summary("IR", error_count, start);
+        return 0;
+    }
     return 0;
 }

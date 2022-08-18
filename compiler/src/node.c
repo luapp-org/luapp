@@ -26,6 +26,7 @@ static struct node *node_create(YYLTYPE location, enum node_type type)
     node->type = type;
     node->location = location;
     node->node_type = type_basic(TYPE_BASIC_ANY);
+    node->ir = NULL;
 
     return node;
 }
