@@ -174,6 +174,7 @@ struct node *node_type_list(YYLTYPE location, struct node *init, struct node *ty
 
     node->data.type_list.init = init;
     node->data.type_list.type = type;
+    node->data.type_list.size = node_get_size(node);
 
     return node;
 }
@@ -279,6 +280,7 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
 
     node->data.expression_list.init = init;
     node->data.expression_list.expression = expression;
+    node->data.expression_list.size = node_get_size(node);
 
     return node;
 }
@@ -295,6 +297,7 @@ struct node *node_name_list(YYLTYPE location, struct node *init, struct node *na
 
     node->data.name_list.init = init;
     node->data.name_list.name = name;
+    node->data.name_list.size = node_get_size(node);
 
     return node;
 }
@@ -311,6 +314,7 @@ struct node *node_variable_list(YYLTYPE location, struct node *init, struct node
 
     node->data.variable_list.init = init;
     node->data.variable_list.variable = variable;
+    node->data.variable_list.size = node_get_size(node);
 
     return node;
 }
@@ -585,8 +589,8 @@ struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct
     struct node *node = node_create(location, NODE_PARAMETER_LIST);
 
     node->data.parameter_list.namelist = namelist;
-
     node->data.parameter_list.vararg = vararg;
+    node->data.parameter_list.size = node_get_size(node);
 
     return node;
 }
@@ -1175,5 +1179,46 @@ char *node_to_string(struct node *node)
         default:
             printf("%d\n", node->type);
             return "none";
+    }
+}
+
+/* node_get_size() -- gets the size of the 'list' of nodes
+ *     args: ast node
+ *     rets: number of nodes
+ *
+ * Node: only nodes that represent lists are allowed
+ */
+int node_get_size(struct node *node)
+{
+    int size = 0;
+    struct node *init, *value;
+    enum node_type type;
+
+    if (node->type == NODE_PARAMETER_LIST) {
+        return node_get_size(node->data.parameter_list.namelist) +
+               (node->data.parameter_list.vararg != NULL);
+    }
+
+    type = node->type;
+
+    for (node; node != NULL; size++) {
+        /* Must be singular; increase counter and return */
+        if (node->type != type)
+            return ++size;
+
+        switch (node->type) {
+            case NODE_NAME_LIST:
+                node = node->data.name_list.init;
+                break;
+            case NODE_TYPE_LIST:
+                node = node->data.type_list.init;
+                break;
+            case NODE_VARIABLE_LIST:
+                node = node->data.variable_list.init;
+                break;
+            case NODE_EXPRESSION_LIST:
+                node = node->data.expression_list.init;
+                break;
+        }
     }
 }

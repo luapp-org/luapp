@@ -50,7 +50,7 @@ struct ir_constant {
     enum ir_constant_type type;
     union {
         struct {
-            char *value;
+            unsigned int symbol_id;
         } string;
         struct {
             double value;
@@ -71,7 +71,8 @@ struct ir_context {
     unsigned char top_register;
 
     /* What will be serialized into bytecode */
-    struct ir_constant_list *list;
+    struct ir_constant_list *constant_list;
+    unsigned int constants;
     unsigned char stack_size;
 };
 

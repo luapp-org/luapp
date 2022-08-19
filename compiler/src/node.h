@@ -131,18 +131,22 @@ struct node {
         struct {
             struct node *init;       /* First expression */
             struct node *expression; /* Next expression */
+            int size;
         } expression_list;
         struct {
             struct node *init; /* First expression */
             struct node *name; /* Next expression */
+            int size;
         } name_list;
         struct {
             struct node *init;     /* First expression */
             struct node *variable; /* Next expression */
+            int size;
         } variable_list;
         struct {
             struct node *namelist;
             struct node *vararg;
+            int size;
         } parameter_list;
         struct {
             struct node *expression;
@@ -211,6 +215,7 @@ struct node {
         struct {
             struct node *init;
             struct node *type;
+            int size;
         } type_list;
         struct {
             struct node *identifier;
@@ -299,5 +304,6 @@ void print_ast(FILE *output, struct node *node, bool first);
 
 /* Helper functions used in other code */
 char *node_to_string(struct node *node);
+int node_get_size(struct node *node);
 
 #endif

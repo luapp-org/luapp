@@ -177,6 +177,47 @@ static void ir_free_register(struct ir_context *context, unsigned char count)
     context->top_register -= count;
 }
 
+/* ir_constant_list() -- allocate memory for a new IR constant list
+ *      args: first constant, last constant
+ *      rets: new list;
+ */
+static struct ir_constant_list *ir_constant_list(struct ir_constant *first,
+                                                 struct ir_constant *last)
+{
+    struct ir_constant_list *list = smalloc(sizeof(struct ir_constant_list));
+
+    /* Set members */
+    list->first = first;
+    list->last = last;
+
+    return list;
+}
+
+/* ir_constant_list_add() -- add a new constant to a given constant list
+ *      args: list of constants, constant
+ *      rets: none;
+ */
+static void ir_constant_list_add(struct ir_constant_list *list, struct ir_constant *constant)
+{
+    if (list == NULL)
+        list = ir_constant_list(constant, constant);
+    else if (list->first == NULL && list->last == NULL) {
+        list->first = constant;
+        list->last = constant;
+
+        constant->prev = NULL;
+        constant->next = NULL;
+    } else {
+        constant->next = list->last->next;
+        if (constant->next == NULL)
+            constant->next->prev = constant;
+        list->last->next = constant;
+
+        constant->prev = list->last;
+        list->last = constant;
+    }
+}
+
 /* ir_constant() -- allocate memory for a new IR constant
  *      args: type of constant
  *      rets: constant
@@ -194,31 +235,32 @@ static struct ir_constant *ir_constant(enum ir_constant_type type)
 }
 
 /* ir_constant_string() -- allocate memory for a new IR constant string
- *      args: string value
- *      rets: constant
+ *      args: context, symbol
+ *      rets: index in constant list
  */
-static struct ir_constant *ir_constant_string(char *value)
+static unsigned int ir_constant_string(struct ir_context *context, struct symbol *symbol)
 {
     struct ir_constant *c = ir_constant(CONSTANT_STRING);
 
-    c->data.string.value = value;
+    c->data.string.symbol_id = symbol->id;
+    ir_constant_list_add(context->constant_list, c);
 
-    return c;
+    return context->constants++;
 }
 
 /* ir_constant_number() -- allocate memory for a new IR constant number
  *      args: number value
  *      rets: constant
  */
-static struct ir_constant *ir_constant_number(double value)
+static unsigned int ir_constant_number(struct ir_context *context, double value)
 {
     struct ir_constant *c = ir_constant(CONSTANT_NUMBER);
 
     c->data.number.value = value;
+    ir_constant_list_add(context->constant_list, c);
 
-    return c;
+    return context->constants++;
 }
-
 /* ir_init() -- initializes the member variables of the IR context
  *      args: context
  *      rets: none
@@ -226,7 +268,9 @@ static struct ir_constant *ir_constant_number(double value)
 
 void ir_init(struct ir_context *context)
 {
-    context->list = NULL;
+    context->constant_list = ir_constant_list(NULL, NULL);
+    context->constants = 0;
+
     context->stack_size = 0;
     context->top_register = 0;
 }
@@ -244,13 +288,22 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
         case NODE_EXPRESSION_STATEMENT: {
             ir_build(context, node->data.expression_statement.expression);
 
-            node->ir = ir_duplicate(node->data.expression_statement.expression->ir);            
+            node->ir = ir_duplicate(node->data.expression_statement.expression->ir);
             break;
         }
         case NODE_CALL: {
             struct ir_instruction *instruction;
-            struct node *function = node->data.call.prefix_expression;
+            struct node *function = node->data.call.prefix_expression;  
             struct node *args = node->data.call.args;
+
+            int size = 0;
+
+            /* Set the size of the args list */
+            if (args)
+                if (args->type != NODE_EXPRESSION_LIST)
+                    size = 1;
+                else 
+                    size = args->data.expression_list.size;
 
             /* Save the old register for later use */
             int old = context->top_register;
@@ -258,12 +311,17 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
             ir_build(context, function);
             ir_build(context, args);
 
-            instruction = ir_instruction_ABC(IR_CALL, old, context->top_register, 1);
+            instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
 
             // node->ir = ir_join(function->ir, args->ir);
             // ir_append(node->ir, instruction);
             node->ir = ir_section(instruction, instruction);
             break;
+        }
+        case NODE_STRING: {
+            
+            ir_constant_string(context, node->data.string.s);
+            printf("adadad\n");
         }
         case NODE_BLOCK: {
             struct node *init = node->data.block.init;
@@ -276,6 +334,20 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
                 ir_build(context, init);
                 ir_build(context, statement);
                 node->ir = ir_join(init->ir, statement->ir);
+            }
+            break;
+        }
+        case NODE_EXPRESSION_LIST: {
+            struct node *init = node->data.expression_list.init;
+            struct node *expression = node->data.expression_list.expression;
+
+            if (expression == NULL) {
+                ir_build(context, init);
+                node->ir = init->ir;
+            } else {
+                ir_build(context, init);
+                ir_build(context, expression);
+                node->ir = ir_join(init->ir, expression->ir);
             }
             break;
         }
