@@ -62,7 +62,7 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
         instruction->next = NULL;
     } else {
         instruction->next = section->last->next;
-        if (instruction->next == NULL)
+        if (instruction->next != NULL)
             instruction->next->prev = instruction;
         section->last->next = instruction;
 
@@ -313,15 +313,18 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
 
             instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
 
-            // node->ir = ir_join(function->ir, args->ir);
-            // ir_append(node->ir, instruction);
-            node->ir = ir_section(instruction, instruction);
+            node->ir = ir_duplicate(args->ir);
+            ir_append(node->ir, instruction);
             break;
         }
         case NODE_STRING: {
-            
-            ir_constant_string(context, node->data.string.s);
-            printf("adadad\n");
+            struct ir_instruction *instruction;
+            unsigned int index = ir_constant_string(context, node->data.string.s);
+
+            instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, 1), index);
+
+            node->ir = ir_section(instruction, instruction);
+            break;
         }
         case NODE_BLOCK: {
             struct node *init = node->data.block.init;
