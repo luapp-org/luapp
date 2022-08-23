@@ -570,7 +570,7 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
                                 struct node *body)
 {
     struct node *node = node_create(location, NODE_FUNCTION_BODY);
-
+    printf("funcbody\n");
     node->data.function_body.exprlist = exprlist;
     node->data.function_body.type_list = type_list;
     node->data.function_body.body = body;
@@ -587,10 +587,11 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
 struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct node *vararg)
 {
     struct node *node = node_create(location, NODE_PARAMETER_LIST);
-
+    printf("parameter list\n");
     node->data.parameter_list.namelist = namelist;
     node->data.parameter_list.vararg = vararg;
     node->data.parameter_list.size = node_get_size(node);
+    printf("parameter list\n");
 
     return node;
 }
@@ -1194,6 +1195,10 @@ int node_get_size(struct node *node)
     struct node *init, *value;
     enum node_type type;
 
+    if (!node)
+        return 0;
+
+    printf("adadad\n");
     if (node->type == NODE_PARAMETER_LIST) {
         return node_get_size(node->data.parameter_list.namelist) +
                (node->data.parameter_list.vararg != NULL);

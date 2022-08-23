@@ -1065,8 +1065,11 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
+
             type_handle_function_body(&new_context, node);
+            
             type_ast_traversal(&new_context, node->data.function_body.body, false);
+            
             free(new_context.type_map);
             context->error_count = new_context.error_count;
             break;

@@ -269,7 +269,9 @@ expression
 
 program 
     : block
-        { *root = $1; }
+        { 
+            // *root = node_function_body(@$, node_parameter_list(@$, NULL, node_vararg(@$)), node_type(@$, type_basic(TYPE_BASIC_ANY)), $1);
+            *root = $1; }
 ;
 
 variable_list 

@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     struct ir_context ir_context = {0, &symbol_table};
     ir_init(&ir_context);
 
-    struct ir_section *section = ir_build(&ir_context, tree);
+    struct ir_section *section = ir_build(&ir_context, tree, true);
     error_count = context.error_count;
 
     if (error_count) {

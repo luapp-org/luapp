@@ -38,6 +38,9 @@ static struct ir_section *ir_duplicate(struct ir_section *original)
  */
 static struct ir_section *ir_join(struct ir_section *first, struct ir_section *second)
 {
+    if (first == NULL)
+        return second;
+
     /* Link the sections together */
     first->last->next = second->first;
     second->first->prev = first->last;
@@ -209,7 +212,7 @@ static void ir_constant_list_add(struct ir_constant_list *list, struct ir_consta
         constant->next = NULL;
     } else {
         constant->next = list->last->next;
-        if (constant->next == NULL)
+        if (constant->next != NULL)
             constant->next->prev = constant;
         list->last->next = constant;
 
@@ -241,7 +244,6 @@ static struct ir_constant *ir_constant(enum ir_constant_type type)
 static unsigned int ir_constant_string(struct ir_context *context, struct symbol *symbol)
 {
     struct ir_constant *c = ir_constant(CONSTANT_STRING);
-
     c->data.string.symbol_id = symbol->id;
     ir_constant_list_add(context->constant_list, c);
 
@@ -279,21 +281,21 @@ void ir_init(struct ir_context *context)
  *      args: context, AST node
  *      rets: new ir section
  */
-struct ir_section *ir_build(struct ir_context *context, struct node *node)
+struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main)
 {
     if (!node)
         return NULL;
 
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
-            ir_build(context, node->data.expression_statement.expression);
+            ir_build(context, node->data.expression_statement.expression, false);
 
             node->ir = ir_duplicate(node->data.expression_statement.expression->ir);
             break;
         }
         case NODE_CALL: {
             struct ir_instruction *instruction;
-            struct node *function = node->data.call.prefix_expression;  
+            struct node *function = node->data.call.prefix_expression;
             struct node *args = node->data.call.args;
 
             int size = 0;
@@ -302,18 +304,20 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
             if (args)
                 if (args->type != NODE_EXPRESSION_LIST)
                     size = 1;
-                else 
+                else
                     size = args->data.expression_list.size;
 
             /* Save the old register for later use */
             int old = context->top_register;
 
-            ir_build(context, function);
-            ir_build(context, args);
+            ir_build(context, function, false);
+            ir_build(context, args, false);
 
             instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
 
-            node->ir = ir_duplicate(args->ir);
+            ir_free_register(context, size + 1);
+
+            node->ir = ir_join(function->ir, args->ir);
             ir_append(node->ir, instruction);
             break;
         }
@@ -326,17 +330,44 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
             node->ir = ir_section(instruction, instruction);
             break;
         }
+        case NODE_NAME_REFERENCE: {        
+            node->ir = ir_build(context, node->data.name_reference.identifier, false);
+            break;
+        }
+        case NODE_IDENTIFIER: {
+            struct ir_instruction *instruction;
+
+            if (node->data.identifier.is_global) {
+                unsigned int index = ir_constant_string(context, node->data.identifier.s);
+
+                instruction = ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, 1), index);
+            }
+
+            node->ir = ir_section(instruction, instruction);
+            break;
+        }
         case NODE_BLOCK: {
+            struct ir_instruction *vararg_instr, *return_instr;
             struct node *init = node->data.block.init;
             struct node *statement = node->data.block.statement;
 
+            if (main) {
+                vararg_instr = ir_instruction_ABC(IR_VARARGPREP, 1, 0, 0);
+                node->ir = ir_section(vararg_instr, vararg_instr);
+            }
+
             if (statement == NULL) {
-                ir_build(context, init);
-                node->ir = init->ir;
+                ir_build(context, init, false);
+                node->ir = ir_join(node->ir, init->ir);
             } else {
-                ir_build(context, init);
-                ir_build(context, statement);
-                node->ir = ir_join(init->ir, statement->ir);
+                ir_build(context, init, false);
+                ir_build(context, statement, false);
+                node->ir = ir_join(node->ir, ir_join(init->ir, statement->ir));
+            }
+
+            if (main) {
+                return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+                node->ir = ir_append(node->ir, return_instr);
             }
             break;
         }
@@ -345,11 +376,11 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node)
             struct node *expression = node->data.expression_list.expression;
 
             if (expression == NULL) {
-                ir_build(context, init);
+                ir_build(context, init, false);
                 node->ir = init->ir;
             } else {
-                ir_build(context, init);
-                ir_build(context, expression);
+                ir_build(context, init, false);
+                ir_build(context, expression, false);
                 node->ir = ir_join(init->ir, expression->ir);
             }
             break;
@@ -368,9 +399,9 @@ void ir_print_context(FILE *output, struct ir_context *context) {}
 static void ir_print_instruction(FILE *output, struct ir_instruction *instruction)
 {
     if (instruction->mode == SUB)
-        fprintf(output, "%5s", " ");
+        fprintf(output, "%-10s", " ");
     else
-        fprintf(output, "%5s", opcode_names[instruction->op]);
+        fprintf(output, "%-10s", opcode_names[instruction->op]);
 
     switch (instruction->mode) {
         case iABC:
