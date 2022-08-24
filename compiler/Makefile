@@ -11,4 +11,4 @@ OBJS = src/main.c src/lexer.yy.c src/parser.tab.c src/compiler.c src/node.c src/
 
 # Builds all of the files and stores the out file in bin/
 make: $(OBJS)
-	gcc -o src/bin/luappc $^
+	gcc -o src/bin/luappc $^ -lm

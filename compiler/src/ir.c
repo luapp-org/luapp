@@ -1,3 +1,6 @@
+#include <math.h>
+#include <stdint.h>
+
 #include "ir.h"
 #include "limits.h"
 #include "node.h"
@@ -125,6 +128,7 @@ static struct ir_instruction *ir_instruction_ABx(enum ir_opcode op, int A, unsig
 
     return instruction;
 }
+
 /* ir_instruction_AsBx() -- creates a new ir_instruction with a given operation code and registers
  *      args: operation code, a register, sbx register
  *      rets: new ir instruction
@@ -138,6 +142,22 @@ static struct ir_instruction *ir_instruction_AsBx(enum ir_opcode op, int A, shor
     instruction->sBx = sBx;
 
     instruction->mode = iAsBx;
+
+    return instruction;
+}
+
+/* ir_instruction_sub() -- creates a new sub instruction, whose purpose is to store a 32-bit value
+ *      args: value
+ *      rets: new ir instruction
+ */
+static struct ir_instruction *ir_instruction_sub(unsigned int value)
+{
+    struct ir_instruction *instruction = smalloc(sizeof(struct ir_instruction));
+
+    /* Set IR operands */
+    instruction->value = value;
+
+    instruction->mode = SUB;
 
     return instruction;
 }
@@ -237,17 +257,49 @@ static struct ir_constant *ir_constant(enum ir_constant_type type)
     return c;
 }
 
+static unsigned int ir_find_string_constant(struct ir_constant_list *list, struct symbol *symbol)
+{
+    int index = 0;
+
+    for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
+        if (iter->type == CONSTANT_STRING && iter->data.string.symbol_id == symbol->id)
+            return index;
+        ++index;
+    }
+
+    return -1;
+}
+
+static unsigned int ir_find_number_constant(struct ir_constant_list *list, double number)
+{
+    int index = 0;
+
+    for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
+        if (iter->type == CONSTANT_NUMBER && iter->data.number.value == number)
+            return index;
+        ++index;
+    }
+
+    return -1;
+}
+
 /* ir_constant_string() -- allocate memory for a new IR constant string
  *      args: context, symbol
  *      rets: index in constant list
  */
 static unsigned int ir_constant_string(struct ir_context *context, struct symbol *symbol)
 {
-    struct ir_constant *c = ir_constant(CONSTANT_STRING);
-    c->data.string.symbol_id = symbol->id;
-    ir_constant_list_add(context->constant_list, c);
+    unsigned int index;
+    if ((index = ir_find_string_constant(context->constant_list, symbol)) == -1) {
+        // We were unable to find an existing constant
+        struct ir_constant *c = ir_constant(CONSTANT_STRING);
+        c->data.string.symbol_id = symbol->id;
 
-    return context->constants++;
+        ir_constant_list_add(context->constant_list, c);
+
+        return context->constants++;
+    } else
+        return index;
 }
 
 /* ir_constant_number() -- allocate memory for a new IR constant number
@@ -256,12 +308,17 @@ static unsigned int ir_constant_string(struct ir_context *context, struct symbol
  */
 static unsigned int ir_constant_number(struct ir_context *context, double value)
 {
-    struct ir_constant *c = ir_constant(CONSTANT_NUMBER);
+    unsigned int index;
+    if ((index = ir_find_number_constant(context->constant_list, value)) == -1) {
+        // We were unable to find an existing number constant
+        struct ir_constant *c = ir_constant(CONSTANT_NUMBER);
 
-    c->data.number.value = value;
-    ir_constant_list_add(context->constant_list, c);
+        c->data.number.value = value;
+        ir_constant_list_add(context->constant_list, c);
 
-    return context->constants++;
+        return context->constants++;
+    } else
+        return index;
 }
 /* ir_init() -- initializes the member variables of the IR context
  *      args: context
@@ -330,9 +387,39 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
             node->ir = ir_section(instruction, instruction);
             break;
         }
-        case NODE_NAME_REFERENCE: {        
+        case NODE_NAME_REFERENCE: {
             node->ir = ir_build(context, node->data.name_reference.identifier, false);
             break;
+        }
+        case NODE_NUMBER: {
+            struct ir_instruction *instruction, *sub;
+
+            if (node->data.number.value <= SHRT_MAX && node->data.number.value >= SHRT_MIN &&
+                floor(node->data.number.value) == node->data.number.value) {
+                // We have a whole number that is large enough to fit in the sBx operand
+                instruction = ir_instruction_AsBx(IR_LOADI, ir_allocate_register(context, 1),
+                                                  node->data.number.value);
+                node->ir = ir_section(instruction, instruction);
+                break;
+            }
+
+            unsigned int index = ir_constant_number(context, node->data.number.value);
+            /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
+             * account for extremely large programs with massive constant pools */
+            if (index <= UINT16_MAX) {
+                instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, 1), index);
+
+                node->ir = ir_section(instruction, instruction);
+                break;
+            } else {
+                /* Here we use a sub instruction. An operation less instruction that simply stores a
+                 * singular value */
+                instruction = ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, 1), 0);
+                sub = ir_instruction_sub(index);
+
+                node->ir = ir_section(instruction, sub);
+                break;
+            }
         }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
@@ -340,7 +427,8 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
             if (node->data.identifier.is_global) {
                 unsigned int index = ir_constant_string(context, node->data.identifier.s);
 
-                instruction = ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, 1), index);
+                instruction =
+                    ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, 1), index);
             }
 
             node->ir = ir_section(instruction, instruction);
