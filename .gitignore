@@ -12,3 +12,4 @@ compiler/src/parser.tab.h
 
 # Ignore all VS Code generated files
 .vscode/
+/result
