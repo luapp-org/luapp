@@ -11,8 +11,7 @@ Luapp is packaged as a nix flake. Just cd into the project directory and run
 
 For a development shell, run `nix develop`.
 
-If you want to build a statically linked binary, run `nix build .#static`. Since
-pkgsStatic is not cached, compiling gcc will take ~10 minutes.
+If you want to build a statically linked binary, run `nix build .#static`.
 
 ### Non-Nix
 

@@ -30,7 +30,7 @@
             name = "luapp-static";
             version = "0.1.0";
             src = ./compiler;
-            buildInputs = with pkgs; [ bison flex pkgsStatic.musl pkgsStatic.gcc ];
+            buildInputs = with pkgs; [ bison flex pkgsStatic.musl gcc ];
             buildPhase = ''
               mkdir -p $out/bin
               make OUTPUT=$out/bin/luappc CFLAGS='-lm -static'
