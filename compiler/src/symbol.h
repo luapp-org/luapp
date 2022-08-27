@@ -31,6 +31,7 @@ struct symbol_list {
 
 struct symbol_table {
     struct symbol_list *variables;
+    unsigned int size;
 };
 
 struct symbol_context {

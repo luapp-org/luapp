@@ -10,12 +10,13 @@
 #include <unistd.h>
 
 #include "compiler.h"
+#include "ir.h"
 #include "lexer.h"
 #include "node.h"
 #include "parser.h"
 #include "symbol.h"
 #include "type.h"
-#include "ir.h"
+#include "codegen.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors)
@@ -58,7 +59,11 @@ int main(int argc, char **argv)
     while ((opt = getopt(argc, argv, "o:s:")) != -1) {
         switch (opt) {
             case 'o':
-                output = fopen(optarg, "w");
+                if (!(output = fopen(optarg, "w"))) {
+                    fprintf(stdout, "Error: Unable to open output file %s: %s", optarg,
+                            strerror(errno));
+                    return 1;
+                }
                 break;
             case 's':
                 stage = optarg;
@@ -177,5 +182,7 @@ int main(int argc, char **argv)
         print_summary("IR", error_count, start);
         return 0;
     }
+
+    codegen_write_program(output, &ir_context, section);
     return 0;
 }

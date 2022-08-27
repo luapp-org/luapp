@@ -48,6 +48,7 @@ static struct symbol *symbol_put(struct symbol_table *table, char *name)
 
     symbol_list->next = table->variables;
     table->variables = symbol_list;
+    table->size = nextSymbolId;  
 
     return &symbol_list->symbol;
 }
