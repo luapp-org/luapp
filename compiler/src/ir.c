@@ -439,11 +439,6 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
             struct node *init = node->data.block.init;
             struct node *statement = node->data.block.statement;
 
-            if (main) {
-                vararg_instr = ir_instruction_ABC(IR_VARARGPREP, 1, 0, 0);
-                node->ir = ir_section(vararg_instr, vararg_instr);
-            }
-
             if (statement == NULL) {
                 ir_build(context, init, false);
                 node->ir = ir_join(node->ir, init->ir);
@@ -452,11 +447,29 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
                 ir_build(context, statement, false);
                 node->ir = ir_join(node->ir, ir_join(init->ir, statement->ir));
             }
+            break;
+        }
+        case NODE_FUNCTION_BODY: {
+            struct node *params = node->data.function_body.exprlist;
+            struct node *namelist = params->data.parameter_list.namelist;
 
-            if (main) {
-                return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
-                node->ir = ir_append(node->ir, return_instr);
+            struct ir_instruction *arg_instr, *return_instr;
+
+            if (namelist) {
+                arg_instr =
+                    ir_instruction_ABC(IR_ARGPREP + (params->data.parameter_list.vararg != NULL),
+                                       namelist->data.name_list.size, 0, 0);
+            } else {
+                arg_instr = ir_instruction_ABC(
+                    IR_ARGPREP + (params->data.parameter_list.vararg != NULL), 0, 0, 0);
             }
+            node->ir = ir_section(arg_instr, arg_instr);
+
+            ir_build(context, node->data.function_body.body, false);
+            node->ir = ir_join(node->ir, node->data.function_body.body->ir);
+
+            return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+            node->ir = ir_append(node->ir, return_instr);
             break;
         }
         case NODE_EXPRESSION_LIST: {

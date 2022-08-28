@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define COMPILER_VERSION "1.0"
+
 typedef struct node *YYSTYPE;
 #define YYSTYPE struct node *
 
