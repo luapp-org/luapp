@@ -798,6 +798,9 @@ static struct node *type_build_type_list(struct type_context *context, struct no
 {
     struct node *t = NULL;
 
+    if (namelist == NULL && vararg)
+        return node_type(vararg->location, vararg->node_type);
+
     if (namelist->type == NODE_NAME_LIST)
         t = namelist->data.name_list.name;
     else
@@ -936,7 +939,9 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
         return;
 
     int last_count;
-    struct type_context new_context = {context->is_strict, context->error_count};
+
+    struct type_context new_context = {context->is_strict, context->error_count, NULL,
+                                       context->global_type_map};
 
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
@@ -1004,6 +1009,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             break;
         case NODE_CALL:
             last_count = context->error_count;
+
             type_ast_traversal(context, node->data.call.args, false);
             type_ast_traversal(context, node->data.call.prefix_expression, false);
 
@@ -1061,17 +1067,22 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_handle_unary(context, node);
             break;
         case NODE_FUNCTION_BODY:
-            new_context.type_map = hashmap_duplicate(context->type_map);
+            if (main)
+                new_context.type_map = context->type_map;
+            else
+                new_context.type_map = hashmap_duplicate(context->type_map);
 
             type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
 
             type_handle_function_body(&new_context, node);
-            
-            type_ast_traversal(&new_context, node->data.function_body.body, false);
-            
-            free(new_context.type_map);
-            context->error_count = new_context.error_count;
+
+            type_ast_traversal(&new_context, node->data.function_body.body, true);
+
+            if (!main) {
+                free(new_context.type_map);
+                context->error_count = new_context.error_count;
+            }
             break;
     }
 }

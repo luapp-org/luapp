@@ -570,7 +570,7 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
                                 struct node *body)
 {
     struct node *node = node_create(location, NODE_FUNCTION_BODY);
-    printf("funcbody\n");
+
     node->data.function_body.exprlist = exprlist;
     node->data.function_body.type_list = type_list;
     node->data.function_body.body = body;
@@ -587,11 +587,10 @@ struct node *node_function_body(YYLTYPE location, struct node *exprlist, struct 
 struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct node *vararg)
 {
     struct node *node = node_create(location, NODE_PARAMETER_LIST);
-    printf("parameter list\n");
+
     node->data.parameter_list.namelist = namelist;
     node->data.parameter_list.vararg = vararg;
     node->data.parameter_list.size = node_get_size(node);
-    printf("parameter list\n");
 
     return node;
 }
@@ -1091,8 +1090,6 @@ void print_ast(FILE *output, struct node *node, bool first)
             previous = parent_id;
             parent_id = id++;
 
-            printf("BODY: %d\n", node->data.function_body.body == NULL);
-
             /* Visit children nodes of the for node */
             print_ast(output, node->data.function_body.exprlist, false);
             print_ast(output, node->data.function_body.type_list, false);
@@ -1178,7 +1175,6 @@ char *node_to_string(struct node *node)
         case NODE_TYPE:
             return type_to_string(node->node_type);
         default:
-            printf("%d\n", node->type);
             return "none";
     }
 }
@@ -1198,7 +1194,6 @@ int node_get_size(struct node *node)
     if (!node)
         return 0;
 
-    printf("adadad\n");
     if (node->type == NODE_PARAMETER_LIST) {
         return node_get_size(node->data.parameter_list.namelist) +
                (node->data.parameter_list.vararg != NULL);

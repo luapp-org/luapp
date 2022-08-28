@@ -11,11 +11,20 @@ struct node;
 struct symbol;
 struct symbol_table;
 
-enum ir_opcode { IR_GETGLOBAL, IR_LOADI, IR_LOADK, IR_LOADKX, IR_CALL, IR_RETURN, IR_VARARGPREP };
+enum ir_opcode {
+    IR_GETGLOBAL,
+    IR_LOADI,
+    IR_LOADK,
+    IR_LOADKX,
+    IR_CALL,
+    IR_RETURN,
+    IR_ARGPREP,
+    IR_VARARGPREP
+};
 
 /* opcode_names -- array of opcode names that are used in ir.c */
-static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",  "LOADK",     "LOADKX",
-                                           "CALL",      "RETURN", "VARARGPREP"};
+static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",  "LOADK",   "LOADKX",
+                                           "CALL",      "RETURN", "ARGPREP", "VARARGPREP"};
 
 enum ir_instruction_mode { iABC, iABx, iAsBx, SUB };
 

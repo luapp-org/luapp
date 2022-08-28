@@ -271,7 +271,11 @@ program
     : block
         { 
             // *root = node_function_body(@$, node_parameter_list(@$, NULL, node_vararg(@$)), node_type(@$, type_basic(TYPE_BASIC_ANY)), $1);
-            *root = $1; }
+            //*root = $1;
+            struct node *params = node_parameter_list(@$, NULL, node_vararg(@$));
+            struct node *type = node_type(@$, type_basic(TYPE_BASIC_ANY)); 
+            *root = node_function_body(@$, params, type, $1);
+        }
 ;
 
 variable_list 
