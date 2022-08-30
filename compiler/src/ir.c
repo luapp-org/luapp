@@ -164,40 +164,40 @@ static struct ir_instruction *ir_instruction_sub(unsigned int value)
 
 /* ir_allocate_register() -- 'allocates' a certain amount of registers based on the counter. In
  * reality it just checks if the counter exceeds the maximum and updates the max register counter.
- *      args: ir context, register count
+ *      args: ir_context, ir proto, register count
  *      rets: first register available
  */
-static unsigned char ir_allocate_register(struct ir_context *context, unsigned char count)
+static unsigned char ir_allocate_register(struct ir_context *context, struct ir_proto *proto, unsigned char count)
 {
-    unsigned char top = context->top_register;
+    unsigned char top = proto->top_register;
 
     /* Can not exceed max byte size */
-    if (context->top_register + count > UCHAR_MAX) {
+    if (proto->top_register + count > UCHAR_MAX) {
         unhandled_compiler_error("out of registers when trying to allocate %d registers", count);
         context->error_count++;
     }
 
-    context->top_register += count;
+    proto->top_register += count;
 
-    if (context->top_register > context->stack_size)
-        context->stack_size = context->top_register;
+    if (proto->top_register > proto->max_stack_size)
+        proto->max_stack_size = proto->top_register;
 
     return top;
 }
 
 /* ir_free_register() -- 'deallocates' a certain amount of registers based on the counter.
- *      args: ir context, register count
+ *      args: ir context, ir proto, register count
  *      rets: none
  */
-static void ir_free_register(struct ir_context *context, unsigned char count)
+static void ir_free_register(struct ir_context *context, struct ir_proto *proto, unsigned char count)
 {
-    if (context->top_register - count < 0) {
+    if (proto->top_register - count < 0) {
         unhandled_compiler_error(
             "attempt to free %d registers setting the stack size below the minimum of 0", count);
         context->error_count++;
     }
 
-    context->top_register -= count;
+    proto->top_register -= count;
 }
 
 /* ir_constant_list() -- allocate memory for a new IR constant list
@@ -284,20 +284,20 @@ static unsigned int ir_find_number_constant(struct ir_constant_list *list, doubl
 }
 
 /* ir_constant_string() -- allocate memory for a new IR constant string
- *      args: context, symbol
+ *      args: proto, symbol
  *      rets: index in constant list
  */
-static unsigned int ir_constant_string(struct ir_context *context, struct symbol *symbol)
+static unsigned int ir_constant_string(struct ir_proto *proto, struct symbol *symbol)
 {
     unsigned int index;
-    if ((index = ir_find_string_constant(context->constant_list, symbol)) == -1) {
+    if ((index = ir_find_string_constant(proto->constant_list, symbol)) == -1) {
         // We were unable to find an existing constant
         struct ir_constant *c = ir_constant(CONSTANT_STRING);
         c->data.string.symbol_id = symbol->id;
 
-        ir_constant_list_add(context->constant_list, c);
+        ir_constant_list_add(proto->constant_list, c);
 
-        return context->constants++;
+        return proto->constant_list->size++;
     } else
         return index;
 }
@@ -306,46 +306,58 @@ static unsigned int ir_constant_string(struct ir_context *context, struct symbol
  *      args: number value
  *      rets: constant
  */
-static unsigned int ir_constant_number(struct ir_context *context, double value)
+static unsigned int ir_constant_number(struct ir_proto *proto, double value)
 {
     unsigned int index;
-    if ((index = ir_find_number_constant(context->constant_list, value)) == -1) {
+    if ((index = ir_find_number_constant(proto->constant_list, value)) == -1) {
         // We were unable to find an existing number constant
         struct ir_constant *c = ir_constant(CONSTANT_NUMBER);
 
         c->data.number.value = value;
-        ir_constant_list_add(context->constant_list, c);
+        ir_constant_list_add(proto->constant_list, c);
 
-        return context->constants++;
+        return proto->constant_list->size++;
     } else
         return index;
 }
+
+/* ir_new_proto() -- allocate memory for a new empty IR function prototype
+ *      args: number value
+ *      rets: constant
+ */
+static struct ir_proto *ir_new_proto()
+{
+    struct ir_proto *p = smalloc(sizeof(struct ir_proto));
+
+    p->constant_list = NULL;
+    p->is_vararg = false;
+    p->max_stack_size = 0;
+    p->parameters_size = 0;
+    p->top_register = 0;
+
+    p->protos = NULL;
+
+    p->prev = NULL;
+    p->next = NULL;
+}
+
 /* ir_init() -- initializes the member variables of the IR context
  *      args: context
  *      rets: none
  */
-
 void ir_init(struct ir_context *context)
 {
-    context->constant_list = ir_constant_list(NULL, NULL);
-    context->constants = 0;
-
-    context->stack_size = 0;
-    context->top_register = 0;
+    context->main_proto = ir_new_proto();    
 }
 
-/* ir_build() -- will build a new IR section based on an AST node
- *      args: context, AST node
- *      rets: new ir section
- */
-struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main)
+struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto, struct node *node)
 {
     if (!node)
         return NULL;
 
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
-            ir_build(context, node->data.expression_statement.expression, false);
+            ir_build_proto(context, proto, node->data.expression_statement.expression);
 
             node->ir = ir_duplicate(node->data.expression_statement.expression->ir);
             break;
@@ -365,10 +377,10 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
                     size = args->data.expression_list.size;
 
             /* Save the old register for later use */
-            int old = context->top_register;
+            int old = proto->top_register;
 
-            ir_build(context, function, false);
-            ir_build(context, args, false);
+            ir_build_proto(context, proto, function);
+            ir_build_proto(context, proto, args);
 
             instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
 
@@ -440,11 +452,11 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
             struct node *statement = node->data.block.statement;
 
             if (statement == NULL) {
-                ir_build(context, init, false);
+                ir_build_proto(context, proto, init);
                 node->ir = ir_join(node->ir, init->ir);
             } else {
-                ir_build(context, init, false);
-                ir_build(context, statement, false);
+                ir_build_proto(context, proto, init);
+                ir_build_proto(context, proto, statement);
                 node->ir = ir_join(node->ir, ir_join(init->ir, statement->ir));
             }
             break;
@@ -452,6 +464,10 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
         case NODE_FUNCTION_BODY: {
             struct node *params = node->data.function_body.exprlist;
             struct node *namelist = params->data.parameter_list.namelist;
+
+            struct ir_proto *p = ir_new_proto();
+            p->is_vararg = params->data.parameter_list.vararg != NULL;
+            p->parameters_size = namelist->data.name_list.size;
 
             struct ir_instruction *arg_instr, *return_instr;
 
@@ -477,16 +493,25 @@ struct ir_section *ir_build(struct ir_context *context, struct node *node, bool 
             struct node *expression = node->data.expression_list.expression;
 
             if (expression == NULL) {
-                ir_build(context, init, false);
+                ir_build_proto(context, proto, init);
                 node->ir = init->ir;
             } else {
-                ir_build(context, init, false);
-                ir_build(context, expression, false);
+                ir_build_proto(context, proto, init);
+                ir_build_proto(context, proto, expression);
                 node->ir = ir_join(init->ir, expression->ir);
             }
             break;
         }
     }
+}
+
+/* ir_build() -- will build a new IR section based on an AST node
+ *      args: context, AST node
+ *      rets: new ir section
+ */
+struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main)
+{
+
 
     return node->ir;
 }

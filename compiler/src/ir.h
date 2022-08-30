@@ -71,18 +71,37 @@ struct ir_constant {
 
 struct ir_constant_list {
     struct ir_constant *first, *last;
+    int size;
+};
+
+struct ir_proto_list;
+
+/* IR function prototypes */
+struct ir_proto {
+    /* Information variables */
+    unsigned char parameters_size;
+    bool is_vararg;
+    unsigned char max_stack_size;
+    struct ir_proto_list *protos;
+    struct ir_constant_list *constant_list;
+
+    /* Variables used within the IR */
+    unsigned char top_register;
+    struct ir_proto *prev, *next;
+};
+
+struct ir_proto_list {
+    struct ir_proto *first, *last;
+    int size;
 };
 
 struct ir_context {
     /* Variables the IR uses */
     int error_count;
-    struct symbol_table *table;
-    unsigned char top_register;
 
-    /* What will be serialized into bytecode */
-    struct ir_constant_list *constant_list;
-    unsigned int constants;
-    unsigned char stack_size;
+    /* What will be serialized */
+    struct symbol_table *table;
+    struct ir_proto *main_proto;
 };
 
 struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main);
