@@ -23,6 +23,7 @@ static struct ir_section *ir_section(struct ir_instruction *first, struct ir_ins
 
     code->first = first;
     code->last = last;
+    code->size = 1;
     return code;
 }
 
@@ -48,7 +49,9 @@ static struct ir_section *ir_join(struct ir_section *first, struct ir_section *s
     first->last->next = second->first;
     second->first->prev = first->last;
 
-    return ir_section(first->first, second->last);
+    struct ir_section *section = ir_section(first->first, second->last);
+    section->size = first->size + second->size;
+    return section;
 }
 
 /* ir_append() -- appends an IR instruction onto an IR section
@@ -63,6 +66,7 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
     else if (section->first == NULL && section->last == NULL) {
         section->first = instruction;
         section->last = instruction;
+        section->size++;
 
         instruction->prev = NULL;
         instruction->next = NULL;
@@ -74,6 +78,7 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
 
         instruction->prev = section->last;
         section->last = instruction;
+        section->size++;
     }
     return section;
 }
@@ -167,7 +172,8 @@ static struct ir_instruction *ir_instruction_sub(unsigned int value)
  *      args: ir_context, ir proto, register count
  *      rets: first register available
  */
-static unsigned char ir_allocate_register(struct ir_context *context, struct ir_proto *proto, unsigned char count)
+static unsigned char ir_allocate_register(struct ir_context *context, struct ir_proto *proto,
+                                          unsigned char count)
 {
     unsigned char top = proto->top_register;
 
@@ -189,7 +195,8 @@ static unsigned char ir_allocate_register(struct ir_context *context, struct ir_
  *      args: ir context, ir proto, register count
  *      rets: none
  */
-static void ir_free_register(struct ir_context *context, struct ir_proto *proto, unsigned char count)
+static void ir_free_register(struct ir_context *context, struct ir_proto *proto,
+                             unsigned char count)
 {
     if (proto->top_register - count < 0) {
         unhandled_compiler_error(
@@ -321,11 +328,27 @@ static unsigned int ir_constant_number(struct ir_proto *proto, double value)
         return index;
 }
 
+/* ir_constant_number() -- allocate memory for a new function prototype list
+ *      args: first proto, last proto
+ *      rets: new list
+ */
+static struct ir_proto_list *ir_proto_list(struct ir_proto *first, struct ir_proto *last)
+{
+    struct ir_proto_list *list = smalloc(sizeof(struct ir_proto_list));
+
+    list->first = first;
+    list->last = last;
+
+    list->size = 1;
+
+    return list;
+}
+
 /* ir_new_proto() -- allocate memory for a new empty IR function prototype
  *      args: number value
  *      rets: constant
  */
-static struct ir_proto *ir_new_proto()
+static struct ir_proto *ir_proto()
 {
     struct ir_proto *p = smalloc(sizeof(struct ir_proto));
 
@@ -335,22 +358,45 @@ static struct ir_proto *ir_new_proto()
     p->parameters_size = 0;
     p->top_register = 0;
 
-    p->protos = NULL;
+    p->protos = ir_proto_list(NULL, NULL);
 
     p->prev = NULL;
     p->next = NULL;
+}
+
+/* ir_proto_append() -- appends a new function prototype to the proto list
+ *      args: list of function prototypes, the function prototype.
+ *      rets: list of protos
+ */
+static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct ir_proto *proto)
+{
+    if (list == NULL)
+        list = ir_constant_list(proto, proto);
+    else if (list->first == NULL && list->last == NULL) {
+        list->first = proto;
+        list->last = proto;
+
+        proto->prev = NULL;
+        proto->next = NULL;
+    } else {
+        proto->next = list->last->next;
+        if (proto->next != NULL)
+            proto->next->prev = proto;
+        list->last->next = proto;
+
+        proto->prev = list->last;
+        list->last = proto;
+    }
 }
 
 /* ir_init() -- initializes the member variables of the IR context
  *      args: context
  *      rets: none
  */
-void ir_init(struct ir_context *context)
-{
-    context->main_proto = ir_new_proto();    
-}
+void ir_init(struct ir_context *context) { context->main_proto = ir_proto(); }
 
-struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto, struct node *node)
+struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto,
+                                struct node *node)
 {
     if (!node)
         return NULL;
@@ -384,7 +430,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
 
-            ir_free_register(context, size + 1);
+            ir_free_register(context, proto, size + 1);
 
             node->ir = ir_join(function->ir, args->ir);
             ir_append(node->ir, instruction);
@@ -394,7 +440,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct ir_instruction *instruction;
             unsigned int index = ir_constant_string(context, node->data.string.s);
 
-            instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, 1), index);
+            instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
 
             node->ir = ir_section(instruction, instruction);
             break;
@@ -409,7 +455,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             if (node->data.number.value <= SHRT_MAX && node->data.number.value >= SHRT_MIN &&
                 floor(node->data.number.value) == node->data.number.value) {
                 // We have a whole number that is large enough to fit in the sBx operand
-                instruction = ir_instruction_AsBx(IR_LOADI, ir_allocate_register(context, 1),
+                instruction = ir_instruction_AsBx(IR_LOADI, ir_allocate_register(context, proto, 1),
                                                   node->data.number.value);
                 node->ir = ir_section(instruction, instruction);
                 break;
@@ -419,14 +465,14 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
-                instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, 1), index);
+                instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
 
                 node->ir = ir_section(instruction, instruction);
                 break;
             } else {
                 /* Here we use a sub instruction. An operation less instruction that simply stores a
                  * singular value */
-                instruction = ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, 1), 0);
+                instruction = ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, proto, 1), 0);
                 sub = ir_instruction_sub(index);
 
                 node->ir = ir_section(instruction, sub);
@@ -440,7 +486,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 unsigned int index = ir_constant_string(context, node->data.identifier.s);
 
                 instruction =
-                    ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, 1), index);
+                    ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, proto, 1), index);
             }
 
             node->ir = ir_section(instruction, instruction);
@@ -465,10 +511,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct node *params = node->data.function_body.exprlist;
             struct node *namelist = params->data.parameter_list.namelist;
 
-            struct ir_proto *p = ir_new_proto();
+            struct ir_proto *p = ir_proto();
             p->is_vararg = params->data.parameter_list.vararg != NULL;
             p->parameters_size = namelist->data.name_list.size;
 
+            struct ir_section *section;
             struct ir_instruction *arg_instr, *return_instr;
 
             if (namelist) {
@@ -479,13 +526,20 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 arg_instr = ir_instruction_ABC(
                     IR_ARGPREP + (params->data.parameter_list.vararg != NULL), 0, 0, 0);
             }
-            node->ir = ir_section(arg_instr, arg_instr);
+            section = ir_section(arg_instr, arg_instr);
 
             ir_build(context, node->data.function_body.body, false);
-            node->ir = ir_join(node->ir, node->data.function_body.body->ir);
+            section = ir_join(node->ir, node->data.function_body.body->ir);
 
             return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
-            node->ir = ir_append(node->ir, return_instr);
+            section = ir_append(node->ir, return_instr);
+
+            p->code = section;
+            proto->protos = ir_proto_append(proto->protos, p);
+
+            struct ir_instruction *closure = ir_instruction_ABx(
+                IR_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
+            node->ir = ir_section(closure, closure);
             break;
         }
         case NODE_EXPRESSION_LIST: {
@@ -511,7 +565,6 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
  */
 struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main)
 {
-
 
     return node->ir;
 }

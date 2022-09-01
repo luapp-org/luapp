@@ -19,12 +19,13 @@ enum ir_opcode {
     IR_CALL,
     IR_RETURN,
     IR_ARGPREP,
-    IR_VARARGPREP
+    IR_VARARGPREP,
+    IR_CLOSURE
 };
 
 /* opcode_names -- array of opcode names that are used in ir.c */
-static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",  "LOADK",   "LOADKX",
-                                           "CALL",      "RETURN", "ARGPREP", "VARARGPREP"};
+static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",   "LOADK",      "LOADKX", "CALL",
+                                           "RETURN",    "ARGPREP", "VARARGPREP", "CLOSURE"};
 
 enum ir_instruction_mode { iABC, iABx, iAsBx, SUB };
 
@@ -51,6 +52,7 @@ struct ir_instruction {
 
 struct ir_section {
     struct ir_instruction *first, *last;
+    int size;
 };
 
 enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER };
@@ -84,6 +86,7 @@ struct ir_proto {
     unsigned char max_stack_size;
     struct ir_proto_list *protos;
     struct ir_constant_list *constant_list;
+    struct ir_section *code;
 
     /* Variables used within the IR */
     unsigned char top_register;
