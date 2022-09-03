@@ -181,8 +181,8 @@ void symbol_print_table(FILE *output, struct symbol_table *table)
     fputs("symbol table:\n", output);
 
     for (iter = table->variables; NULL != iter; iter = iter->next) {
-        fprintf(output, "  variable: %s /* %u */\n", iter->symbol.name, iter->symbol.id);
+        fprintf(output, "  %-10s\t%10u\n", iter->symbol.name, iter->symbol.id);
     }
 
-    fputs("\n", output);
+    fputc('\n', output);
 }
