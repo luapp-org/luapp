@@ -3,6 +3,6 @@
 
 #include <stdio.h>
 
-void codegen_write_program(FILE *output, struct ir_context *context, struct ir_section *section);
+void codegen_write_program(FILE *output, struct ir_context *context);
 
 #endif

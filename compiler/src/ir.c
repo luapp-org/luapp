@@ -627,10 +627,6 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
         fputc('\n', output);
     }
 
-    /* Dump all protos within the current one (if any) */
-    for (struct ir_proto *iter = proto->protos->first; iter != NULL; iter = iter->next)
-        ir_print_proto(output, iter);
-
     fputc('\n', output);
 
     /* Dump all constants */
@@ -649,6 +645,10 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
     }
 
     fprintf(output, "----------------------------------------------------------------\n");
+    
+    /* Dump all protos within the current one (if any) */
+    for (struct ir_proto *iter = proto->protos->first; iter != NULL; iter = iter->next)
+        ir_print_proto(output, iter);
 }
 
 /* ir_print_context() -- will print all of the contents of the IR context

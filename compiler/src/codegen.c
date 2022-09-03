@@ -39,8 +39,14 @@ void codegen_write_symbol_table(FILE *output, struct symbol_table *table)
         codegen_write_string(output, iter->symbol.name);
 }
 
-void codegen_write_program(FILE *output, struct ir_context *context, struct ir_section *section)
+void codegen_write_proto(FILE *output, struct ir_proto *proto)
+{
+    
+}
+
+void codegen_write_program(FILE *output, struct ir_context *context)
 {
     codegen_write_symbol_table(output, context->table);
+
     fprintf(output, "\n\n");
 }

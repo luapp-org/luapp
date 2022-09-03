@@ -183,6 +183,6 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    //codegen_write_program(output, &ir_context, section);
+    codegen_write_program(output, &ir_context);
     return 0;
 }
