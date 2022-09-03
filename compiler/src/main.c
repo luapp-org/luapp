@@ -168,7 +168,7 @@ int main(int argc, char **argv)
     struct ir_context ir_context = {0, &symbol_table};
     ir_init(&ir_context);
 
-    struct ir_proto *proto = ir_build(&ir_context, tree);
+    ir_context.main_proto = ir_build(&ir_context, tree);
     error_count = context.error_count;
 
     if (error_count) {
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
     /* If the stage is "ir" then print the instructions */
     if (!strcmp("ir", stage)) {
-        ir_print_section(output, proto->code);
+        ir_print_context(output, &ir_context);
         print_summary("IR", error_count, start);
         return 0;
     }
