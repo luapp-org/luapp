@@ -107,7 +107,7 @@ struct ir_context {
     struct ir_proto *main_proto;
 };
 
-struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main);
+struct ir_proto *ir_build(struct ir_context *context, struct node *node);
 void ir_init(struct ir_context *context);
 
 void ir_print_context(FILE *output, struct ir_context *context);

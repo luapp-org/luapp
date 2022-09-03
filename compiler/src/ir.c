@@ -298,6 +298,7 @@ static unsigned int ir_constant_string(struct ir_proto *proto, struct symbol *sy
 {
     unsigned int index;
     if ((index = ir_find_string_constant(proto->constant_list, symbol)) == -1) {
+
         // We were unable to find an existing constant
         struct ir_constant *c = ir_constant(CONSTANT_STRING);
         c->data.string.symbol_id = symbol->id;
@@ -344,7 +345,7 @@ static struct ir_proto_list *ir_proto_list(struct ir_proto *first, struct ir_pro
     return list;
 }
 
-/* ir_new_proto() -- allocate memory for a new empty IR function prototype
+/* ir_proto() -- allocate memory for a new empty IR function prototype
  *      args: number value
  *      rets: constant
  */
@@ -352,7 +353,7 @@ static struct ir_proto *ir_proto()
 {
     struct ir_proto *p = smalloc(sizeof(struct ir_proto));
 
-    p->constant_list = NULL;
+    p->constant_list = ir_constant_list(NULL, NULL);
     p->is_vararg = false;
     p->max_stack_size = 0;
     p->parameters_size = 0;
@@ -371,7 +372,7 @@ static struct ir_proto *ir_proto()
 static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct ir_proto *proto)
 {
     if (list == NULL)
-        list = ir_constant_list(proto, proto);
+        list = ir_proto_list(proto, proto);
     else if (list->first == NULL && list->last == NULL) {
         list->first = proto;
         list->last = proto;
@@ -404,8 +405,6 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
             ir_build_proto(context, proto, node->data.expression_statement.expression);
-
-            node->ir = ir_duplicate(node->data.expression_statement.expression->ir);
             break;
         }
         case NODE_CALL: {
@@ -432,21 +431,21 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_free_register(context, proto, size + 1);
 
-            node->ir = ir_join(function->ir, args->ir);
-            ir_append(node->ir, instruction);
+            ir_append(proto->code, instruction);
             break;
         }
         case NODE_STRING: {
             struct ir_instruction *instruction;
-            unsigned int index = ir_constant_string(context, node->data.string.s);
+            unsigned int index = ir_constant_string(proto, node->data.string.s);
 
-            instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
+            instruction =
+                ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
 
-            node->ir = ir_section(instruction, instruction);
+            ir_append(proto->code, instruction);
             break;
         }
         case NODE_NAME_REFERENCE: {
-            node->ir = ir_build(context, node->data.name_reference.identifier, false);
+            ir_build_proto(context, proto, node->data.name_reference.identifier);
             break;
         }
         case NODE_NUMBER: {
@@ -457,25 +456,28 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 // We have a whole number that is large enough to fit in the sBx operand
                 instruction = ir_instruction_AsBx(IR_LOADI, ir_allocate_register(context, proto, 1),
                                                   node->data.number.value);
-                node->ir = ir_section(instruction, instruction);
+                ir_append(proto->code, instruction);
                 break;
             }
 
-            unsigned int index = ir_constant_number(context, node->data.number.value);
+            unsigned int index = ir_constant_number(proto, node->data.number.value);
             /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
-                instruction = ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
+                instruction =
+                    ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
 
-                node->ir = ir_section(instruction, instruction);
+                ir_append(proto->code, instruction);
                 break;
             } else {
                 /* Here we use a sub instruction. An operation less instruction that simply stores a
                  * singular value */
-                instruction = ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, proto, 1), 0);
+                instruction =
+                    ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, proto, 1), 0);
                 sub = ir_instruction_sub(index);
 
-                node->ir = ir_section(instruction, sub);
+                ir_append(proto->code, instruction);
+                ir_append(proto->code, sub);
                 break;
             }
         }
@@ -483,13 +485,13 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct ir_instruction *instruction;
 
             if (node->data.identifier.is_global) {
-                unsigned int index = ir_constant_string(context, node->data.identifier.s);
+                unsigned int index = ir_constant_string(proto, node->data.identifier.s);
 
-                instruction =
-                    ir_instruction_ABx(IR_GETGLOBAL, ir_allocate_register(context, proto, 1), index);
+                instruction = ir_instruction_ABx(IR_GETGLOBAL,
+                                                 ir_allocate_register(context, proto, 1), index);
             }
 
-            node->ir = ir_section(instruction, instruction);
+            ir_append(proto->code, instruction);
             break;
         }
         case NODE_BLOCK: {
@@ -497,13 +499,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct node *init = node->data.block.init;
             struct node *statement = node->data.block.statement;
 
-            if (statement == NULL) {
+            if (statement == NULL)
                 ir_build_proto(context, proto, init);
-                node->ir = ir_join(node->ir, init->ir);
-            } else {
+            else {
                 ir_build_proto(context, proto, init);
                 ir_build_proto(context, proto, statement);
-                node->ir = ir_join(node->ir, ir_join(init->ir, statement->ir));
             }
             break;
         }
@@ -528,45 +528,56 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
             section = ir_section(arg_instr, arg_instr);
 
-            ir_build(context, node->data.function_body.body, false);
-            section = ir_join(node->ir, node->data.function_body.body->ir);
+            ir_build_proto(context, proto, node->data.function_body.body);
 
             return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
-            section = ir_append(node->ir, return_instr);
+            ir_append(proto->code, return_instr);
 
-            p->code = section;
-            proto->protos = ir_proto_append(proto->protos, p);
+            ir_proto_append(proto->protos, p);
 
             struct ir_instruction *closure = ir_instruction_ABx(
                 IR_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
-            node->ir = ir_section(closure, closure);
+            ir_append(proto->code, closure);
             break;
         }
         case NODE_EXPRESSION_LIST: {
             struct node *init = node->data.expression_list.init;
             struct node *expression = node->data.expression_list.expression;
 
-            if (expression == NULL) {
+            if (expression == NULL)
                 ir_build_proto(context, proto, init);
-                node->ir = init->ir;
-            } else {
+            else {
                 ir_build_proto(context, proto, init);
                 ir_build_proto(context, proto, expression);
-                node->ir = ir_join(init->ir, expression->ir);
             }
             break;
         }
     }
 }
 
-/* ir_build() -- will build a new IR section based on an AST node
+/* ir_build() -- will build a new IR proto based on an AST
  *      args: context, AST node
  *      rets: new ir section
  */
-struct ir_section *ir_build(struct ir_context *context, struct node *node, bool main)
+struct ir_proto *ir_build(struct ir_context *context, struct node *node)
 {
+    struct ir_proto *proto = ir_proto();
 
-    return node->ir;
+    /* Mark this function as a vararg function */
+    proto->is_vararg = true;
+
+    /* Build the initial argument preparation instruction */
+    struct ir_instruction *instruction = ir_instruction_ABC(IR_VARARGPREP, 0, 0, 0);
+    proto->code = ir_append(proto->code, instruction);
+
+    /* Build the content of the main block */
+    ir_build_proto(context, proto, node->data.function_body.body);
+    
+    /* Build the function exit instruction (return) */
+    instruction = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+    proto->code = ir_append(proto->code, instruction);
+
+    return proto;
 }
 
 /* ir_print_context() -- will print all of the contents of the IR context
