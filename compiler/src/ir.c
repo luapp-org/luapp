@@ -580,12 +580,6 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
     return proto;
 }
 
-/* ir_print_context() -- will print all of the contents of the IR context
- *      args: output, context
- *      rets: none
- */
-void ir_print_context(FILE *output, struct ir_context *context) {}
-
 static void ir_print_instruction(FILE *output, struct ir_instruction *instruction)
 {
     if (instruction->mode == SUB)
@@ -609,16 +603,42 @@ static void ir_print_instruction(FILE *output, struct ir_instruction *instructio
     }
 }
 
-/* ir_print_section() -- will an IR section to the console
- *      args: output, section
+/* ir_print_proto() -- will an IR function prototype to the console
+ *      args: output, proto
  *      rets: none
  */
-void ir_print_section(FILE *output, struct ir_section *section)
+void ir_print_proto(FILE *output, struct ir_proto *proto)
 {
+    fprintf(output, "----------------------------------------------------------------\n");
+
+    /* Dump the function prototype information */
+    fprintf(output, "proto->is_vararg       %7s\n", proto->is_vararg ? "true" : "false");
+    fprintf(output, "proto->parameters_size %7d\n", proto->parameters_size);
+    fprintf(output, "proto->max_stack_size  %7d\n", proto->max_stack_size);
+
+    /* Spacing... lol */
+    fputc('\n', output);
+
+    /* Dump all of the instructions */
     int count = 1;
-    for (struct ir_instruction *iter = section->first; iter != NULL; iter = iter->next) {
+    for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next) {
         fprintf(output, "[%04d]     ", count++);
         ir_print_instruction(output, iter);
         fputc('\n', output);
     }
+
+    fprintf(output, "----------------------------------------------------------------\n");
+}
+
+/* ir_print_context() -- will print all of the contents of the IR context
+ *      args: output, context
+ *      rets: none
+ */
+void ir_print_context(FILE *output, struct ir_context *context) 
+{
+    /* Dump the symbol table */
+    symbol_print_table(output, context->table);
+
+    /* Dump the main function prototype */
+    ir_print_proto(output, context->main_proto);
 }

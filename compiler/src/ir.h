@@ -111,6 +111,5 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node);
 void ir_init(struct ir_context *context);
 
 void ir_print_context(FILE *output, struct ir_context *context);
-void ir_print_section(FILE *output, struct ir_section *section);
 
 #endif
