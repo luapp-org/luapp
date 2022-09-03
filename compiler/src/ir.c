@@ -572,7 +572,7 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
 
     /* Build the content of the main block */
     ir_build_proto(context, proto, node->data.function_body.body);
-    
+
     /* Build the function exit instruction (return) */
     instruction = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
     proto->code = ir_append(proto->code, instruction);
@@ -627,6 +627,27 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
         fputc('\n', output);
     }
 
+    /* Dump all protos within the current one (if any) */
+    for (struct ir_proto *iter = proto->protos->first; iter != NULL; iter = iter->next)
+        ir_print_proto(output, iter);
+
+    fputc('\n', output);
+
+    /* Dump all constants */
+    fprintf(output, "constants:\n");
+    for (struct ir_constant *iter = proto->constant_list->first; iter != NULL; iter = iter->next) {
+        /* Dump individual constants */
+        switch (iter->type) {
+            case CONSTANT_STRING:
+                fprintf(output, "   string { %d }\n", iter->data.string.symbol_id);
+                break;
+
+            case CONSTANT_NUMBER:
+                fprintf(output, "   number { %f }\n", iter->data.number.value);
+                break;
+        }
+    }
+
     fprintf(output, "----------------------------------------------------------------\n");
 }
 
@@ -634,7 +655,7 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
  *      args: output, context
  *      rets: none
  */
-void ir_print_context(FILE *output, struct ir_context *context) 
+void ir_print_context(FILE *output, struct ir_context *context)
 {
     /* Dump the symbol table */
     symbol_print_table(output, context->table);
