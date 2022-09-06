@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+struct ir_context;
+
 void codegen_write_program(FILE *output, struct ir_context *context);
 
 #endif

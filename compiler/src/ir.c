@@ -390,6 +390,25 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
     }
 }
 
+/* ir_join() -- joins two IR proto lists together to shape a new list of protos
+ *      args: first proto, second proto
+ *      rets: new proto list
+ */
+static struct ir_proto_list *ir_proto_join(struct ir_proto_list *first, struct ir_proto_list *second)
+{
+    if (first == NULL)
+        return second;
+
+    /* Link the sections together */
+    first->last->next = second->first;
+    second->first->prev = first->last;
+
+    struct ir_proto_list *proto_list = ir_proto_list(first->first, second->last);
+    proto_list->size = first->size + second->size;
+
+    return proto_list;
+}
+
 /* ir_init() -- initializes the member variables of the IR context
  *      args: context
  *      rets: none
@@ -578,6 +597,24 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
     proto->code = ir_append(proto->code, instruction);
 
     return proto;
+}
+
+/* ir_collect_protos() -- will collect all protos and shove them into a list
+ *      args: main/core proto
+ *      rets: new ir proto list
+ */
+struct ir_proto_list *ir_collect_protos(struct ir_proto *main)
+{
+    struct ir_proto_list *list = NULL;
+
+    /* recursively reach all function prototypes */
+    for (struct ir_proto *iter = main->protos->first; iter != NULL; iter = iter->next)
+        list = ir_proto_join(list, ir_collect_protos(iter));
+
+    if (!list)
+        return ir_proto_list(main, main);
+        
+    return ir_proto_append(list, main);
 }
 
 static void ir_print_instruction(FILE *output, struct ir_instruction *instruction)
