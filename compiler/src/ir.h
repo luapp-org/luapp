@@ -33,7 +33,7 @@ struct ir_instruction {
     union {
         unsigned int value;
         struct {
-            enum ir_opcode op;
+            unsigned char op; /* needed to be a byte lol */
             unsigned char A;
             union {
                 struct {

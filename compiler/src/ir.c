@@ -80,6 +80,7 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
         section->last = instruction;
         section->size++;
     }
+
     return section;
 }
 
@@ -376,7 +377,7 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
     else if (list->first == NULL && list->last == NULL) {
         list->first = proto;
         list->last = proto;
-
+        list->size++;
         proto->prev = NULL;
         proto->next = NULL;
     } else {
@@ -384,17 +385,20 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
         if (proto->next != NULL)
             proto->next->prev = proto;
         list->last->next = proto;
-
+        list->size++;
         proto->prev = list->last;
         list->last = proto;
     }
+    
+    return list;
 }
 
 /* ir_join() -- joins two IR proto lists together to shape a new list of protos
  *      args: first proto, second proto
  *      rets: new proto list
  */
-static struct ir_proto_list *ir_proto_join(struct ir_proto_list *first, struct ir_proto_list *second)
+static struct ir_proto_list *ir_proto_join(struct ir_proto_list *first,
+                                           struct ir_proto_list *second)
 {
     if (first == NULL)
         return second;
@@ -613,7 +617,7 @@ struct ir_proto_list *ir_collect_protos(struct ir_proto *main)
 
     if (!list)
         return ir_proto_list(main, main);
-        
+
     return ir_proto_append(list, main);
 }
 
@@ -637,6 +641,7 @@ static void ir_print_instruction(FILE *output, struct ir_instruction *instructio
         default:
             fprintf(output, "%10d", instruction->value);
             break;
+        
     }
 }
 
@@ -682,7 +687,7 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
     }
 
     fprintf(output, "----------------------------------------------------------------\n");
-    
+
     /* Dump all protos within the current one (if any) */
     for (struct ir_proto *iter = proto->protos->first; iter != NULL; iter = iter->next)
         ir_print_proto(output, iter);

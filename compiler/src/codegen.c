@@ -8,7 +8,15 @@
 #include "symbol.h"
 #include "type.h"
 
-void codegen_write_byte(FILE *output, unsigned char value) { fprintf(output, "%02X", value); }
+void codegen_write_byte(FILE *output, unsigned char value)
+{
+    fwrite(&value, sizeof(value), 1, output);
+}
+
+void codegen_write_int(FILE *output, unsigned int value)
+{
+    fwrite(&value, sizeof(value), 1, output);
+}
 
 void codegen_write_size(FILE *output, unsigned int size)
 {
@@ -51,19 +59,24 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
     codegen_write_byte(output, proto->parameters_size);
     codegen_write_byte(output, proto->is_vararg);
 
+    codegen_write_size(output, proto->code->size);
+    
     /* Write all of the instructions to the stream */
-    for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next)
-        codegen_write_size(output, iter->value);
+    for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next) {
+        codegen_write_int(output, iter->value);
+    }
+
+    codegen_write_size(output, proto->constant_list->size);
 
     /* Write all of the constants to the stream */
     for (struct ir_constant *iter = proto->constant_list->first; iter != NULL; iter = iter->next) {
         /* Handle each constant type */
         switch (iter->type) {
             case CONSTANT_STRING:
-                codegen_write_size(output, iter->data.string.symbol_id);
+                codegen_write_int(output, iter->data.string.symbol_id);
                 break;
             case CONSTANT_NUMBER:
-                codegen_write_size(output, iter->data.number.value);
+                codegen_write_int(output, iter->data.number.value);
                 break;
         }
     }
@@ -75,7 +88,7 @@ void codegen_write_program(FILE *output, struct ir_context *context)
 
     /* Collect the protos */
     struct ir_proto_list *protos = ir_collect_protos(context->main_proto);
-    
+
     /* Write the proto list to the stream */
     codegen_write_size(output, protos->size);
 
