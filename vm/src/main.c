@@ -3,12 +3,12 @@
  */
 
 #include <assert.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
-#include <getopt.h>
 
-#include "vm.h"
 #include "reader.h"
+#include "vm.h"
 
 /* main() -- entry point for the VM */
 int main(int argc, char **argv)
@@ -22,7 +22,7 @@ int main(int argc, char **argv)
         dot = strrchr(argv[optind], '.');
 
         /* If the given file is of the correct type, init the reader */
-        if (dot && !strcmp(dot, ".bin")) 
+        if (dot && !strcmp(dot, ".bin"))
             input = fopen(argv[optind], "r");
         else {
             printf("Error: incorrect file type.\n");
@@ -34,7 +34,19 @@ int main(int argc, char **argv)
     }
 
     struct vm_context context;
+    context.error_count = 0;
+
     read_context(input, &context);
+
+    /* Handle any errors that come up */
+    if (context.error_count) 
+        return 1;
+    
+    /* Execute the instructions */
+    vm_execute(&context);
+
+    if (context.error_count) 
+        return 1;
 
     return 0;
 }

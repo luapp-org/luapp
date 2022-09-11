@@ -48,7 +48,7 @@ void codegen_write_symbol_table(FILE *output, struct symbol_table *table)
 {
     codegen_write_size(output, table->size);
 
-    for (struct symbol_list *iter = table->variables; iter != NULL; iter = iter->next)
+    for (struct symbol_list *iter = table->first; iter != NULL; iter = iter->next)
         codegen_write_string(output, iter->symbol.name);
 }
 

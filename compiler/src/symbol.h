@@ -26,11 +26,11 @@ struct symbol {
 
 struct symbol_list {
     struct symbol symbol;
-    struct symbol_list *next;
+    struct symbol_list *next, *prev;
 };
 
 struct symbol_table {
-    struct symbol_list *variables;
+    struct symbol_list *first, *last;
     unsigned int size;
 };
 

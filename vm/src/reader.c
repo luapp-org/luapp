@@ -43,7 +43,7 @@ char **read_strings(FILE *input)
 {
     /* Create the main string array */
     int size = read_cint(input);
-    printf("%d\n", size);
+
     char **strings = malloc((size + 1) * sizeof(char *));
     assert(strings);
 
@@ -64,7 +64,7 @@ char **read_strings(FILE *input)
     return strings;
 }
 
-struct vm_proto *read_protos(FILE *input)
+struct vm_proto *read_protos(FILE *input, struct vm_context *context)
 {
     /* Create ana allocate the function prototype list */
     int size = read_cint(input);
@@ -82,36 +82,30 @@ struct vm_proto *read_protos(FILE *input)
         proto->parameters_size = read_byte(input);
         proto->is_vararg = read_byte(input);
 
-        printf("p->max_stack_size: %d\n", proto->max_stack_size);
-        printf("p->parameters_size: %d\n", proto->parameters_size);
-        printf("p->is_vararg: %d\n", proto->is_vararg);
-
         /* Create the instruction array */
         int sizecode = read_cint(input);
         proto->code = malloc((sizecode + 1) * sizeof(unsigned int));
         assert(proto->code);
 
         /* Read each instruction in the array */
-        for (int j = 0; j < sizecode; j++) {
+        for (int j = 0; j < sizecode; j++) 
             proto->code[j] = read_int(input);
-            printf("p->code[%d]: %u\n", j, proto->code[j]);
-        }
 
         /* Create the constant array */
-        int sizek = read_cint(input);
-        printf("p->sizek = %d\n", sizek);
-        proto->constants = malloc((sizek + 1) * sizeof(struct vm_constant));
+        proto->sizek = read_cint(input);
+
+        proto->constants = malloc((proto->sizek + 1) * sizeof(struct vm_value));
         assert(proto->constants);
 
         /* Read each constant */
-        for (int k = 0; k < sizek; k++) {
+        for (int k = 0; k < proto->sizek; k++) {
             /* Get the constant type to process it */
             proto->constants[k].type = read_byte(input);
 
             /* Handle each constant type */
             switch (proto->constants[k].type) {
                 case CONSTANT_STRING:
-                    proto->constants[k].data.string.symbol_id = read_int(input);
+                    proto->constants[k].data.string.value = context->strings[read_int(input)];
                     break;
                 case CONSTANT_NUMBER:
                     proto->constants[k].data.number.value = read_int(input);
@@ -126,5 +120,5 @@ struct vm_proto *read_protos(FILE *input)
 void read_context(FILE *input, struct vm_context *context)
 {
     context->strings = read_strings(input);
-    context->protos = read_protos(input);
+    context->protos = read_protos(input, context);
 }

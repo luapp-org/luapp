@@ -27,7 +27,7 @@ enum ir_opcode {
 static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",   "LOADK",      "LOADKX", "CALL",
                                            "RETURN",    "ARGPREP", "VARARGPREP", "CLOSURE"};
 
-enum ir_instruction_mode { iABC, iABx, iAsBx, SUB };
+enum ir_instruction_mode { iABC, iABx, isAx, SUB };
 
 struct ir_instruction {
     union {

@@ -139,15 +139,14 @@ static struct ir_instruction *ir_instruction_ABx(enum ir_opcode op, int A, unsig
  *      args: operation code, a register, sbx register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_AsBx(enum ir_opcode op, int A, short sBx)
+static struct ir_instruction *ir_instruction_isAx(enum ir_opcode op, short sBx)
 {
     struct ir_instruction *instruction = ir_instruction(op);
 
     /* Set IR operands */
-    instruction->A = A;
     instruction->sBx = sBx;
 
-    instruction->mode = iAsBx;
+    instruction->mode = isAx;
 
     return instruction;
 }
@@ -635,7 +634,7 @@ static void ir_print_instruction(FILE *output, struct ir_instruction *instructio
         case iABx:
             fprintf(output, "%10d %hu", instruction->A, instruction->Bx);
             break;
-        case iAsBx:
+        case isAx:
             fprintf(output, "%10d %d", instruction->A, instruction->sBx);
             break;
         default:

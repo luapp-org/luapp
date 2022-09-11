@@ -4,15 +4,19 @@
 #include <string.h>
 
 #include "compiler.h"
-#include "util/flexstr.h"
 #include "node.h"
 #include "symbol.h"
+#include "util/flexstr.h"
 
 /* symbol_initialize_table() -- initializes the symbol table
  *      args: table that we will init
  *      returns: none
  */
-void symbol_initialize_table(struct symbol_table *table) { table->variables = NULL; }
+void symbol_initialize_table(struct symbol_table *table)
+{
+    table->first = NULL;
+    table->last = NULL;
+}
 
 /* symbol_get() -- get a symbol from the symbol table
  *      args: table, the name of the symbol
@@ -21,7 +25,7 @@ void symbol_initialize_table(struct symbol_table *table) { table->variables = NU
 static struct symbol *symbol_get(struct symbol_table *table, char *name)
 {
     struct symbol_list *iter;
-    for (iter = table->variables; NULL != iter; iter = iter->next) {
+    for (iter = table->first; NULL != iter; iter = iter->next) {
         if (!strcmp(name, iter->symbol.name)) {
             return &iter->symbol;
         }
@@ -46,9 +50,23 @@ static struct symbol *symbol_put(struct symbol_table *table, char *name)
     symbol_list->symbol.name = strdup(name);
     symbol_list->symbol.id = nextSymbolId++;
 
-    symbol_list->next = table->variables;
-    table->variables = symbol_list;
-    table->size = nextSymbolId;  
+    if (table->first == NULL && table->last == NULL) {
+        table->first = symbol_list;
+        table->last = symbol_list;
+
+        symbol_list->prev = NULL;
+        symbol_list->next = NULL;
+    } else {
+        symbol_list->next = table->last->next;
+        if (symbol_list->next != NULL)
+            symbol_list->next->prev = symbol_list;
+        table->last->next = symbol_list;
+
+        symbol_list->prev = table->last;
+        table->last = symbol_list;
+    }
+
+    table->size = nextSymbolId;
 
     return &symbol_list->symbol;
 }
@@ -180,7 +198,7 @@ void symbol_print_table(FILE *output, struct symbol_table *table)
 
     fputs("symbol table:\n", output);
 
-    for (iter = table->variables; NULL != iter; iter = iter->next) {
+    for (iter = table->first; NULL != iter; iter = iter->next) {
         fprintf(output, "  %-10s\t%10u\n", iter->symbol.name, iter->symbol.id);
     }
 
