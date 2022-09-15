@@ -17,8 +17,6 @@
 struct node;
 struct type;
 
-unsigned int nextSymbolId;
-
 struct symbol {
     char *name;
     unsigned int id;

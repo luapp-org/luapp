@@ -8,6 +8,8 @@
 #include "symbol.h"
 #include "util/flexstr.h"
 
+static unsigned int nextSymbolId;
+
 /* symbol_initialize_table() -- initializes the symbol table
  *      args: table that we will init
  *      returns: none

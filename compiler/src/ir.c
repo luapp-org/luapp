@@ -264,12 +264,13 @@ static struct ir_constant *ir_constant(enum ir_constant_type type)
     return c;
 }
 
-static unsigned int ir_find_string_constant(struct ir_constant_list *list, struct symbol *symbol)
+static unsigned int ir_find_symbol_constant(struct ir_constant_list *list, struct symbol *symbol,
+                                            enum ir_constant_type type)
 {
     int index = 0;
 
     for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
-        if (iter->type == CONSTANT_STRING && iter->data.string.symbol_id == symbol->id)
+        if (iter->type == type && iter->data.symbol.symbol_id == symbol->id)
             return index;
         ++index;
     }
@@ -290,24 +291,47 @@ static unsigned int ir_find_number_constant(struct ir_constant_list *list, doubl
     return -1;
 }
 
-/* ir_constant_string() -- allocate memory for a new IR constant string
- *      args: proto, symbol
+static unsigned int ir_find_global_constant(struct ir_constant_list *list, struct symbol *symbol)
+{
+    int index = 0;
+
+    for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
+        if (iter->type == CONSTANT_GLOBAL && iter->data.symbol.symbol_id == symbol->id)
+            return index;
+        ++index;
+    }
+
+    return -1;
+}
+
+/* ir_constant_symbol() -- allocate memory for a new constant using the symbol value
+ *      args: proto, symbol, constant type
  *      rets: index in constant list
  */
-static unsigned int ir_constant_string(struct ir_proto *proto, struct symbol *symbol)
+static unsigned int ir_constant_symbol(struct ir_proto *proto, struct symbol *symbol,
+                                       enum ir_constant_type type)
 {
     unsigned int index;
-    if ((index = ir_find_string_constant(proto->constant_list, symbol)) == -1) {
+    if ((index = ir_find_symbol_constant(proto->constant_list, symbol, type)) == -1) {
 
         // We were unable to find an existing constant
-        struct ir_constant *c = ir_constant(CONSTANT_STRING);
-        c->data.string.symbol_id = symbol->id;
+        struct ir_constant *c = ir_constant(type);
+        c->data.symbol.symbol_id = symbol->id;
 
         ir_constant_list_add(proto->constant_list, c);
 
         return proto->constant_list->size++;
     } else
         return index;
+}
+
+/* ir_constant_string() -- allocate memory for a new IR constant string
+ *      args: proto, symbol
+ *      rets: index in constant list
+ */
+static unsigned int ir_constant_string(struct ir_proto *proto, struct symbol *symbol)
+{
+    return ir_constant_symbol(proto, symbol, CONSTANT_STRING);
 }
 
 /* ir_constant_number() -- allocate memory for a new IR constant number
@@ -327,6 +351,15 @@ static unsigned int ir_constant_number(struct ir_proto *proto, double value)
         return proto->constant_list->size++;
     } else
         return index;
+}
+
+/* ir_constant_global() -- allocate memory for a new global constant
+ *      args: proto, symbol
+ *      rets: constant
+ */
+static unsigned int ir_constant_global(struct ir_proto *proto, struct symbol *symbol)
+{
+    return ir_constant_symbol(proto, symbol, CONSTANT_GLOBAL);
 }
 
 /* ir_constant_number() -- allocate memory for a new function prototype list
@@ -388,7 +421,7 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
         proto->prev = list->last;
         list->last = proto;
     }
-    
+
     return list;
 }
 
@@ -476,8 +509,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             if (node->data.number.value <= SHRT_MAX && node->data.number.value >= SHRT_MIN &&
                 floor(node->data.number.value) == node->data.number.value) {
                 // We have a whole number that is large enough to fit in the sBx operand
-                instruction = ir_instruction_AsBx(IR_LOADI, ir_allocate_register(context, proto, 1),
-                                                  node->data.number.value);
+                instruction = ir_instruction_ABx(IR_LOADI, ir_allocate_register(context, proto, 1),
+                                                 node->data.number.value);
                 ir_append(proto->code, instruction);
                 break;
             }
@@ -507,7 +540,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct ir_instruction *instruction;
 
             if (node->data.identifier.is_global) {
-                unsigned int index = ir_constant_string(proto, node->data.identifier.s);
+                unsigned int index = ir_constant_global(proto, node->data.identifier.s);
 
                 instruction = ir_instruction_ABx(IR_GETGLOBAL,
                                                  ir_allocate_register(context, proto, 1), index);
@@ -640,7 +673,6 @@ static void ir_print_instruction(FILE *output, struct ir_instruction *instructio
         default:
             fprintf(output, "%10d", instruction->value);
             break;
-        
     }
 }
 
@@ -676,9 +708,11 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
         /* Dump individual constants */
         switch (iter->type) {
             case CONSTANT_STRING:
-                fprintf(output, "   string { %d }\n", iter->data.string.symbol_id);
+                fprintf(output, "   string { %d }\n", iter->data.symbol.symbol_id);
                 break;
-
+            case CONSTANT_GLOBAL:
+                fprintf(output, "   global { %d }\n", iter->data.symbol.symbol_id);
+                break;
             case CONSTANT_NUMBER:
                 fprintf(output, "   number { %f }\n", iter->data.number.value);
                 break;

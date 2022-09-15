@@ -55,14 +55,14 @@ struct ir_section {
     int size;
 };
 
-enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER };
+enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER, CONSTANT_GLOBAL };
 
 struct ir_constant {
     enum ir_constant_type type;
     union {
         struct {
             unsigned int symbol_id;
-        } string;
+        } symbol;
         struct {
             double value;
         } number;

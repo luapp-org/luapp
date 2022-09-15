@@ -70,10 +70,12 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
 
     /* Write all of the constants to the stream */
     for (struct ir_constant *iter = proto->constant_list->first; iter != NULL; iter = iter->next) {
+        codegen_write_int(output, iter->type);
         /* Handle each constant type */
         switch (iter->type) {
+            case CONSTANT_GLOBAL:
             case CONSTANT_STRING:
-                codegen_write_int(output, iter->data.string.symbol_id);
+                codegen_write_int(output, iter->data.symbol.symbol_id);
                 break;
             case CONSTANT_NUMBER:
                 codegen_write_int(output, iter->data.number.value);
