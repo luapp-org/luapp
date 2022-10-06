@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 
+struct vm_table;
+struct vm_value;
+
 typedef unsigned int vm_instruction;
 
 /* vm_opcodes - operation codes for the instructions */
@@ -20,7 +23,7 @@ enum vm_opcodes {
 
 /* Retrieves the operation for a Lua++ instruction. This section acts almost as a header for the
  * following 32 bit instruction. */
-#define GETARG_OP(instruction) (instruction & 0xFF);
+#define GETARG_OP(instruction) ((instruction) & 0xFF);
 
 /* This is the ABC encoding. It consists of three 8-bit values that usually point to a register or a
  * really small number. */
@@ -35,26 +38,6 @@ enum vm_opcodes {
 /* Finally the sAx encoding. It consists of one signed 24-bit value used for instructions that
  * require one very large argument. */
 #define GETARG_sAx(instruction) (((int)instruction >> 16))
-
-/* vm_constant_type - the type of value */
-enum vm_value_type { V_STRING, V_NUMBER };
-
-/* vm_value - represents a data structure in the VM. These are on the stack or constants that can be
- * loaded from p->k */
-struct vm_value {
-    /* value type */
-    enum vm_value_type type;
-
-    /* data union */
-    union {
-        struct {
-            char *value;
-        } string;
-        struct {
-            double value;
-        } number;
-    } data;
-};
 
 /* Represents a slot on the stack (register) */
 typedef struct vm_value *vm_register;
@@ -78,6 +61,9 @@ struct vm_proto {
 struct vm_context {
     /* string table */
     char **strings;
+
+    /* environment table */
+    struct vm_table *env;
 
     /* all functions in the program */
     struct vm_proto *protos;

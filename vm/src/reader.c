@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "reader.h"
+#include "lib.h"
 #include "vm.h"
 
 unsigned char read_byte(FILE *input)
@@ -51,7 +52,7 @@ char **read_strings(FILE *input)
     for (int i = 0; i < size; i++) {
         int len = read_cint(input);
 
-        strings[i] = malloc((len + 1) * sizeof(char));
+        strings[i] = calloc(sizeof(char), len);
         assert(strings[i]);
 
         /* Read each char of the string and save in 'strings' */
@@ -84,7 +85,7 @@ struct vm_proto *read_protos(FILE *input, struct vm_context *context)
 
         /* Create the instruction array */
         int sizecode = read_cint(input);
-        proto->code = malloc((sizecode + 1) * sizeof(unsigned int));
+        proto->code = calloc(sizecode, sizeof(unsigned int));
         assert(proto->code);
 
         /* Read each instruction in the array */
@@ -94,21 +95,18 @@ struct vm_proto *read_protos(FILE *input, struct vm_context *context)
         /* Create the constant array */
         proto->sizek = read_cint(input);
 
-        proto->constants = malloc((proto->sizek + 1) * sizeof(struct vm_value));
+        proto->constants = calloc(proto->sizek, sizeof(struct vm_value *));
         assert(proto->constants);
 
         /* Read each constant */
         for (int k = 0; k < proto->sizek; k++) {
-            /* Get the constant type to process it */
-            proto->constants[k].type = read_byte(input);
-
             /* Handle each constant type */
-            switch (proto->constants[k].type) {
-                case CONSTANT_STRING:
-                    proto->constants[k].data.string.value = context->strings[read_int(input)];
+            switch (read_byte(input)) {
+                case CONST_STRING:
+                    VM_SETSVALUE(&proto->constants[k], context->strings[read_int(input)]);
                     break;
-                case CONSTANT_NUMBER:
-                    proto->constants[k].data.number.value = read_int(input);
+                case CONST_NUMBER:
+                    VM_SETNVALUE(&proto->constants[k], read_int(input));
                     break;
             }
         }

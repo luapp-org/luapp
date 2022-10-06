@@ -2,7 +2,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "lib.h"
 #include "vm.h"
 
 /* Macros we use for the VM execution */
@@ -13,7 +15,7 @@
 #define VM_GETREG(arg) (assert(arg < p.max_stack_size), &stack[arg])
 
 /* Retrieve the constant located at the given position from the constant's array */
-#define VM_GETCON(arg) (assert(arg < p.sizek), &k[arg])
+#define VM_GETK(arg) (assert(arg < p.sizek), &k[arg])
 
 struct vm_value *vm_stack(int size)
 {
@@ -36,7 +38,7 @@ init_dispatch:
     k = p.constants;
     pc = p.code;
 
-dispatch:
+dispatch : {
     /* Run each instruction */
     unsigned int op = GETARG_OP(*pc);
 
@@ -46,11 +48,12 @@ dispatch:
 
             /* Get the stack slot (ra) and constant reference (kv) */
             vm_register ra = VM_GETREG(GETARG_A(instr));
-            const struct vm_value *kv = VM_GETCON(GETARG_Bx(instr));
+            const struct vm_value *kv = VM_GETK(GETARG_Bx(instr));
 
             /* Load the constant into the register slot */
             *ra = *kv;
             VM_NEXT();
         }
     }
+}
 }
