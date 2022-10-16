@@ -804,7 +804,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Print expressions */
             print_ast(output, node->data.type_annotation.identifier, false);
             print_ast(output, node->data.type_annotation.type, false);
-
+            
             parent_id = previous;
             break;
         case NODE_TYPE:
@@ -943,21 +943,9 @@ void print_ast(FILE *output, struct node *node, bool first)
             print_ast(output, node->data.expression_statement.expression, false);
             break;
         case NODE_BLOCK:
-            previous = 0;
-
-            /* Check if we are in the root node */
-            if (first) {
-                fprintf(output, "digraph G\n{\n");
-                fprintf(output, "\tnode[fontname=Monospace]\n");
-
-                /* Write the parentless node and increment id */
-                write_parentless_node(output, "program", false);
-                id++;
-            } else {
-                /* Save parent id for reset later */
-                previous = parent_id;
-                id++;
-            }
+            /* Save parent id for reset later */
+            previous = parent_id;
+            id++;
 
             print_ast(output, node->data.block.init, false);
 
@@ -966,10 +954,6 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             /* Reset parent ID for next node */
             parent_id = previous;
-
-            /* Close diagraph */
-            if (first)
-                fprintf(output, "}\n");
             break;
         case NODE_ASSIGNMENT:
             /* Fromat name of node: "binary operation \n op" */
@@ -1085,17 +1069,35 @@ void print_ast(FILE *output, struct node *node, bool first)
             id++;
             break;
         case NODE_FUNCTION_BODY:
-            write_node(output, "function_body", false);
-            /* Save and increment ids */
-            previous = parent_id;
-            parent_id = id++;
+
+            /* Check if we are in the root node */
+            if (first) {
+                fprintf(output, "digraph G\n{\n");
+                fprintf(output, "\tnode[fontname=Monospace]\n");
+
+                /* Write the parentless node and increment id */
+                write_parentless_node(output, "program", false);
+                id++;
+            } else {
+                write_node(output, "function_body", false);
+                /* Save and increment ids */
+                previous = parent_id;
+                parent_id = id++;
+            }
 
             /* Visit children nodes of the for node */
-            print_ast(output, node->data.function_body.exprlist, false);
-            print_ast(output, node->data.function_body.type_list, false);
+            if (!first) {
+                print_ast(output, node->data.function_body.exprlist, false);
+                print_ast(output, node->data.function_body.type_list, false);
+            }
+
             print_ast(output, node->data.function_body.body, false);
 
             parent_id = previous;
+
+            /* Close diagraph */
+            if (first)
+                fprintf(output, "}\n");
             break;
         case NODE_NAME_REFERENCE:
             write_node(output, "name_reference", false);

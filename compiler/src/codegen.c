@@ -18,20 +18,13 @@ void codegen_write_int(FILE *output, unsigned int value)
     fwrite(&value, sizeof(value), 1, output);
 }
 
-void codegen_write_size(FILE *output, unsigned int size)
+void codegen_write_size(FILE *output, unsigned int value)
 {
     do {
-        /* Extract a byte from the int */
-        int val = size & 0x7F;
-        size >>= 7;
-
-        if (size)
-            val |= 0x80;
-
-        /* Write the byte to the stream */
-        codegen_write_byte(output, val);
-
-    } while (size);
+        codegen_write_byte(output, (value & 127) | ((value > 127) << 7));
+        printf("just wrote value: %d\n", (value & 127) | ((value > 127) << 7));
+        value >>= 7;
+    } while (value);
 }
 
 void codegen_write_string(FILE *output, char *value)
@@ -60,7 +53,7 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
     codegen_write_byte(output, proto->is_vararg);
 
     codegen_write_size(output, proto->code->size);
-    
+
     /* Write all of the instructions to the stream */
     for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next) {
         codegen_write_int(output, iter->value);
@@ -68,16 +61,21 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
 
     codegen_write_size(output, proto->constant_list->size);
 
-    /* Write all of the constants to the stream */
+    int id = 0;
     for (struct ir_constant *iter = proto->constant_list->first; iter != NULL; iter = iter->next) {
-        codegen_write_int(output, iter->type);
-        /* Handle each constant type */
+        codegen_write_byte(output, iter->type);
+        /* Write individual constants */
         switch (iter->type) {
-            case CONSTANT_GLOBAL:
             case CONSTANT_STRING:
-                codegen_write_int(output, iter->data.symbol.symbol_id);
+                //fprintf(stdout, "[%d]   string { %d }\n", id++, iter->data.symbol.symbol_id);
+                codegen_write_size(output, iter->data.symbol.symbol_id + 1);
+                break;
+            case CONSTANT_ENV:
+                //fprintf(stdout, "[%d]   global { k(%d) }\n", id++, iter->data.env.index);
+                codegen_write_int(output, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
+                //fprintf(stdout, "[%d]   number { %f }\n", id++, iter->data.number.value);
                 codegen_write_int(output, iter->data.number.value);
                 break;
         }

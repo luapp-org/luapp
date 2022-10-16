@@ -10,20 +10,19 @@ typedef unsigned int vm_instruction;
 
 /* vm_opcodes - operation codes for the instructions */
 enum vm_opcodes {
-    OP_GETGLOBAL,
+    OP_GETENV,
     OP_LOADI,
     OP_LOADK,
     OP_LOADKX,
     OP_CALL,
     OP_RETURN,
-    OP_ARGPREP,
     OP_VARARGPREP,
     OP_CLOSURE
 };
 
 /* Retrieves the operation for a Lua++ instruction. This section acts almost as a header for the
  * following 32 bit instruction. */
-#define GETARG_OP(instruction) ((instruction) & 0xFF);
+#define GETARG_OP(instruction) ((instruction)&0xFF);
 
 /* This is the ABC encoding. It consists of three 8-bit values that usually point to a register or a
  * really small number. */
@@ -44,31 +43,49 @@ typedef struct vm_value *vm_register;
 
 /* vm_proto - represents a function in the VM (similar to IR proto) */
 struct vm_proto {
-    /* function properties */
+    /* Function properties */
     unsigned char parameters_size;
     bool is_vararg;
     unsigned char max_stack_size;
 
-    /* individual instructions for the function */
+    /* Individual instructions for the function */
     vm_instruction *code;
 
-    /* array of values used within the program */
+    /* Array of values used within the program */
     struct vm_value *constants;
     int sizek;
 };
 
+/* vm_stack - represents a stack of vm_values in the VM */
+struct vm_stack {
+    /* Total amout of items in the stack array */
+    int size;
+    /* The capacity of the stack (how many slots exist in the array) */
+    int capacity;
+
+    /* Pointers to sections on the stack */
+    struct vm_value *top;  /* First empty register on the stack */
+    struct vm_value *base; /* Base register */
+
+    /* The stack itself */
+    struct vm_value *stack;
+};
+
 /* vm_context - carries all of the important data for the VM */
 struct vm_context {
-    /* string table */
+    /* String table */
     char **strings;
 
-    /* environment table */
+    /* Environment table */
     struct vm_table *env;
 
-    /* all functions in the program */
+    /* All functions in the program */
     struct vm_proto *protos;
 
-    /* error count */
+    /* Stack for the current program */
+    struct vm_stack stack;
+
+    /* Error count */
     int error_count;
 };
 

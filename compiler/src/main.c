@@ -140,6 +140,7 @@ int main(int argc, char **argv)
 
     /* If the stage is "type" print the type tree */
     if (!strcmp("type", stage)) {
+        print_ast(output, tree, true);
         print_summary("Type checker", error_count, start);
         type_destroy(&type_context);
         return 0;

@@ -12,20 +12,19 @@ struct symbol;
 struct symbol_table;
 
 enum ir_opcode {
-    IR_GETGLOBAL,
+    IR_GETENV,
     IR_LOADI,
     IR_LOADK,
     IR_LOADKX,
     IR_CALL,
     IR_RETURN,
-    IR_ARGPREP,
     IR_VARARGPREP,
     IR_CLOSURE
 };
 
 /* opcode_names -- array of opcode names that are used in ir.c */
-static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",   "LOADK",      "LOADKX", "CALL",
-                                           "RETURN",    "ARGPREP", "VARARGPREP", "CLOSURE"};
+static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",  "LOADK",      "LOADKX",
+                                           "CALL",      "RETURN", "VARARGPREP", "CLOSURE"};
 
 enum ir_instruction_mode { iABC, iABx, isAx, SUB };
 
@@ -55,7 +54,7 @@ struct ir_section {
     int size;
 };
 
-enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER, CONSTANT_GLOBAL };
+enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER, CONSTANT_ENV };
 
 struct ir_constant {
     enum ir_constant_type type;
@@ -66,6 +65,9 @@ struct ir_constant {
         struct {
             double value;
         } number;
+        struct {
+            unsigned int index;
+        } env;
     } data;
 
     struct ir_constant *prev, *next;

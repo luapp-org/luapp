@@ -291,12 +291,12 @@ static unsigned int ir_find_number_constant(struct ir_constant_list *list, doubl
     return -1;
 }
 
-static unsigned int ir_find_global_constant(struct ir_constant_list *list, struct symbol *symbol)
+static unsigned int ir_find_env_constant(struct ir_constant_list *list, unsigned int id)
 {
     int index = 0;
 
     for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
-        if (iter->type == CONSTANT_GLOBAL && iter->data.symbol.symbol_id == symbol->id)
+        if (iter->type == CONSTANT_ENV && iter->data.env.index == index)
             return index;
         ++index;
     }
@@ -353,13 +353,26 @@ static unsigned int ir_constant_number(struct ir_proto *proto, double value)
         return index;
 }
 
-/* ir_constant_global() -- allocate memory for a new global constant
+/* ir_constant_env() -- allocate memory for a new global constant
  *      args: proto, symbol
  *      rets: constant
  */
-static unsigned int ir_constant_global(struct ir_proto *proto, struct symbol *symbol)
+static unsigned int ir_constant_env(struct ir_proto *proto, struct symbol *symbol)
 {
-    return ir_constant_symbol(proto, symbol, CONSTANT_GLOBAL);
+    unsigned int id = ir_constant_symbol(proto, symbol, CONSTANT_STRING);
+
+    unsigned int index;
+    if ((index = ir_find_env_constant(proto->constant_list, id)) == -1) {
+
+        // We were unable to find an existing constant
+        struct ir_constant *c = ir_constant(CONSTANT_ENV);
+        c->data.env.index = id;
+
+        ir_constant_list_add(proto->constant_list, c);
+
+        return proto->constant_list->size++;
+    } else
+        return index;
 }
 
 /* ir_constant_number() -- allocate memory for a new function prototype list
@@ -540,10 +553,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct ir_instruction *instruction;
 
             if (node->data.identifier.is_global) {
-                unsigned int index = ir_constant_global(proto, node->data.identifier.s);
+                unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
-                instruction = ir_instruction_ABx(IR_GETGLOBAL,
-                                                 ir_allocate_register(context, proto, 1), index);
+                instruction =
+                    ir_instruction_ABx(IR_GETENV, ir_allocate_register(context, proto, 1), index);
             }
 
             ir_append(proto->code, instruction);
@@ -570,22 +583,13 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             p->is_vararg = params->data.parameter_list.vararg != NULL;
             p->parameters_size = namelist->data.name_list.size;
 
-            struct ir_section *section;
-            struct ir_instruction *arg_instr, *return_instr;
-
-            if (namelist) {
-                arg_instr =
-                    ir_instruction_ABC(IR_ARGPREP + (params->data.parameter_list.vararg != NULL),
-                                       namelist->data.name_list.size, 0, 0);
-            } else {
-                arg_instr = ir_instruction_ABC(
-                    IR_ARGPREP + (params->data.parameter_list.vararg != NULL), 0, 0, 0);
-            }
-            section = ir_section(arg_instr, arg_instr);
+            struct ir_instruction *arg_instr = ir_instruction_ABC(
+                IR_VARARGPREP, (namelist != NULL ? namelist->data.name_list.size : 0), 0, 0);
+            struct ir_section *section = ir_section(arg_instr, arg_instr);
 
             ir_build_proto(context, proto, node->data.function_body.body);
 
-            return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+            struct ir_instruction *return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
             ir_append(proto->code, return_instr);
 
             ir_proto_append(proto->protos, p);
@@ -704,17 +708,19 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
 
     /* Dump all constants */
     fprintf(output, "constants:\n");
+
+    int id = 0;
     for (struct ir_constant *iter = proto->constant_list->first; iter != NULL; iter = iter->next) {
         /* Dump individual constants */
         switch (iter->type) {
             case CONSTANT_STRING:
-                fprintf(output, "   string { %d }\n", iter->data.symbol.symbol_id);
+                fprintf(output, "[%d]   string { %d }\n", id++, iter->data.symbol.symbol_id);
                 break;
-            case CONSTANT_GLOBAL:
-                fprintf(output, "   global { %d }\n", iter->data.symbol.symbol_id);
+            case CONSTANT_ENV:
+                fprintf(output, "[%d]   global { k(%d) }\n", id++, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
-                fprintf(output, "   number { %f }\n", iter->data.number.value);
+                fprintf(output, "[%d]   number { %f }\n", id++, iter->data.number.value);
                 break;
         }
     }

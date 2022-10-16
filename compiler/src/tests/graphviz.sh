@@ -1,4 +1,5 @@
 cd src
 
-bin/luapp -s parser -o dot/$1.dot
-dot -Tpng dot/$1.dot > dot/$1.png
+[ $1 = "-parser" ]; bin/luappc -s parser -o dot/$2.dot
+[ $1 = "-type" ]; bin/luappc -s parser -o dot/$2.dot
+dot -Tpng dot/$2.dot > dot/$2.png

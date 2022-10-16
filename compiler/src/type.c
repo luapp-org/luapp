@@ -261,15 +261,22 @@ static void type_handle_local_assignment(struct type_context *context, struct no
 {
     struct node *identifier;
 
-    if (name && expr && name->type != NODE_TYPE_ANNOTATION) {
-        free(name->node_type);
-        name->node_type = expr->node_type;
+    if (name && expr) {
+        if (name->data.type_annotation.type->node_type == NULL) {
+            free(name->node_type);
+            name->node_type = expr->node_type;
+            name->data.type_annotation.type->node_type = expr->node_type;
+        } else if (name->type != NODE_TYPE_ANNOTATION) {
+            free(name->node_type);
+            name->node_type = expr->node_type;
 
-        if (context->is_strict) {
-            compiler_error(name->location,
-                           "expected type annotation; compiler is in \"strict\" mode");
-            context->error_count++;
+            if (context->is_strict && name->type != NODE_TYPE_ANNOTATION) {
+                compiler_error(name->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
         }
+
         identifier = name;
     } else if (name)
         identifier = name->data.type_annotation.identifier;
@@ -1079,10 +1086,10 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             type_ast_traversal(&new_context, node->data.function_body.body, true);
 
-            if (!main) {
+            if (!main)
                 free(new_context.type_map);
-                context->error_count = new_context.error_count;
-            }
+
+            context->error_count = new_context.error_count;
             break;
     }
 }

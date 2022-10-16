@@ -2,9 +2,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "reader.h"
 #include "lib.h"
+#include "reader.h"
 #include "vm.h"
 
 unsigned char read_byte(FILE *input)
@@ -17,17 +18,17 @@ unsigned char read_byte(FILE *input)
 
 unsigned int read_cint(FILE *input)
 {
-    int result = 0, a = 0, b = 0;
+    unsigned int result = 0;
+    unsigned int shift = 0;
+
     unsigned char byte;
 
-    do {
-        /* Uncompress the integer with this weird math */
+    do
+    {
         byte = read_byte(input);
-        a = (byte & 0x7F) << b;
-        b += 7;
-        result |= a;
-
-    } while (byte < 0);
+        result |= (byte & 127) << shift;
+        shift += 7;
+    } while (byte & 128);
 
     return result;
 }
@@ -40,26 +41,47 @@ unsigned int read_int(FILE *input)
     return integer;
 }
 
+char *read_string(FILE *input, char **strings)
+{
+    unsigned int index = read_cint(input);
+;
+    return index == 0 ? NULL : strings[index - 1];
+}
+
+struct vm_value get_env(struct vm_table *env, struct vm_value value)
+{
+    struct vm_value *ret;
+    if (ret = vm_table_get(env, value))
+        return *ret;
+    else {
+        struct vm_value nil;
+        VM_SETNIL(&nil);
+
+        return nil;
+    }
+}
+
 char **read_strings(FILE *input)
 {
     /* Create the main string array */
     int size = read_cint(input);
 
-    char **strings = malloc((size + 1) * sizeof(char *));
+    char **strings = calloc(size, sizeof(char *));
     assert(strings);
 
     /* Read each string individually */
     for (int i = 0; i < size; i++) {
         int len = read_cint(input);
 
-        strings[i] = calloc(sizeof(char), len);
+        /* + 1 for the end of string delimeter */
+        strings[i] = calloc(len + 1, sizeof(char));
         assert(strings[i]);
 
         /* Read each char of the string and save in 'strings' */
-        for (int j = 0; j < len; j++) 
+        for (int j = 0; j < len; j++)
             strings[i][j] = (char)read_byte(input);
 
-        strings[len] = '\0';
+        strings[i][len] = '\0';
     }
 
     return strings;
@@ -69,44 +91,49 @@ struct vm_proto *read_protos(FILE *input, struct vm_context *context)
 {
     /* Create ana allocate the function prototype list */
     int size = read_cint(input);
-    struct vm_proto *protos = malloc((size + 1) * sizeof(struct vm_proto));
+    struct vm_proto *protos = calloc(size, sizeof(struct vm_proto));
     assert(protos);
 
     /* Traverse through each function prototype */
     for (int i = 0; i < size; i++) {
-        /* Create our new function prototype */
-        struct vm_proto *proto = malloc(sizeof(struct vm_proto));
-        assert(proto);
-
         /* Read properties */
-        proto->max_stack_size = read_byte(input);
-        proto->parameters_size = read_byte(input);
-        proto->is_vararg = read_byte(input);
+        protos[i].max_stack_size = read_byte(input);
+        protos[i].parameters_size = read_byte(input);
+        protos[i].is_vararg = read_byte(input);
 
         /* Create the instruction array */
         int sizecode = read_cint(input);
-        proto->code = calloc(sizecode, sizeof(unsigned int));
-        assert(proto->code);
+        protos[i].code = calloc(sizecode, sizeof(unsigned int));
 
         /* Read each instruction in the array */
-        for (int j = 0; j < sizecode; j++) 
-            proto->code[j] = read_int(input);
+        for (int j = 0; j < sizecode; j++)
+            protos[i].code[j] = read_int(input);
 
         /* Create the constant array */
-        proto->sizek = read_cint(input);
+        protos[i].sizek = read_cint(input);
 
-        proto->constants = calloc(proto->sizek, sizeof(struct vm_value *));
-        assert(proto->constants);
+        protos[i].constants = calloc(protos[i].sizek, sizeof(struct vm_value));
 
         /* Read each constant */
-        for (int k = 0; k < proto->sizek; k++) {
+        for (int k = 0; k < protos[i].sizek; k++) {
+
             /* Handle each constant type */
             switch (read_byte(input)) {
-                case CONST_STRING:
-                    VM_SETSVALUE(&proto->constants[k], context->strings[read_int(input)]);
+                case CONST_ENV: {
+                    /* Attemp to load environment member, set nil otherwise */
+                    const struct vm_value s = protos[i].constants[read_int(input)];
+                    struct vm_value e = get_env(context->env, s);
+
+                    VM_SETOBJ(&protos[i].constants[k], &e);
                     break;
+                }
+                case CONST_STRING: {
+                    char *s = read_string(input, context->strings);
+                    VM_SETSVALUE(&protos[i].constants[k], s);
+                    break;
+                }
                 case CONST_NUMBER:
-                    VM_SETNVALUE(&proto->constants[k], read_int(input));
+                    VM_SETNVALUE(&protos[i].constants[k], read_int(input));
                     break;
             }
         }
