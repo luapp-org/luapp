@@ -376,7 +376,7 @@ static void Arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TM
 #define RKC(i)                                                                                     \
     check_exp(getCMode(GET_OPCODE(i)) == OpArgK,                                                   \
               ISK(GETARG_C(i)) ? k + INDEXK(GETARG_C(i)) : base + GETARG_C(i))
-#define KBx(i) check_exp(getBMode(GET_OPCODE(i)) == OpArgK, k + GETARG_Bx(i))
+#define KBx(i) check_exp(getBMode(GET_OPCODE(i)) == OpArgK, k + GETARG_D(i))
 
 #define dojump(L, pc, i)                                                                           \
     {                                                                                              \
@@ -568,29 +568,29 @@ reentry: /* entry point */
                 continue;
             }
             case OP_JMP: {
-                dojump(L, pc, GETARG_sBx(i));
+                dojump(L, pc, GETARG_E(i));
                 continue;
             }
             case OP_EQ: {
                 TValue *rb = RKB(i);
                 TValue *rc = RKC(i);
-                Protect(if (equalobj(L, rb, rc) == GETARG_A(i)) dojump(L, pc, GETARG_sBx(*pc));)
+                Protect(if (equalobj(L, rb, rc) == GETARG_A(i)) dojump(L, pc, GETARG_D(*pc));)
                     pc++;
                 continue;
             }
             case OP_LT: {
                 Protect(if (luaV_lessthan(L, RKB(i), RKC(i)) == GETARG_A(i))
-                            dojump(L, pc, GETARG_sBx(*pc));) pc++;
+                            dojump(L, pc, GETARG_D(*pc));) pc++;
                 continue;
             }
             case OP_LE: {
                 Protect(if (lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
-                            dojump(L, pc, GETARG_sBx(*pc));) pc++;
+                            dojump(L, pc, GETARG_D(*pc));) pc++;
                 continue;
             }
             case OP_TEST: {
                 if (l_isfalse(ra) != GETARG_C(i))
-                    dojump(L, pc, GETARG_sBx(*pc));
+                    dojump(L, pc, GETARG_D(*pc));
                 pc++;
                 continue;
             }
@@ -598,7 +598,7 @@ reentry: /* entry point */
                 TValue *rb = RB(i);
                 if (l_isfalse(rb) != GETARG_C(i)) {
                     setobjs2s(L, ra, rb);
-                    dojump(L, pc, GETARG_sBx(*pc));
+                    dojump(L, pc, GETARG_D(*pc));
                 }
                 pc++;
                 continue;
@@ -683,7 +683,7 @@ reentry: /* entry point */
                 lua_Number idx = luai_numadd(nvalue(ra), step); /* increment index */
                 lua_Number limit = nvalue(ra + 1);
                 if (luai_numlt(0, step) ? luai_numle(idx, limit) : luai_numle(limit, idx)) {
-                    dojump(L, pc, GETARG_sBx(i)); /* jump back */
+                    dojump(L, pc, GETARG_D(i)); /* jump back */
                     setnvalue(ra, idx);           /* update internal index... */
                     setnvalue(ra + 3, idx);       /* ...and external index */
                 }
@@ -701,7 +701,7 @@ reentry: /* entry point */
                 else if (!tonumber(pstep, ra + 2))
                     luaG_runerror(L, LUA_QL("for") " step must be a number");
                 setnvalue(ra, luai_numsub(nvalue(ra), nvalue(pstep)));
-                dojump(L, pc, GETARG_sBx(i));
+                dojump(L, pc, GETARG_D(i));
                 continue;
             }
             case OP_TFORLOOP: {
@@ -715,7 +715,7 @@ reentry: /* entry point */
                 cb = RA(i) + 3;                     /* previous call may change the stack */
                 if (!ttisnil(cb)) {                 /* continue loop? */
                     setobjs2s(L, cb - 1, cb);       /* save control variable */
-                    dojump(L, pc, GETARG_sBx(*pc)); /* jump back */
+                    dojump(L, pc, GETARG_D(*pc)); /* jump back */
                 }
                 pc++;
                 continue;
@@ -751,7 +751,7 @@ reentry: /* entry point */
                 Proto *p;
                 Closure *ncl;
                 int nup, j;
-                p = cl->p->p[GETARG_Bx(i)];
+                p = cl->p->p[GETARG_D(i)];
                 nup = p->nups;
                 ncl = luaF_newLclosure(L, nup, cl->env);
                 ncl->l.p = p;

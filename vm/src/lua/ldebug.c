@@ -322,14 +322,14 @@ static Instruction symbexec(const Proto *pt, int lastpc, int reg)
                 check(checkArgMode(pt, c, getCMode(op)));
                 break;
             }
-            case iABx: {
-                b = GETARG_Bx(i);
+            case iAD: {
+                b = GETARG_D(i);
                 if (getBMode(op) == OpArgK)
                     check(b < pt->sizek);
                 break;
             }
-            case iAsBx: {
-                b = GETARG_sBx(i);
+            case iE: {
+                b = GETARG_E(i);
                 if (getBMode(op) == OpArgR) {
                     int dest = pc + 1 + b;
                     check(0 <= dest && dest < pt->sizecode);
@@ -498,7 +498,7 @@ static const char *getobjname(lua_State *L, CallInfo *ci, int stackpos, const ch
         lua_assert(pc != -1);
         switch (GET_OPCODE(i)) {
             case OP_GETGLOBAL: {
-                int g = GETARG_Bx(i); /* global index */
+                int g = GETARG_D(i); /* global index */
                 lua_assert(ttisstring(&p->k[g]));
                 *name = svalue(&p->k[g]);
                 return "global";

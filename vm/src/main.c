@@ -7,10 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "reader.h"
-#include "vm.h"
-#include "lib.h"
-
 /* main() -- entry point for the VM */
 int main(int argc, char **argv)
 {
@@ -33,25 +29,6 @@ int main(int argc, char **argv)
         printf("Error: expected one input file, found %d files.\n", argc - optind);
         return 1;
     }
-
-    struct vm_context context;
-    context.error_count = 0;
-
-    lib_open(&context);
-
-    read_context(input, &context);
-
-    /* Handle any errors that come up */
-    if (context.error_count) 
-        return 1;
-
-    /* Execute the instructions */
-    vm_execute(&context);
-
-    lib_close(&context);
-
-    if (context.error_count) 
-        return 1;
 
     return 0;
 }

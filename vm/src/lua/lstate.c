@@ -70,7 +70,6 @@ static void f_luaopen(lua_State *L, void *ud)
     sethvalue(L, registry(L), luaH_new(L, 0, 2)); /* registry */
     luaS_resize(L, MINSTRTABSIZE);                /* initial size of string table */
     luaT_init(L);
-    luaX_init(L);
     luaS_fix(luaS_newliteral(L, MEMERRMSG));
     g->GCthreshold = 4 * g->totalbytes;
 }

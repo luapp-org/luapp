@@ -96,8 +96,8 @@ static void PrintCode(const Proto *f)
         int a = GETARG_A(i);
         int b = GETARG_B(i);
         int c = GETARG_C(i);
-        int bx = GETARG_Bx(i);
-        int sbx = GETARG_sBx(i);
+        int d = GETARG_D(i);
+        int e = GETARG_E(i);
         int line = getline(f, pc);
         printf("\t%d\t", pc + 1);
         if (line > 0)
@@ -113,23 +113,20 @@ static void PrintCode(const Proto *f)
                 if (getCMode(o) != OpArgN)
                     printf(" %d", ISK(c) ? (-1 - INDEXK(c)) : c);
                 break;
-            case iABx:
+            case iAD:
                 if (getBMode(o) == OpArgK)
-                    printf("%d %d", a, -1 - bx);
+                    printf("%d %d", a, -1 - d);
                 else
-                    printf("%d %d", a, bx);
+                    printf("%d %d", a, d);
                 break;
-            case iAsBx:
-                if (o == OP_JMP)
-                    printf("%d", sbx);
-                else
-                    printf("%d %d", a, sbx);
+            case iE:
+                printf("%d", e);
                 break;
         }
         switch (o) {
             case OP_LOADK:
                 printf("\t; ");
-                PrintConstant(f, bx);
+                PrintConstant(f, d);
                 break;
             case OP_GETUPVAL:
             case OP_SETUPVAL:
@@ -137,7 +134,7 @@ static void PrintCode(const Proto *f)
                 break;
             case OP_GETGLOBAL:
             case OP_SETGLOBAL:
-                printf("\t; %s", svalue(&f->k[bx]));
+                printf("\t; %s", svalue(&f->k[d]));
                 break;
             case OP_GETTABLE:
             case OP_SELF:
@@ -171,10 +168,10 @@ static void PrintCode(const Proto *f)
             case OP_JMP:
             case OP_FORLOOP:
             case OP_FORPREP:
-                printf("\t; to %d", sbx + pc + 2);
+                printf("\t; to %d", d + pc + 2);
                 break;
             case OP_CLOSURE:
-                printf("\t; %p", VOID(f->p[bx]));
+                printf("\t; %p", VOID(f->p[d]));
                 break;
             case OP_SETLIST:
                 if (c == 0)
