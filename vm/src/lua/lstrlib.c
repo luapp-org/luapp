@@ -149,17 +149,17 @@ static int writer(lua_State *L, const void *b, size_t size, void *B)
     return 0;
 }
 
-static int str_dump(lua_State *L)
-{
-    luaL_Buffer b;
-    luaL_checktype(L, 1, LUA_TFUNCTION);
-    lua_settop(L, 1);
-    luaL_buffinit(L, &b);
-    if (lua_dump(L, writer, &b) != 0)
-        luaL_error(L, "unable to dump given function");
-    luaL_pushresult(&b);
-    return 1;
-}
+// static int str_dump(lua_State *L)
+// {
+//     luaL_Buffer b;
+//     luaL_checktype(L, 1, LUA_TFUNCTION);
+//     lua_settop(L, 1);
+//     luaL_buffinit(L, &b);
+//     if (lua_dump(L, writer, &b) != 0)
+//         luaL_error(L, "unable to dump given function");
+//     luaL_pushresult(&b);
+//     return 1;
+// }
 
 /*
 ** {======================================================
@@ -867,10 +867,10 @@ static int str_format(lua_State *L)
 }
 
 static const luaL_Reg strlib[] = {
-    {"byte", str_byte},       {"char", str_char},     {"dump", str_dump},   {"find", str_find},
-    {"format", str_format},   {"gfind", gfind_nodef}, {"gmatch", gmatch},   {"gsub", str_gsub},
-    {"len", str_len},         {"lower", str_lower},   {"match", str_match}, {"rep", str_rep},
-    {"reverse", str_reverse}, {"sub", str_sub},       {"upper", str_upper}, {NULL, NULL}};
+    {"byte", str_byte},     {"char", str_char},   {"find", str_find}, {"format", str_format},
+    {"gfind", gfind_nodef}, {"gmatch", gmatch},   {"gsub", str_gsub}, {"len", str_len},
+    {"lower", str_lower},   {"match", str_match}, {"rep", str_rep},   {"reverse", str_reverse},
+    {"sub", str_sub},       {"upper", str_upper}, {NULL, NULL}};
 
 static void createmetatable(lua_State *L)
 {
