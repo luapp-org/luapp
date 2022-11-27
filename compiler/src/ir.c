@@ -84,15 +84,13 @@ static struct ir_section *ir_append(struct ir_section *section, struct ir_instru
     return section;
 }
 
-/* ir_instruction() -- creates a new ir_instruction with a given operation code
- *      args: operation code
+/* ir_instruction() -- creates a new ir_instruction
+ *      args: none
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction(enum ir_opcode op)
+static struct ir_instruction *ir_instruction()
 {
     struct ir_instruction *instruction = smalloc(sizeof(struct ir_instruction));
-
-    instruction->op = op;
 
     instruction->next = NULL;
     instruction->prev = NULL;
@@ -104,49 +102,62 @@ static struct ir_instruction *ir_instruction(enum ir_opcode op)
  *      args: operation code, a register, b register, and c register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_ABC(enum ir_opcode op, int A, int B, int C)
+static struct ir_instruction *ir_instruction_ABC(enum opcode op, uint8_t a, uint8_t b, uint8_t c)
 {
-    struct ir_instruction *instruction = ir_instruction(op);
+    struct ir_instruction *instruction = ir_instruction();
 
-    /* Set IR operands */
-    instruction->A = A;
-    instruction->B = B;
-    instruction->C = C;
+    /* Set IR instruction */
+    instruction->value = (uint32_t)op | (a << 8) | (b << 16) | (c << 24);
 
     instruction->mode = iABC;
 
     return instruction;
 }
 
-/* ir_instruction_ABx() -- creates a new ir_instruction with a given operation code and registers
- *      args: operation code, a register, bx register
+/* ir_instruction_AD() -- creates a new ir_instruction with a given operation code and registers
+ *      args: operation code, a register, d register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_ABx(enum ir_opcode op, int A, unsigned short Bx)
+static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, int16_t d)
 {
-    struct ir_instruction *instruction = ir_instruction(op);
+    struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->A = A;
-    instruction->Bx = Bx;
+    instruction->value = (uint32_t)op | (a << 8) | ((uint16_t)d << 16);
 
-    instruction->mode = iABx;
+    instruction->mode = iAD;
 
     return instruction;
 }
 
-/* ir_instruction_AsBx() -- creates a new ir_instruction with a given operation code and registers
- *      args: operation code, a register, sbx register
+/* ir_instruction_ADu() -- creates a new ir_instruction with a given operation code and registers
+ *      args: operation code, a register, du register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_isAx(enum ir_opcode op, short sBx)
+static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, uint16_t du)
 {
-    struct ir_instruction *instruction = ir_instruction(op);
+    struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->sBx = sBx;
+    instruction->value = (uint32_t)op | (a << 8) | ((uint16_t)du << 16);
 
-    instruction->mode = isAx;
+    instruction->mode = iADu;
+
+    return instruction;
+}
+
+/* ir_instruction_AE() -- creates a new ir_instruction with a given operation code and registers
+ *      args: operation code, a register, e register
+ *      rets: new ir instruction
+ */
+static struct ir_instruction *ir_instruction_AE(enum opcode op, int32_t e)
+{
+    struct ir_instruction *instruction = ir_instruction();
+
+    /* Set IR operands */
+    instruction->value = (uint32_t)op | ((uint32_t)e << 8);
+
+    instruction->mode = iE;
 
     return instruction;
 }
@@ -157,7 +168,7 @@ static struct ir_instruction *ir_instruction_isAx(enum ir_opcode op, short sBx)
  */
 static struct ir_instruction *ir_instruction_sub(unsigned int value)
 {
-    struct ir_instruction *instruction = smalloc(sizeof(struct ir_instruction));
+    struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
     instruction->value = value;
@@ -404,6 +415,7 @@ static struct ir_proto *ir_proto()
     p->max_stack_size = 0;
     p->parameters_size = 0;
     p->top_register = 0;
+    p->upvalues_size = 0;
 
     p->protos = ir_proto_list(NULL, NULL);
 
@@ -495,7 +507,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, function);
             ir_build_proto(context, proto, args);
 
-            instruction = ir_instruction_ABC(IR_CALL, old, size + 1, 1);
+            instruction = ir_instruction_ABC(OP_CALL, old, size + 1, 1);
 
             ir_free_register(context, proto, size + 1);
 
@@ -507,7 +519,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             unsigned int index = ir_constant_string(proto, node->data.string.s);
 
             instruction =
-                ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
+                ir_instruction_ABx(OP_LOADK, ir_allocate_register(context, proto, 1), index);
 
             ir_append(proto->code, instruction);
             break;
@@ -519,21 +531,25 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         case NODE_NUMBER: {
             struct ir_instruction *instruction, *sub;
 
-            if (node->data.number.value <= SHRT_MAX && node->data.number.value >= SHRT_MIN &&
+            if (node->data.number.value <= USHRT_MAX && node->data.number.value >= -USHRT_MAX &&
                 floor(node->data.number.value) == node->data.number.value) {
-                // We have a whole number that is large enough to fit in the sBx operand
-                instruction = ir_instruction_ABx(IR_LOADI, ir_allocate_register(context, proto, 1),
+                /* Determine whether we have a negative or positive value */
+                const bool is_positive = node->data.number.value >= 0;
+
+                /* We have a whole number that is large enough to fit in the Du operand */
+                instruction = ir_instruction_ABx(is_positive ? OP_LOADPN : OP_LOADNN,
+                                                 ir_allocate_register(context, proto, 1),
                                                  node->data.number.value);
                 ir_append(proto->code, instruction);
                 break;
             }
 
-            unsigned int index = ir_constant_number(proto, node->data.number.value);
+            uint32_t index = ir_constant_number(proto, node->data.number.value);
             /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
                 instruction =
-                    ir_instruction_ABx(IR_LOADK, ir_allocate_register(context, proto, 1), index);
+                    ir_instruction_ABx(OP_LOADK, ir_allocate_register(context, proto, 1), index);
 
                 ir_append(proto->code, instruction);
                 break;
@@ -541,7 +557,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 /* Here we use a sub instruction. An operation less instruction that simply stores a
                  * singular value */
                 instruction =
-                    ir_instruction_ABx(IR_LOADKX, ir_allocate_register(context, proto, 1), 0);
+                    ir_instruction_ABx(OP_LOADKX, ir_allocate_register(context, proto, 1), 0);
                 sub = ir_instruction_sub(index);
 
                 ir_append(proto->code, instruction);
@@ -556,7 +572,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
                 instruction =
-                    ir_instruction_ABx(IR_GETENV, ir_allocate_register(context, proto, 1), index);
+                    ir_instruction_ABx(OP_GETENV, ir_allocate_register(context, proto, 1), index);
             }
 
             ir_append(proto->code, instruction);
@@ -584,18 +600,19 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             p->parameters_size = namelist->data.name_list.size;
 
             struct ir_instruction *arg_instr = ir_instruction_ABC(
-                IR_VARARGPREP, (namelist != NULL ? namelist->data.name_list.size : 0), 0, 0);
+                OP_VARARGPREP, (namelist != NULL ? namelist->data.name_list.size : 0), 0, 0);
+
             struct ir_section *section = ir_section(arg_instr, arg_instr);
 
             ir_build_proto(context, proto, node->data.function_body.body);
 
-            struct ir_instruction *return_instr = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+            struct ir_instruction *return_instr = ir_instruction_ABC(OP_RETURN, 0, 1, 0);
             ir_append(proto->code, return_instr);
 
             ir_proto_append(proto->protos, p);
 
             struct ir_instruction *closure = ir_instruction_ABx(
-                IR_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
+                OP_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
             ir_append(proto->code, closure);
             break;
         }
@@ -626,14 +643,14 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
     proto->is_vararg = true;
 
     /* Build the initial argument preparation instruction */
-    struct ir_instruction *instruction = ir_instruction_ABC(IR_VARARGPREP, 0, 0, 0);
+    struct ir_instruction *instruction = ir_instruction_ABC(OP_VARARGPREP, 0, 0, 0);
     proto->code = ir_append(proto->code, instruction);
 
     /* Build the content of the main block */
     ir_build_proto(context, proto, node->data.function_body.body);
 
     /* Build the function exit instruction (return) */
-    instruction = ir_instruction_ABC(IR_RETURN, 0, 1, 0);
+    instruction = ir_instruction_ABC(OP_RETURN, 0, 1, 0);
     proto->code = ir_append(proto->code, instruction);
 
     return proto;
@@ -662,17 +679,22 @@ static void ir_print_instruction(FILE *output, struct ir_instruction *instructio
     if (instruction->mode == SUB)
         fprintf(output, "%-10s", " ");
     else
-        fprintf(output, "%-10s", opcode_names[instruction->op]);
+        fprintf(output, "%-10s", opcode_names[GET_OPCODE(instruction->value)]);
 
     switch (instruction->mode) {
         case iABC:
-            fprintf(output, "%10d %d %d", instruction->A, instruction->B, instruction->C);
+            fprintf(output, "%10d %d %d", GETARG_A(instruction->value),
+                    GETARG_B(instruction->value), GETARG_C(instruction->value));
             break;
-        case iABx:
-            fprintf(output, "%10d %hu", instruction->A, instruction->Bx);
+        case iAD:
+            fprintf(output, "%10d %hu", GETARG_A(instruction->value), GETARG_D(instruction->value));
             break;
-        case isAx:
-            fprintf(output, "%10d %d", instruction->A, instruction->sBx);
+        case iADu:
+            fprintf(output, "%10d %hu", GETARG_A(instruction->value),
+                    GETARG_Du(instruction->value));
+            break;
+        case iE:
+            fprintf(output, "%10d", GETARG_E(instruction->value));
             break;
         default:
             fprintf(output, "%10d", instruction->value);

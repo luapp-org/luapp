@@ -5,47 +5,17 @@
 #include <stdio.h>
 
 #include "compiler.h"
+#include "../../opcodes.h"
 
 /* Blind definitions */
 struct node;
 struct symbol;
 struct symbol_table;
 
-enum ir_opcode {
-    IR_GETENV,
-    IR_LOADI,
-    IR_LOADK,
-    IR_LOADKX,
-    IR_CALL,
-    IR_RETURN,
-    IR_VARARGPREP,
-    IR_CLOSURE
-};
-
-/* opcode_names -- array of opcode names that are used in ir.c */
-static const char *const opcode_names[] = {"GETGLOBAL", "LOADI",  "LOADK",      "LOADKX",
-                                           "CALL",      "RETURN", "VARARGPREP", "CLOSURE"};
-
-enum ir_instruction_mode { iABC, iABx, isAx, SUB };
-
 struct ir_instruction {
-    union {
-        unsigned int value;
-        struct {
-            unsigned char op; /* needed to be a byte lol */
-            unsigned char A;
-            union {
-                struct {
-                    unsigned char B;
-                    unsigned char C;
-                };
-                unsigned short Bx;
-                short sBx;
-            };
-        };
-    };
+    uint32_t value;
 
-    enum ir_instruction_mode mode;
+    enum opcode_mode mode;
     struct ir_instruction *prev, *next;
 };
 
@@ -60,13 +30,13 @@ struct ir_constant {
     enum ir_constant_type type;
     union {
         struct {
-            unsigned int symbol_id;
+            uint32_t symbol_id;
         } symbol;
         struct {
             double value;
         } number;
         struct {
-            unsigned int index;
+            uint32_t index;
         } env;
     } data;
 
@@ -83,15 +53,17 @@ struct ir_proto_list;
 /* IR function prototypes */
 struct ir_proto {
     /* Information variables */
-    unsigned char parameters_size;
+    uint8_t max_stack_size;
+    uint8_t parameters_size;
+    uint8_t upvalues_size;
     bool is_vararg;
-    unsigned char max_stack_size;
+
     struct ir_proto_list *protos;
     struct ir_constant_list *constant_list;
     struct ir_section *code;
 
     /* Variables used within the IR */
-    unsigned char top_register;
+    uint8_t top_register;
     struct ir_proto *prev, *next;
 };
 

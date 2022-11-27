@@ -295,22 +295,6 @@ static int db_gethook(lua_State *L)
     return 3;
 }
 
-static int db_debug(lua_State *L)
-{
-    for (;;) {
-        char buffer[250];
-        fputs("lua_debug> ", stderr);
-        if (fgets(buffer, sizeof(buffer), stdin) == 0 || strcmp(buffer, "cont\n") == 0)
-            return 0;
-        if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
-            lua_pcall(L, 0, 0, 0)) {
-            fputs(lua_tostring(L, -1), stderr);
-            fputs("\n", stderr);
-        }
-        lua_settop(L, 0); /* remove eventual returns */
-    }
-}
-
 #define LEVELS1 12 /* size of the first part of the stack */
 #define LEVELS2 10 /* size of the second part of the stack */
 
@@ -367,21 +351,14 @@ static int db_errorfb(lua_State *L)
     return 1;
 }
 
-static const luaL_Reg dblib[] = {{"debug", db_debug},
-                                 {"getfenv", db_getfenv},
-                                 {"gethook", db_gethook},
-                                 {"getinfo", db_getinfo},
-                                 {"getlocal", db_getlocal},
-                                 {"getregistry", db_getregistry},
-                                 {"getmetatable", db_getmetatable},
-                                 {"getupvalue", db_getupvalue},
-                                 {"setfenv", db_setfenv},
-                                 {"sethook", db_sethook},
-                                 {"setlocal", db_setlocal},
-                                 {"setmetatable", db_setmetatable},
-                                 {"setupvalue", db_setupvalue},
-                                 {"traceback", db_errorfb},
-                                 {NULL, NULL}};
+static const luaL_Reg dblib[] = {
+    {"getfenv", db_getfenv},           {"gethook", db_gethook},
+    {"getinfo", db_getinfo},           {"getlocal", db_getlocal},
+    {"getregistry", db_getregistry},   {"getmetatable", db_getmetatable},
+    {"getupvalue", db_getupvalue},     {"setfenv", db_setfenv},
+    {"sethook", db_sethook},           {"setlocal", db_setlocal},
+    {"setmetatable", db_setmetatable}, {"setupvalue", db_setupvalue},
+    {"traceback", db_errorfb},         {NULL, NULL}};
 
 LUALIB_API int luaopen_debug(lua_State *L)
 {

@@ -267,20 +267,6 @@ static int load_aux(lua_State *L, int status)
     }
 }
 
-static int luaB_loadstring(lua_State *L)
-{
-    size_t l;
-    const char *s = luaL_checklstring(L, 1, &l);
-    const char *chunkname = luaL_optstring(L, 2, s);
-    return load_aux(L, luaL_loadbuffer(L, s, l, chunkname));
-}
-
-static int luaB_loadfile(lua_State *L)
-{
-    const char *fname = luaL_optstring(L, 1, NULL);
-    return load_aux(L, luaL_loadfile(L, fname));
-}
-
 /*
 ** Reader for generic `load' function: `lua_load' uses the
 ** stack for internal stuff, so the reader cannot change the
@@ -302,26 +288,6 @@ static const char *generic_reader(lua_State *L, void *ud, size_t *size)
     } else
         luaL_error(L, "reader function must return a string");
     return NULL; /* to avoid warnings */
-}
-
-static int luaB_load(lua_State *L)
-{
-    int status;
-    const char *cname = luaL_optstring(L, 2, "=(load)");
-    luaL_checktype(L, 1, LUA_TFUNCTION);
-    lua_settop(L, 3); /* function, eventual name, plus one reserved slot */
-    status = lua_load(L, generic_reader, NULL, cname);
-    return load_aux(L, status);
-}
-
-static int luaB_dofile(lua_State *L)
-{
-    const char *fname = luaL_optstring(L, 1, NULL);
-    int n = lua_gettop(L);
-    if (luaL_loadfile(L, fname) != 0)
-        lua_error(L);
-    lua_call(L, 0, LUA_MULTRET);
-    return lua_gettop(L) - n;
 }
 
 static int luaB_assert(lua_State *L)
@@ -440,14 +406,10 @@ static int luaB_newproxy(lua_State *L)
 
 static const luaL_Reg base_funcs[] = {{"assert", luaB_assert},
                                       {"collectgarbage", luaB_collectgarbage},
-                                      {"dofile", luaB_dofile},
                                       {"error", luaB_error},
                                       {"gcinfo", luaB_gcinfo},
                                       {"getfenv", luaB_getfenv},
                                       {"getmetatable", luaB_getmetatable},
-                                      {"loadfile", luaB_loadfile},
-                                      {"load", luaB_load},
-                                      {"loadstring", luaB_loadstring},
                                       {"next", luaB_next},
                                       {"pcall", luaB_pcall},
                                       {"print", luaB_print},
