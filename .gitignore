@@ -1,15 +1,15 @@
 # Ignore the directory for all of the binary and dot files
-compiler/src/bin
-compiler/src/dot/*.dot
-vm/src/bin
+src/compiler/src/bin
+src/compiler/src/dot/*.dot
+src/vm/src/bin
 
 # Ignore all Flex generated files
-compiler/src/lexer.yy.c
-compiler/src/lexer.yy.h
+src/compiler/src/lexer.yy.c
+src/compiler/src/lexer.yy.h
 
 # Ignore all Bison generated files
-compiler/src/parser.tab.c
-compiler/src/parser.tab.h
+src/compiler/src/parser.tab.c
+src/compiler/src/parser.tab.h
 
 # Ignore all VS Code generated files
 .vscode/
