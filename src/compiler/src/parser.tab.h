@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.5.1.  */
+/* A Bison parser, made by GNU Bison 3.8.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -31,8 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Undocumented macros, especially those whose name start with YY_,
-   are private implementation details.  Do not rely on them.  */
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
 
 #ifndef YY_YY_PARSER_TAB_H_INCLUDED
 # define YY_YY_PARSER_TAB_H_INCLUDED
@@ -44,75 +45,80 @@
 extern int yydebug;
 #endif
 
-/* Token type.  */
+/* Token kinds.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    IDENTIFIER_T = 258,
-    NUMBER_T = 259,
-    STRING_T = 260,
-    AND_T = 261,
-    BREAK_T = 262,
-    DO_T = 263,
-    ELSE_T = 264,
-    ELSEIF_T = 265,
-    END_T = 266,
-    FALSE_T = 267,
-    TRUE_T = 268,
-    FOR_T = 269,
-    FUNCTION_T = 270,
-    IF_T = 271,
-    IN_T = 272,
-    LOCAL_T = 273,
-    NIL_T = 274,
-    NOT_T = 275,
-    OR_T = 276,
-    REPEAT_T = 277,
-    RETURN_T = 278,
-    THEN_T = 279,
-    UNTIL_T = 280,
-    WHILE_T = 281,
-    TNUMBER_T = 282,
-    TSTRING_T = 283,
-    TBOOLEAN_T = 284,
-    TANY_T = 285,
-    TARRAY_T = 286,
-    TTABLE_T = 287,
-    PLUS_T = 288,
-    MINUS_T = 289,
-    ASTERISK_T = 290,
-    SLASH_T = 291,
-    PERCENT_T = 292,
-    EQUAL_T = 293,
-    LEFT_PARAN_T = 294,
-    RIGHT_PARAN_T = 295,
-    RIGHT_SQUARE_T = 296,
-    LEFT_SQUARE_T = 297,
-    CARROT_T = 298,
-    GREATER_THAN_T = 299,
-    LESS_THAN_T = 300,
-    SQUIGGLE_T = 301,
-    COLON_T = 302,
-    POUND_T = 303,
-    DOT_T = 304,
-    COMMA_T = 305,
-    LEFT_BRACKET_T = 306,
-    RIGHT_BRACKET_T = 307,
-    DOUBLE_EQUAL_T = 308,
-    NOT_EQUAL_T = 309,
-    GREATER_EQUAL_T = 310,
-    LESS_EQUAL_T = 311,
-    CONCAT_T = 312,
-    VARARG_T = 313,
-    PLUS_EQUAL_T = 314,
-    MINUS_EQUAL_T = 315,
-    ASTERISK_EQUAL_T = 316,
-    SLASH_EQUAL_T = 317,
-    MOD_EQUAL_T = 318,
-    CARROT_EQUAL_T = 319,
-    CONCAT_EQUAL_T = 320
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    IDENTIFIER_T = 258,            /* IDENTIFIER_T  */
+    NUMBER_T = 259,                /* NUMBER_T  */
+    STRING_T = 260,                /* STRING_T  */
+    AND_T = 261,                   /* AND_T  */
+    BREAK_T = 262,                 /* BREAK_T  */
+    DO_T = 263,                    /* DO_T  */
+    ELSE_T = 264,                  /* ELSE_T  */
+    ELSEIF_T = 265,                /* ELSEIF_T  */
+    END_T = 266,                   /* END_T  */
+    FALSE_T = 267,                 /* FALSE_T  */
+    TRUE_T = 268,                  /* TRUE_T  */
+    FOR_T = 269,                   /* FOR_T  */
+    FUNCTION_T = 270,              /* FUNCTION_T  */
+    IF_T = 271,                    /* IF_T  */
+    IN_T = 272,                    /* IN_T  */
+    LOCAL_T = 273,                 /* LOCAL_T  */
+    NIL_T = 274,                   /* NIL_T  */
+    NOT_T = 275,                   /* NOT_T  */
+    OR_T = 276,                    /* OR_T  */
+    REPEAT_T = 277,                /* REPEAT_T  */
+    RETURN_T = 278,                /* RETURN_T  */
+    THEN_T = 279,                  /* THEN_T  */
+    UNTIL_T = 280,                 /* UNTIL_T  */
+    WHILE_T = 281,                 /* WHILE_T  */
+    TNUMBER_T = 282,               /* TNUMBER_T  */
+    TSTRING_T = 283,               /* TSTRING_T  */
+    TBOOLEAN_T = 284,              /* TBOOLEAN_T  */
+    TANY_T = 285,                  /* TANY_T  */
+    TARRAY_T = 286,                /* TARRAY_T  */
+    TTABLE_T = 287,                /* TTABLE_T  */
+    PLUS_T = 288,                  /* PLUS_T  */
+    MINUS_T = 289,                 /* MINUS_T  */
+    ASTERISK_T = 290,              /* ASTERISK_T  */
+    SLASH_T = 291,                 /* SLASH_T  */
+    PERCENT_T = 292,               /* PERCENT_T  */
+    EQUAL_T = 293,                 /* EQUAL_T  */
+    LEFT_PARAN_T = 294,            /* LEFT_PARAN_T  */
+    RIGHT_PARAN_T = 295,           /* RIGHT_PARAN_T  */
+    RIGHT_SQUARE_T = 296,          /* RIGHT_SQUARE_T  */
+    LEFT_SQUARE_T = 297,           /* LEFT_SQUARE_T  */
+    CARROT_T = 298,                /* CARROT_T  */
+    GREATER_THAN_T = 299,          /* GREATER_THAN_T  */
+    LESS_THAN_T = 300,             /* LESS_THAN_T  */
+    SQUIGGLE_T = 301,              /* SQUIGGLE_T  */
+    COLON_T = 302,                 /* COLON_T  */
+    POUND_T = 303,                 /* POUND_T  */
+    DOT_T = 304,                   /* DOT_T  */
+    COMMA_T = 305,                 /* COMMA_T  */
+    LEFT_BRACKET_T = 306,          /* LEFT_BRACKET_T  */
+    RIGHT_BRACKET_T = 307,         /* RIGHT_BRACKET_T  */
+    DOUBLE_EQUAL_T = 308,          /* DOUBLE_EQUAL_T  */
+    NOT_EQUAL_T = 309,             /* NOT_EQUAL_T  */
+    GREATER_EQUAL_T = 310,         /* GREATER_EQUAL_T  */
+    LESS_EQUAL_T = 311,            /* LESS_EQUAL_T  */
+    CONCAT_T = 312,                /* CONCAT_T  */
+    VARARG_T = 313,                /* VARARG_T  */
+    PLUS_EQUAL_T = 314,            /* PLUS_EQUAL_T  */
+    MINUS_EQUAL_T = 315,           /* MINUS_EQUAL_T  */
+    ASTERISK_EQUAL_T = 316,        /* ASTERISK_EQUAL_T  */
+    SLASH_EQUAL_T = 317,           /* SLASH_EQUAL_T  */
+    MOD_EQUAL_T = 318,             /* MOD_EQUAL_T  */
+    CARROT_EQUAL_T = 319,          /* CARROT_EQUAL_T  */
+    CONCAT_EQUAL_T = 320           /* CONCAT_EQUAL_T  */
   };
+  typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
@@ -138,6 +144,8 @@ struct YYLTYPE
 
 
 
+
 int yyparse (YYSTYPE *root, int *error_count, yyscan_t lexer);
+
 
 #endif /* !YY_YY_PARSER_TAB_H_INCLUDED  */
