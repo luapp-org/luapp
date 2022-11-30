@@ -1,0 +1,15 @@
+digraph G
+{
+	node[fontname=Monospace]
+	n0[label="program"]
+	n1[label="call"]
+	n0->n1
+	n2[label="identifier\n\"print\""]
+	n1->n2
+	n3[label="string\n\"a\""]
+	n1->n3
+	n4[label="string\n\"b\""]
+	n1->n4
+	n5[label="string\n\"c\""]
+	n1->n5
+}

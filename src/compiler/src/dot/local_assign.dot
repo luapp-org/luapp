@@ -1,0 +1,27 @@
+digraph G
+{
+	node[fontname=Monospace]
+	n0[label="program"]
+	n1[label="local"]
+	n0->n1
+	n2[label="type annotation"]
+	n1->n2
+	n3[label="identifier\n\"a\""]
+	n2->n3
+	n4[label="number"]
+	n4[color=green3]
+	n4[fontcolor=green3]
+	n2->n4
+	n5[label="type annotation"]
+	n1->n5
+	n6[label="identifier\n\"b\""]
+	n5->n6
+	n7[label="string"]
+	n7[color=green3]
+	n7[fontcolor=green3]
+	n5->n7
+	n8[label="number\n\"12.000000\""]
+	n1->n8
+	n9[label="string\n\"hello\""]
+	n1->n9
+}

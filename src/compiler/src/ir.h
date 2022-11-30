@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 #include "compiler.h"
-#include "../../opcodes.h"
 
 /* Blind definitions */
 struct node;

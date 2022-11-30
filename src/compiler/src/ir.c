@@ -134,7 +134,7 @@ static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, int16
  *      args: operation code, a register, du register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, uint16_t du)
+static struct ir_instruction *ir_instruction_ADu(enum opcode op, uint8_t a, uint16_t du)
 {
     struct ir_instruction *instruction = ir_instruction();
 
@@ -146,11 +146,11 @@ static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, uint1
     return instruction;
 }
 
-/* ir_instruction_AE() -- creates a new ir_instruction with a given operation code and registers
- *      args: operation code, a register, e register
+/* ir_instruction_E() -- creates a new ir_instruction with a given operation code and registers
+ *      args: operation code, e register
  *      rets: new ir instruction
  */
-static struct ir_instruction *ir_instruction_AE(enum opcode op, int32_t e)
+static struct ir_instruction *ir_instruction_E(enum opcode op, int32_t e)
 {
     struct ir_instruction *instruction = ir_instruction();
 
@@ -519,7 +519,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             unsigned int index = ir_constant_string(proto, node->data.string.s);
 
             instruction =
-                ir_instruction_ABx(OP_LOADK, ir_allocate_register(context, proto, 1), index);
+                ir_instruction_AD(OP_LOADK, ir_allocate_register(context, proto, 1), index);
 
             ir_append(proto->code, instruction);
             break;
@@ -537,7 +537,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 const bool is_positive = node->data.number.value >= 0;
 
                 /* We have a whole number that is large enough to fit in the Du operand */
-                instruction = ir_instruction_ABx(is_positive ? OP_LOADPN : OP_LOADNN,
+                instruction = ir_instruction_ADu(is_positive ? OP_LOADPN : OP_LOADNN,
                                                  ir_allocate_register(context, proto, 1),
                                                  node->data.number.value);
                 ir_append(proto->code, instruction);
@@ -549,7 +549,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
                 instruction =
-                    ir_instruction_ABx(OP_LOADK, ir_allocate_register(context, proto, 1), index);
+                    ir_instruction_AD(OP_LOADK, ir_allocate_register(context, proto, 1), index);
 
                 ir_append(proto->code, instruction);
                 break;
@@ -557,7 +557,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 /* Here we use a sub instruction. An operation less instruction that simply stores a
                  * singular value */
                 instruction =
-                    ir_instruction_ABx(OP_LOADKX, ir_allocate_register(context, proto, 1), 0);
+                    ir_instruction_AD(OP_LOADKX, ir_allocate_register(context, proto, 1), 0);
                 sub = ir_instruction_sub(index);
 
                 ir_append(proto->code, instruction);
@@ -572,7 +572,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
                 instruction =
-                    ir_instruction_ABx(OP_GETENV, ir_allocate_register(context, proto, 1), index);
+                    ir_instruction_AD(OP_GETENV, ir_allocate_register(context, proto, 1), index);
             }
 
             ir_append(proto->code, instruction);
@@ -611,7 +611,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_proto_append(proto->protos, p);
 
-            struct ir_instruction *closure = ir_instruction_ABx(
+            struct ir_instruction *closure = ir_instruction_AD(
                 OP_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
             ir_append(proto->code, closure);
             break;
@@ -714,6 +714,7 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
     fprintf(output, "proto->is_vararg       %7s\n", proto->is_vararg ? "true" : "false");
     fprintf(output, "proto->parameters_size %7d\n", proto->parameters_size);
     fprintf(output, "proto->max_stack_size  %7d\n", proto->max_stack_size);
+    fprintf(output, "proto->upvalues_size   %7d\n", proto->upvalues_size);
 
     /* Spacing... lol */
     fputc('\n', output);

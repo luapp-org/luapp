@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#include "../../common/opcodes.h"
 
 #define COMPILER_VERSION "1.0"
 

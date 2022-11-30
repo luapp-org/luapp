@@ -1,0 +1,29 @@
+digraph G
+{
+	node[fontname=Monospace]
+	n0[label="program"]
+	n1[label="local"]
+	n0->n1
+	n2[label="type annotation"]
+	n1->n2
+	n3[label="identifier\n\"myTable\""]
+	n2->n3
+	n4[label="Table<string, number>"]
+	n4[color=green3]
+	n4[fontcolor=green3]
+	n2->n4
+	n5[label="table_constructor"]
+	n1->n5
+	n6[label="key_value_pair"]
+	n5->n6
+	n7[label="string\n\"key\""]
+	n6->n7
+	n8[label="number\n\"123.000000\""]
+	n6->n8
+	n9[label="key_value_pair"]
+	n5->n9
+	n10[label="string\n\"val\""]
+	n9->n10
+	n11[label="number\n\"334.000000\""]
+	n9->n11
+}

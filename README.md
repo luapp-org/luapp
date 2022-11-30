@@ -8,11 +8,11 @@ sudo apt update
 sudo apt install flex
 sudo apt install bison
 ```
-2. Venture into the folder of the project that you would like to compile (e.g. ``compiler/``).
-3. Build and run it like so:
+2. Enter the main source folder and run ``make compiler`` or ``make vm`` based on the project you would like to build. 
+3. Then run the binary file located in `src/bin`.
 ```
 make
-./bin/luapp ...
+./bin/luappc ...
 ```
 
 

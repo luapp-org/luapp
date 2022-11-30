@@ -2,6 +2,7 @@
 #define _OPCODES_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 /* Main file for instruction manipulation */
 enum opcode {
@@ -121,13 +122,7 @@ enum opcode {
 
 #define NUM_OPCODES (int32_t)OP_VARARG + 1
 
-const char *const opcode_names[NUM_OPCODES + 1] = {
-    "MOVE",    "LOADPN",    "LOADNN",   "LOADK",     "LOADKX",   "LOADBOOL", "LOADNIL",  "GETUPVAL",
-    "GETENV",  "GETGLOBAL", "GETTABLE", "SETGLOBAL", "SETUPVAL", "SETTABLE", "NEWTABLE", "SELF",
-    "ADD",     "SUB",       "MUL",      "DIV",       "MOD",      "POW",      "UNM",      "NOT",
-    "LEN",     "CONCAT",    "JMP",      "EQ",        "LT",       "LE",       "TEST",     "TESTSET",
-    "CALL",    "TAILCALL",  "RETURN",   "FORLOOP",   "FORPREP",  "TFORLOOP", "SETLIST",  "CLOSE",
-    "CLOSURE", "VARARG",    NULL};
+extern const char *const opcode_names[NUM_OPCODES + 1];
 
 enum opcode_mode { iABC, iAD, iADu, iE, SUB };
 

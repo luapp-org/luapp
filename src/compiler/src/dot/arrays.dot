@@ -1,0 +1,23 @@
+digraph G
+{
+	node[fontname=Monospace]
+	n0[label="program"]
+	n1[label="local"]
+	n0->n1
+	n2[label="type annotation"]
+	n1->n2
+	n3[label="identifier\n\"a\""]
+	n2->n3
+	n4[label="Array<number>"]
+	n4[color=green3]
+	n4[fontcolor=green3]
+	n2->n4
+	n5[label="array_constructor"]
+	n1->n5
+	n6[label="number\n\"3.000000\""]
+	n5->n6
+	n7[label="number\n\"2.000000\""]
+	n5->n7
+	n8[label="number\n\"1.000000\""]
+	n5->n8
+}

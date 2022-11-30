@@ -22,7 +22,6 @@ void codegen_write_size(FILE *output, unsigned int value)
 {
     do {
         codegen_write_byte(output, (value & 127) | ((value > 127) << 7));
-        printf("just wrote value: %d\n", (value & 127) | ((value > 127) << 7));
         value >>= 7;
     } while (value);
 }
@@ -55,9 +54,8 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
     codegen_write_size(output, proto->code->size);
 
     /* Write all of the instructions to the stream */
-    for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next) {
+    for (struct ir_instruction *iter = proto->code->first; iter != NULL; iter = iter->next)
         codegen_write_int(output, iter->value);
-    }
 
     codegen_write_size(output, proto->constant_list->size);
 
@@ -67,15 +65,12 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
         /* Write individual constants */
         switch (iter->type) {
             case CONSTANT_STRING:
-                //fprintf(stdout, "[%d]   string { %d }\n", id++, iter->data.symbol.symbol_id);
                 codegen_write_size(output, iter->data.symbol.symbol_id + 1);
                 break;
             case CONSTANT_ENV:
-                //fprintf(stdout, "[%d]   global { k(%d) }\n", id++, iter->data.env.index);
                 codegen_write_int(output, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
-                //fprintf(stdout, "[%d]   number { %f }\n", id++, iter->data.number.value);
                 codegen_write_int(output, iter->data.number.value);
                 break;
         }
