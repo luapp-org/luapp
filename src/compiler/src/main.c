@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         switch (opt) {
             case 'o':
                 if (!(output = fopen(optarg, "w"))) {
-                    fprintf(stdout, "Error: Unable to open output file %s: %s", optarg,
+                    fprintf(stdout, "Error: Unable to open output file %s: %s\n", optarg,
                             strerror(errno));
                     return 1;
                 }
