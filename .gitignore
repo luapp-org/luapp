@@ -1,5 +1,5 @@
 # Ignore the directory for all of the binary and dot files
-src/compiler/src/bin
+src/bin
 src/compiler/src/dot/*.dot
 src/vm/src/bin
 
