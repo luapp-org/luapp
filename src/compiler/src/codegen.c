@@ -75,6 +75,8 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
                 break;
         }
     }
+
+    /* TODO: List of function prototype indexes */
 }
 
 void codegen_write_program(FILE *output, struct ir_context *context)
@@ -89,6 +91,9 @@ void codegen_write_program(FILE *output, struct ir_context *context)
 
     for (struct ir_proto *iter = protos->first; iter != NULL; iter = iter->next)
         codegen_write_proto(output, iter);
+
+    /* The main function is always the first in the list */
+    codegen_write_size(output, 0);
 
     fprintf(output, "\n\n");
 }
