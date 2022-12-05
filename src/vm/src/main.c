@@ -15,7 +15,6 @@ int main(int argc, char **argv)
 
     /* Determine if we are using stdin or file in. */
     if (optind == argc - 1) {
-        /* Check if the input file is a .lpp or .lua file */
         dot = strrchr(argv[optind], '.');
 
         /* If the given file is of the correct type, init the reader */
