@@ -179,7 +179,7 @@ LUA_API int(lua_pcall)(lua_State *L, int nargs, int nresults, int errfunc);
 LUA_API int(lua_cpcall)(lua_State *L, lua_CFunction func, void *ud);
 
 /* load.c */
-LUA_API int(luapp_load)(lua_State *L, const char* const src, size_t size, const char *chunkname);
+LUA_API int(luapp_loadfile)(lua_State *L, const char *chunkname, FILE *input);
 
 LUA_API int(lua_dump)(lua_State *L, lua_Writer writer, void *data);
 
