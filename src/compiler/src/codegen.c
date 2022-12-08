@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Common includes */
+#include "../../common/bytecode.h"
+
 #include "codegen.h"
 #include "ir.h"
 #include "symbol.h"
@@ -49,6 +52,7 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
     /* Write the important information about the function */
     codegen_write_byte(output, proto->max_stack_size);
     codegen_write_byte(output, proto->parameters_size);
+    codegen_write_byte(output, proto->upvalues_size);
     codegen_write_byte(output, proto->is_vararg);
 
     codegen_write_size(output, proto->code->size);
@@ -81,6 +85,9 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
 
 void codegen_write_program(FILE *output, struct ir_context *context)
 {
+    /* Write bytecode size */
+    codegen_write_byte(output, VERSION_1);
+
     codegen_write_symbol_table(output, context->table);
 
     /* Collect the protos */

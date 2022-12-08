@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "lua/lua.h"
+#include "lua/lauxlib.h"
+
 /* main() -- entry point for the VM */
 int main(int argc, char **argv)
 {
@@ -18,7 +21,7 @@ int main(int argc, char **argv)
         dot = strrchr(argv[optind], '.');
 
         /* If the given file is of the correct type, init the reader */
-        if (dot && !strcmp(dot, ".out"))
+        if (dot && (!strcmp(dot, ".out") || !strcmp(dot, ".bin")))
             input = fopen(argv[optind], "r");
         else {
             printf("Error: incorrect file type.\n");
@@ -29,6 +32,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    lua_State *L = luaL_newstate();
     
+    if (luapp_loadfile(L, "?=lua++", input))
+    {
+        /* An error occured, display it and pop it from the stack */
+        printf("Error: %s\n", lua_tostring(L, -1));
+        lua_pop(L, 1);
+    }
+
+    lua_close(L);
     return 0;
 }

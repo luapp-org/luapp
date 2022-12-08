@@ -27,9 +27,6 @@
 #include "ltm.h"
 #include "lvm.h"
 
-/* Lua++ modified features */
-#include "../load.c"
-
 const char lua_ident[] = "$Lua: " LUA_RELEASE " " LUA_COPYRIGHT " $\n"
                          "$Authors: " LUA_AUTHORS " $\n"
                          "$URL: www.lua.org $\n";

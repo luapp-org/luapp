@@ -4,6 +4,19 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#if defined(luaall_c)
+#define LUAI_FUNC static
+#define LUAI_DATA /* empty */
+
+#elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 302) && defined(__ELF__)
+#define LUAI_FUNC __attribute__((visibility("hidden"))) extern
+#define LUAI_DATA LUAI_FUNC
+
+#else
+#define LUAI_FUNC extern
+#define LUAI_DATA extern
+#endif
+
 /* Main file for instruction manipulation */
 enum opcode {
     OP_MOVE,
@@ -122,8 +135,8 @@ enum opcode {
 
 #define NUM_OPCODES (int32_t)OP_VARARG + 1
 
-extern const char *const opcode_names[NUM_OPCODES + 1];
+LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
 
-enum opcode_mode { iABC, iAD, iADu, iE, SUB };
+typedef enum opcode_mode { iABC, iAD, iADu, iE, SUB } opcode_t;
 
 #endif
