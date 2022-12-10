@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "lua/lua.h"
 #include "lua/lauxlib.h"
+#include "lua/lua.h"
+#include "lua/lualib.h"
 
 /* main() -- entry point for the VM */
 int main(int argc, char **argv)
@@ -33,9 +34,9 @@ int main(int argc, char **argv)
     }
 
     lua_State *L = luaL_newstate();
-    
-    if (luapp_loadfile(L, "?=lua++", input))
-    {
+    luaL_openlibs(L);
+
+    if (luapp_loadfile(L, "?=lua", input)) {
         /* An error occured, display it and pop it from the stack */
         printf("Error: %s\n", lua_tostring(L, -1));
         lua_pop(L, 1);

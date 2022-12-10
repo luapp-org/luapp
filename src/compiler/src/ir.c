@@ -263,7 +263,7 @@ static void ir_constant_list_add(struct ir_constant_list *list, struct ir_consta
  *      args: type of constant
  *      rets: constant
  */
-static struct ir_constant *ir_constant(enum ir_constant_type type)
+static struct ir_constant *ir_constant(constant_t type)
 {
     struct ir_constant *c = smalloc(sizeof(struct ir_constant));
 
@@ -276,7 +276,7 @@ static struct ir_constant *ir_constant(enum ir_constant_type type)
 }
 
 static unsigned int ir_find_symbol_constant(struct ir_constant_list *list, struct symbol *symbol,
-                                            enum ir_constant_type type)
+                                            constant_t type)
 {
     int index = 0;
 
@@ -307,7 +307,7 @@ static unsigned int ir_find_env_constant(struct ir_constant_list *list, unsigned
     int index = 0;
 
     for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
-        if (iter->type == CONSTANT_ENV && iter->data.env.index == index)
+        if (iter->type == CONSTANT_ENVIRONMENT && iter->data.env.index == index)
             return index;
         ++index;
     }
@@ -320,7 +320,7 @@ static unsigned int ir_find_env_constant(struct ir_constant_list *list, unsigned
  *      rets: index in constant list
  */
 static unsigned int ir_constant_symbol(struct ir_proto *proto, struct symbol *symbol,
-                                       enum ir_constant_type type)
+                                       constant_t type)
 {
     unsigned int index;
     if ((index = ir_find_symbol_constant(proto->constant_list, symbol, type)) == -1) {
@@ -376,7 +376,7 @@ static unsigned int ir_constant_env(struct ir_proto *proto, struct symbol *symbo
     if ((index = ir_find_env_constant(proto->constant_list, id)) == -1) {
 
         // We were unable to find an existing constant
-        struct ir_constant *c = ir_constant(CONSTANT_ENV);
+        struct ir_constant *c = ir_constant(CONSTANT_ENVIRONMENT);
         c->data.env.index = id;
 
         ir_constant_list_add(proto->constant_list, c);
@@ -737,13 +737,13 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
         /* Dump individual constants */
         switch (iter->type) {
             case CONSTANT_STRING:
-                fprintf(output, "[%d]   string { %d }\n", id++, iter->data.symbol.symbol_id);
+                fprintf(output, "[%d]   string      { %d }\n", id++, iter->data.symbol.symbol_id);
                 break;
-            case CONSTANT_ENV:
-                fprintf(output, "[%d]   global { k(%d) }\n", id++, iter->data.env.index);
+            case CONSTANT_ENVIRONMENT:
+                fprintf(output, "[%d]   environment { k(%d) }\n", id++, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
-                fprintf(output, "[%d]   number { %f }\n", id++, iter->data.number.value);
+                fprintf(output, "[%d]   number      { %f }\n", id++, iter->data.number.value);
                 break;
         }
     }

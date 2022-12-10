@@ -23,10 +23,8 @@ struct ir_section {
     int size;
 };
 
-enum ir_constant_type { CONSTANT_STRING, CONSTANT_NUMBER, CONSTANT_ENV };
-
 struct ir_constant {
-    enum ir_constant_type type;
+    constant_t type;
     union {
         struct {
             uint32_t symbol_id;

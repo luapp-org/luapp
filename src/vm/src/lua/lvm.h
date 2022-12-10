@@ -26,4 +26,7 @@ LUAI_FUNC void luaV_settable(lua_State *L, const TValue *t, TValue *key, StkId v
 LUAI_FUNC void luaV_execute(lua_State *L, int nexeccalls);
 LUAI_FUNC void luaV_concat(lua_State *L, int total, int last);
 
+/* Lua++ additions */
+LUAI_FUNC void luaV_getenv(lua_State *L, Table *env, TValue *k);
+
 #endif

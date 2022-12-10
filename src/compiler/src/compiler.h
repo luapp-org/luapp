@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../../common/bytecode.h"
 #include "../../common/opcodes.h"
 
 #define COMPILER_VERSION "1.0"

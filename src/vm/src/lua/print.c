@@ -13,6 +13,7 @@
 #include "ldebug.h"
 #include "lobject.h"
 
+#include "../../../common/bytecode.h"
 #include "../../../common/opcodes.h"
 
 #define PrintFunction luaU_print

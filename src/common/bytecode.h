@@ -16,4 +16,13 @@ typedef enum bytecode_version
 /* Acceptable bytecode version */
 #define VERSION_ACCEPTABLE(version) (version >= MIN_VERSION && version <= MAX_VERSION)
 
+typedef enum constant_type
+{
+    CONSTANT_NIL,
+    CONSTANT_BOOLEAN,
+    CONSTANT_NUMBER,
+    CONSTANT_STRING,
+    CONSTANT_ENVIRONMENT
+} constant_t;
+
 #endif

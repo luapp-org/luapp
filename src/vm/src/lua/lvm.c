@@ -106,7 +106,8 @@ void luaV_gettable(lua_State *L, const TValue *t, TValue *key, StkId val)
         const TValue *tm;
         if (ttistable(t)) { /* `t' is a table? */
             Table *h = hvalue(t);
-            const TValue *res = luaH_get(h, key);                   /* do a primitive get */
+            const TValue *res = luaH_get(h, key);
+            /* do a primitive get */
             if (!ttisnil(res) ||                                    /* result is no nil? */
                 (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
                 setobj2s(L, val, res);
@@ -318,6 +319,19 @@ void luaV_concat(lua_State *L, int total, int last)
         total -= n - 1; /* got `n' strings to create 1 new */
         last -= n - 1;
     } while (total > 1); /* repeat until only 1 result left */
+}
+
+void luaV_getenv(lua_State *L, Table *env, TValue *k)
+{
+    /* Allocate a stack slot for gettable */
+    luaD_checkstack(L, 1);
+    setnilvalue(L->top);
+    L->top++;
+
+    /* Find the object associated with `k` and save in L->top - 1 */
+    TValue g;
+    sethvalue(L, &g, env);
+    luaV_gettable(L, &g, k, L->top - 1);
 }
 
 static void Arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op)
@@ -574,8 +588,7 @@ reentry: /* entry point */
             case OP_EQ: {
                 TValue *rb = RKB(i);
                 TValue *rc = RKC(i);
-                Protect(if (equalobj(L, rb, rc) == GETARG_A(i)) dojump(L, pc, GETARG_D(*pc));)
-                    pc++;
+                Protect(if (equalobj(L, rb, rc) == GETARG_A(i)) dojump(L, pc, GETARG_D(*pc));) pc++;
                 continue;
             }
             case OP_LT: {
@@ -684,8 +697,8 @@ reentry: /* entry point */
                 lua_Number limit = nvalue(ra + 1);
                 if (luai_numlt(0, step) ? luai_numle(idx, limit) : luai_numle(limit, idx)) {
                     dojump(L, pc, GETARG_D(i)); /* jump back */
-                    setnvalue(ra, idx);           /* update internal index... */
-                    setnvalue(ra + 3, idx);       /* ...and external index */
+                    setnvalue(ra, idx);         /* update internal index... */
+                    setnvalue(ra + 3, idx);     /* ...and external index */
                 }
                 continue;
             }
@@ -712,9 +725,9 @@ reentry: /* entry point */
                 L->top = cb + 3; /* func. + 2 args (state and index) */
                 Protect(luaD_call(L, cb, GETARG_C(i)));
                 L->top = L->ci->top;
-                cb = RA(i) + 3;                     /* previous call may change the stack */
-                if (!ttisnil(cb)) {                 /* continue loop? */
-                    setobjs2s(L, cb - 1, cb);       /* save control variable */
+                cb = RA(i) + 3;                   /* previous call may change the stack */
+                if (!ttisnil(cb)) {               /* continue loop? */
+                    setobjs2s(L, cb - 1, cb);     /* save control variable */
                     dojump(L, pc, GETARG_D(*pc)); /* jump back */
                 }
                 pc++;

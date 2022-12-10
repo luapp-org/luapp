@@ -71,7 +71,7 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
             case CONSTANT_STRING:
                 codegen_write_size(output, iter->data.symbol.symbol_id + 1);
                 break;
-            case CONSTANT_ENV:
+            case CONSTANT_ENVIRONMENT:
                 codegen_write_int(output, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
