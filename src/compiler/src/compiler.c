@@ -49,7 +49,7 @@ void clear(char arr[])
  */
 void usage()
 {
-    printf("luapp -s [lexer|parser|type|symbol|ir|codgen] -o [outputfile] [inputfile]\n\n");
+    printf("luappc -s [lexer|parser|type|symbol|ir|codgen] -o [outputfile] [inputfile]\n\n");
     printf(" -s : indicates the name of the stage to stop after.\n");
     printf("      Defaults to the last stage.\n");
     printf(" -o : name of the output file. Defaults to \"output.s\"\n\n");
