@@ -274,6 +274,7 @@ int luaD_precall(lua_State *L, StkId func, int nresults)
             base = adjust_varargs(L, p, nargs);
             func = restorestack(L, funcr); /* previous call may change the stack */
         }
+
         ci = inc_ci(L); /* now `enter' new function */
         ci->func = func;
         L->base = ci->base = base;
@@ -312,6 +313,58 @@ int luaD_precall(lua_State *L, StkId func, int nresults)
             luaD_poscall(L, L->top - n);
             return PCRC;
         }
+    }
+}
+
+int luapp_precall(lua_State *L, StkId func, int nresults)
+{
+    Closure *ccl = clvalue(func);
+
+    /* Create new call info for the current function */
+    CallInfo *ci = inc_ci(L); /* 'enter' the function */
+    ci->func = func;
+    ci->base = func + 1;
+    ci->top = L->top + ccl->stacksize;
+    ci->savedpc = NULL;
+    ci->nresults = nresults;
+
+    /* Update our base */
+    L->base = ci->base;
+
+    /* Make sure we have enough stack space for our func */
+    luaD_checkstack(L, ccl->l.p->maxstacksize);
+    lua_assert(ci->top <= L->stack_last);
+
+    /* We have a C function which we can call */
+    if (ccl->l.isC) {
+        /* Call the actual function */
+        lua_lock(L);
+        int32_t ret = ccl->c.f(L);
+        lua_unlock(L);
+
+        if (ret < 0) /* func yeilds */
+            return PCRYIELD;
+
+        /* ci is our callinfo, cip is our parent */
+        CallInfo *ci = L->ci;
+        CallInfo *cip = ci - 1;
+
+        StkId res = ci->func;
+        StkId vali = L->top - ret;
+        StkId valend = L->top;
+
+        int i;
+        for (i = nresults; i != 0 && vali < valend; i--)
+            setobj2s(L, res++, vali++);
+        while (i-- > 0)
+            setnilvalue(res++);
+
+        // pop the stack frame
+        L->ci = cip;
+        L->base = cip->base;
+        L->top = res;
+
+        return PCRC;
     }
 }
 
@@ -373,6 +426,7 @@ static void resume(lua_State *L, void *ud)
     CallInfo *ci = L->ci;
     if (L->status == 0) { /* start coroutine? */
         lua_assert(ci == L->base_ci && firstArg > L->base);
+
         if (luaD_precall(L, firstArg - 1, LUA_MULTRET) != PCRLUA)
             return;
     } else { /* resuming from previous yield */
@@ -387,7 +441,8 @@ static void resume(lua_State *L, void *ud)
         } else                             /* yielded inside a hook: just continue its execution */
             L->base = L->ci->base;
     }
-    luaV_execute(L, cast_int(L->ci - L->base_ci));
+    // luaV_execute(L, cast_int(L->ci - L->base_ci));
+    luapp_execute(L, cast_int(L->ci - L->base_ci));
 }
 
 static int resume_error(lua_State *L, const char *msg)

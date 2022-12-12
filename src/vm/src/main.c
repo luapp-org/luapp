@@ -36,12 +36,18 @@ int main(int argc, char **argv)
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
 
-    if (luapp_loadfile(L, "?=lua", input)) {
+    if (luapp_loadfile(L, "=lua++", input)) {
         /* An error occured, display it and pop it from the stack */
         printf("Error: %s\n", lua_tostring(L, -1));
         lua_pop(L, 1);
+
+        /* Close everything and return */
+        lua_close(L);
+        return 1;
     }
 
+    /* Run the closure at L->top + 0 */
+    lua_resume(L, 0);
     lua_close(L);
     return 0;
 }

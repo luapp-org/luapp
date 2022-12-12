@@ -126,7 +126,7 @@ enum opcode {
  * A:    8 bits
  * D:    16 bits (unsigned)
  */
-#define GETARG_Du(i) ((uint32_t)i >> 16)
+#define GETARG_Du(i) (UINT16_MAX - ((uint32_t)i >> 16) + 1)
 
 /* iE
  * E:    24 bits

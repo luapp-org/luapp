@@ -139,7 +139,7 @@ static struct ir_instruction *ir_instruction_ADu(enum opcode op, uint8_t a, uint
     struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->value = (uint32_t)op | (a << 8) | ((uint16_t)du << 16);
+    instruction->value = (uint32_t)op | (a << 8) | ((int16_t)du << 16);
 
     instruction->mode = iADu;
 

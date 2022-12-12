@@ -114,9 +114,8 @@ static Proto *read_proto(lua_State *L, FILE *input, TString **strings, TString *
                 uint32_t index = read_type(input, uint32_t);
 
                 luaV_getenv(L, hvalue(gt(L)), &p->k[index]);
-                
                 setobj(L, &p->k[i], L->top - 1);
-                lua_pop(L, 1);
+                L->top--;
                 break;
             }
         }
@@ -160,7 +159,11 @@ int32_t luapp_loadfile(lua_State *L, const char *chunkname, FILE *input)
     uint32_t proto_count = read_size(input);
     Proto **protos = read_protos(L, input, proto_count, strings, source);
 
-    //luaU_print(protos[0], 1);
+    /* Create and push a closure onto the stack */
+    Closure *cl = luaF_newLclosure(L, 0, hvalue(gt(L)));
+    cl->l.p = protos[0];
+    setclvalue(L, L->top, cl);
+    incr_top(L);
 
     /* Dispose of the string array as we don't need it anymore */
     luaM_free(L, strings);

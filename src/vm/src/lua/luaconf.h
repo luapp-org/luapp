@@ -16,6 +16,8 @@
 ** ===================================================================
 */
 
+#define LUA_USE_LINUX
+
 /*
 @@ LUA_ANSI controls the use of non-ansi features.
 ** CHANGE it (define it) if you want Lua to avoid the use of any

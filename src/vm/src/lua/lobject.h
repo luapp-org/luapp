@@ -180,8 +180,7 @@ typedef struct lua_TValue {
     {                                                                                              \
         const TValue *o2 = (obj2);                                                                 \
         TValue *o1 = (obj1);                                                                       \
-        o1->value = o2->value;                                                                     \
-        o1->tt = o2->tt;                                                                           \
+        *o1 = *o2;                                                                                 \
         checkliveness(G(L), o1);                                                                   \
     }
 
@@ -314,6 +313,8 @@ typedef struct LClosure {
 } LClosure;
 
 typedef union Closure {
+    lu_byte stacksize;
+
     CClosure c;
     LClosure l;
 } Closure;
