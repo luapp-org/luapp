@@ -185,5 +185,6 @@ int main(int argc, char **argv)
     }
 
     codegen_write_program(output, &ir_context);
+    fclose(output);
     return 0;
 }
