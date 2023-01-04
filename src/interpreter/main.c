@@ -25,41 +25,14 @@ static void print_summary(char *pass, int error_count)
     printf("\n%s encountered %d %s.\n", pass, error_count, (error_count == 1 ? "error" : "errors"));
 }
 
-int main(int argc, char **argv)
+int compile(FILE *input, FILE *output)
 {
-    int opt, error_count;
-    char *stage, *dot;
-    FILE *input, *output;
-    struct symbol_table symbol_table;
     yyscan_t lexer;
-    time_t start;
+    int error_count = 0;
     struct node *tree;
+    struct symbol_table symbol_table;
 
-    if (!(output = fopen("interpreter/coutput.bin", "w+"))) {
-        printf("Error: unable to open file.\n");
-        return 1;
-    }
-
-    /* Determine if we are using stdin or file in. */
-    if (optind == argc - 1) {
-        /* Check if the input file is a .lpp or .lua file */
-        dot = strrchr(argv[optind], '.');
-
-        /* If the given file is of the correct type, init the lexer */
-        if (dot && !strcmp(dot, ".lpp") || !strcmp(dot, ".lua")) {
-            lex_init(&lexer, fopen(argv[optind], "r"));
-        } else {
-            printf("Incorrect file type.\n");
-            return 1;
-        }
-    } else if (optind >= argc)
-        lex_init(&lexer, stdin);
-    else {
-        printf("Expected 1 input file, found %d.\n", argc - optind);
-        return 1;
-    }
-
-    error_count = 0;
+    lex_init(&lexer, input);
 
     /* Run the parser, it's needed for all later passes */
     tree = parser_parse(&error_count, lexer);
@@ -109,6 +82,27 @@ int main(int argc, char **argv)
     }
 
     codegen_write_program(output, &ir_context);
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    int opt, error_count;
+    char *stage, *dot;
+    FILE *input, *output;
+    struct symbol_table symbol_table;
+
+    time_t start;
+    struct node *tree;
+
+    if (!(output = fopen("interpreter/coutput.bin", "w+"))) {
+        printf("Error: unable to open file.\n");
+        return 1;
+    }
+
+    if (compile(stdin, output))
+        return 1;
+
     fclose(output);
 
     if (!(input = fopen("interpreter/coutput.bin", "r"))) {
