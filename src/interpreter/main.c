@@ -88,25 +88,48 @@ int compile(FILE *input, FILE *output)
 int main(int argc, char **argv)
 {
     int opt, error_count;
-    char *stage, *dot;
+    size_t bufsize;
+    char *stage, *dot, *buff;
     FILE *input, *output;
     struct symbol_table symbol_table;
 
     time_t start;
     struct node *tree;
 
-    if (!(output = fopen("interpreter/coutput.bin", "w+"))) {
-        printf("Error: unable to open file.\n");
+    /* Determine if we are using stdin or file in. */
+    if (optind == argc - 1) {
+        /* Check if the input file is a .lpp or .lua file */
+        dot = strrchr(argv[optind], '.');
+
+        /* If the given file is of the correct type, init the lexer */
+        if (dot && !strcmp(dot, ".lpp") || !strcmp(dot, ".lua")) {
+            if (!(input = fopen(argv[optind], "r"))) {
+                printf("Error: unable to open file '%s'\n", argv[optind]);
+                return 1;
+            }
+        } else {
+            printf("Incorrect file type.\n");
+            return 1;
+        }
+    } else if (optind >= argc)
+        input = stdin;
+    else {
+        printf("Expected 1 input file, found %d.\n", argc - optind);
         return 1;
     }
 
-    if (compile(stdin, output))
+    if (!(output = open_memstream(&buff, &bufsize))) {
+        printf("Error: unable to write to memory stream.\n");
+        return 1;
+    }
+
+    if (compile(input, output))
         return 1;
 
     fclose(output);
 
-    if (!(input = fopen("interpreter/coutput.bin", "r"))) {
-        printf("Error: unable to open file.\n");
+    if (!(input = fmemopen(buff, bufsize, "r"))) {
+        printf("Error: unable to read memory stream.\n");
         return 1;
     }
 
@@ -127,5 +150,6 @@ int main(int argc, char **argv)
     lua_resume(L, 0);
     lua_close(L);
     fclose(input);
+    free(buff);
     return 0;
 }
