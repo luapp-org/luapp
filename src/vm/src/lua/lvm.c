@@ -334,7 +334,7 @@ void luaV_getenv(lua_State *L, Table *env, TValue *k)
     luaV_gettable(L, &g, k, L->top - 1);
 }
 
-static void Arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op)
+void luaV_arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op)
 {
     TValue tempb, tempc;
     const TValue *b, *c;
@@ -415,7 +415,7 @@ static void Arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TM
             lua_Number nb = nvalue(rb), nc = nvalue(rc);                                           \
             setnvalue(ra, op(nb, nc));                                                             \
         } else                                                                                     \
-            Protect(Arith(L, ra, rb, rc, tm));                                                     \
+            Protect(luaV_arith(L, ra, rb, rc, tm));                                                     \
     }
 
 void luaV_execute(lua_State *L, int nexeccalls)
@@ -547,7 +547,7 @@ reentry: /* entry point */
                     lua_Number nb = nvalue(rb);
                     setnvalue(ra, luai_numunm(nb));
                 } else {
-                    Protect(Arith(L, ra, rb, rb, TM_UNM));
+                    Protect(luaV_arith(L, ra, rb, rb, TM_UNM));
                 }
                 continue;
             }

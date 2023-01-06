@@ -450,6 +450,26 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
     return list;
 }
 
+static enum opcode get_arith_opcode(enum node_binary_operation op)
+{
+    switch (op) {
+        case BINOP_ADD:
+            return OP_ADD;
+        case BINOP_SUB:
+            return OP_SUB;
+        case BINOP_MUL:
+            return OP_MUL;
+        case BINOP_DIV:
+            return OP_DIV;
+        case BINOP_POW:
+            return OP_POW;
+        case BINOP_MOD:
+            return OP_MOD;
+    }
+
+    return 0;
+}
+
 /* ir_join() -- joins two IR proto lists together to shape a new list of protos
  *      args: first proto, second proto
  *      rets: new proto list
@@ -512,6 +532,37 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_free_register(context, proto, size + 1);
 
             ir_append(proto->code, instruction);
+            break;
+        }
+        case NODE_BINARY_OPERATION: {
+            /* ir build proto will alloc */
+            uint8_t target = proto->top_register;
+
+            /* Determine operation code for binary operation */
+            switch (node->data.binary_operation.operation) {
+                case BINOP_ADD:
+                case BINOP_SUB:
+                case BINOP_MUL:
+                case BINOP_DIV:
+                case BINOP_POW:
+                case BINOP_MOD:
+                    enum opcode code = get_arith_opcode(node->data.binary_operation.operation);
+
+                    ir_build_proto(context, proto, node->data.binary_operation.left);
+                    ir_build_proto(context, proto, node->data.binary_operation.right);
+
+                    struct ir_instruction *instruction =
+                        ir_instruction_ABC(code, target, target, target + 1);
+
+                    /* Pop the two expressions off the stack */
+                    ir_free_register(context, proto, 1);
+
+                    ir_append(proto->code, instruction);
+                    break;
+
+                default:
+                    break;
+            }
             break;
         }
         case NODE_STRING: {

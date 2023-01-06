@@ -21,6 +21,8 @@ void codegen_write_int(FILE *output, unsigned int value)
     fwrite(&value, sizeof(value), 1, output);
 }
 
+void codegen_write_double(FILE *output, double value) { fwrite(&value, sizeof(value), 1, output); }
+
 void codegen_write_size(FILE *output, unsigned int value)
 {
     do {
@@ -75,7 +77,7 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
                 codegen_write_int(output, iter->data.env.index);
                 break;
             case CONSTANT_NUMBER:
-                codegen_write_int(output, iter->data.number.value);
+                codegen_write_double(output, iter->data.number.value);
                 break;
         }
     }

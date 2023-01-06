@@ -1,3 +1,4 @@
+#define LUA_CORE
 #include "lua/lvm.h"
 
 #include "../../common/opcodes.h"
@@ -10,6 +11,20 @@
             x;                                                                                     \
         };                                                                                         \
         base = L->base;                                                                            \
+    }
+
+/* Performs basic arithmetic operation and invokes luaV_arith if needed */
+#define ARITH(op, tm)                                                                              \
+    {                                                                                              \
+        StkId ra = RA(i);                                                                          \
+        StkId rb = RB(i);                                                                          \
+        StkId rc = RC(i);                                                                          \
+                                                                                                   \
+        if (ttisnumber(rb) && ttisnumber(rc)) {                                                    \
+            lua_Number nb = nvalue(rb), nc = nvalue(rc);                                           \
+            setnvalue(ra, op(nb, nc));                                                             \
+        } else                                                                                     \
+            PROTECT(luaV_arith(L, ra, rb, rc, tm));                                                \
     }
 
 /* Register manipulation */
@@ -71,6 +86,12 @@ reentry:
                 setobj2s(L, RA(i), KD(i));
                 continue;
             }
+            case OP_LOADKX: {
+                const Instruction sub = *pc++;
+
+                setobj2s(L, RA(i), K(sub));
+                continue;
+            }
             case OP_LOADNN: {
                 setnvalue(RA(i), -(double)(GETARG_Du(i)));
                 continue;
@@ -78,6 +99,30 @@ reentry:
             case OP_LOADPN: {
                 setnvalue(RA(i), (double)(GETARG_Du(i)));
                 continue;
+            }
+            case OP_ADD: {
+                ARITH(luai_numadd, TM_ADD);
+                break;
+            }
+            case OP_SUB: {
+                ARITH(luai_numsub, TM_SUB);
+                break;
+            }
+            case OP_MUL: {
+                ARITH(luai_nummul, TM_MUL);
+                break;
+            }
+            case OP_DIV: {
+                ARITH(luai_numdiv, TM_DIV);
+                break;
+            }
+            case OP_POW: {
+                ARITH(luai_numpow, TM_POW);
+                break;
+            }
+            case OP_MOD: {
+                ARITH(luai_nummod, TM_MOD);
+                break;
             }
             case OP_GETENV: {
                 TValue *kv = KD(i);
@@ -94,7 +139,7 @@ reentry:
                 int32_t nparams = GETARG_B(i) - 1;
                 int32_t nresults = GETARG_C(i) - 1;
 
-                if (nparams == LUA_MULTRET)
+                if (nparams != LUA_MULTRET)
                     L->top = ra + 1 + nparams;
 
                 L->savedpc = pc;

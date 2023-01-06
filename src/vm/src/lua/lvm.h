@@ -28,6 +28,7 @@ LUAI_FUNC void luaV_concat(lua_State *L, int total, int last);
 
 /* Lua++ additions */
 LUAI_FUNC void luaV_getenv(lua_State *L, Table *env, TValue *k);
+LUAI_FUNC void luaV_arith(lua_State *L, StkId ra, const TValue *rb, const TValue *rc, TMS op);
 LUAI_FUNC void luapp_execute(lua_State *L, int nexeccalls);
 
 #endif
