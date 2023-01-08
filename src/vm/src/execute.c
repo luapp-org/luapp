@@ -1,5 +1,6 @@
 #define LUA_CORE
 #include "lua/lvm.h"
+#include "lua/lgc.h"
 
 #include "../../common/opcodes.h"
 
@@ -87,6 +88,7 @@ reentry:
                 continue;
             }
             case OP_LOADKX: {
+                /* Constant is stored in the sub instruction */
                 const Instruction sub = *pc++;
 
                 setobj2s(L, RA(i), K(sub));
@@ -130,6 +132,15 @@ reentry:
                 /* Make sure we were able to successfully retrieve the value from our environment */
                 if (!ttisnil(kv))
                     setobj2s(L, RA(i), kv);
+                continue;
+            }
+            case OP_CONCAT: {
+                int32_t b = GETARG_B(i);
+                int32_t c = GETARG_C(i);
+
+                PROTECT(luaV_concat(L, c - b + 1, c); luaC_checkGC(L));
+
+                setobjs2s(L, RA(i), base + b);
                 continue;
             }
             case OP_CALL: {

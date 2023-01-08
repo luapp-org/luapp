@@ -545,7 +545,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 case BINOP_MUL:
                 case BINOP_DIV:
                 case BINOP_POW:
-                case BINOP_MOD:
+                case BINOP_MOD: {
                     enum opcode code = get_arith_opcode(node->data.binary_operation.operation);
 
                     ir_build_proto(context, proto, node->data.binary_operation.left);
@@ -559,7 +559,23 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
                     ir_append(proto->code, instruction);
                     break;
+                }
+                case BINOP_CONCAT: {
+                    ir_build_proto(context, proto, node->data.binary_operation.left);
+                    ir_build_proto(context, proto, node->data.binary_operation.right);
 
+                    /* top_register contains the next availible register so -1 to get previous */
+                    const uint8_t end = proto->top_register - 1;
+
+                    struct ir_instruction *instruction =
+                        ir_instruction_ABC(OP_CONCAT, target, target, end);
+
+                    /* Pop all experssions from the stack */
+                    ir_free_register(context, proto, end - target);
+
+                    ir_append(proto->code, instruction);
+                    break;
+                }
                 default:
                     break;
             }
