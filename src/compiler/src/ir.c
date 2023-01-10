@@ -386,6 +386,14 @@ static unsigned int ir_constant_env(struct ir_proto *proto, struct symbol *symbo
         return index;
 }
 
+static int32_t ir_get_constant_number(struct ir_proto *proto, struct node *node)
+{
+    if (node->type != NODE_NUMBER)
+        return -1;
+
+    return ir_constant_number(proto, node->data.number.value);
+}
+
 /* ir_constant_number() -- allocate memory for a new function prototype list
  *      args: first proto, last proto
  *      rets: new list
@@ -450,21 +458,21 @@ static struct ir_proto_list *ir_proto_append(struct ir_proto_list *list, struct 
     return list;
 }
 
-static enum opcode get_arith_opcode(enum node_binary_operation op)
+static enum opcode get_arith_opcode(enum node_binary_operation op, bool is_k)
 {
     switch (op) {
         case BINOP_ADD:
-            return OP_ADD;
+            return is_k ? OP_ADDK : OP_ADD;
         case BINOP_SUB:
-            return OP_SUB;
+            return is_k ? OP_SUBK : OP_SUB;
         case BINOP_MUL:
-            return OP_MUL;
+            return is_k ? OP_MULK : OP_MUL;
         case BINOP_DIV:
-            return OP_DIV;
+            return is_k ? OP_DIVK : OP_DIV;
         case BINOP_POW:
-            return OP_POW;
+            return is_k ? OP_POWK : OP_POW;
         case BINOP_MOD:
-            return OP_MOD;
+            return is_k ? OP_MODK : OP_MOD;
     }
 
     return 0;
@@ -546,18 +554,34 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 case BINOP_DIV:
                 case BINOP_POW:
                 case BINOP_MOD: {
-                    enum opcode code = get_arith_opcode(node->data.binary_operation.operation);
+                    const int32_t constant =
+                        ir_get_constant_number(proto, node->data.binary_operation.right);
 
-                    ir_build_proto(context, proto, node->data.binary_operation.left);
-                    ir_build_proto(context, proto, node->data.binary_operation.right);
+                    if (constant >= 0 && constant <= 255) {
+                        enum opcode code =
+                            get_arith_opcode(node->data.binary_operation.operation, true);
 
-                    struct ir_instruction *instruction =
-                        ir_instruction_ABC(code, target, target, target + 1);
+                        ir_build_proto(context, proto, node->data.binary_operation.left);
 
-                    /* Pop the two expressions off the stack */
-                    ir_free_register(context, proto, 1);
+                        struct ir_instruction *instruction =
+                            ir_instruction_ABC(code, target, target, constant);
 
-                    ir_append(proto->code, instruction);
+                        ir_append(proto->code, instruction);
+                    } else {
+                        enum opcode code =
+                            get_arith_opcode(node->data.binary_operation.operation, false);
+
+                        ir_build_proto(context, proto, node->data.binary_operation.left);
+                        ir_build_proto(context, proto, node->data.binary_operation.right);
+
+                        struct ir_instruction *instruction =
+                            ir_instruction_ABC(code, target, target, target + 1);
+
+                        /* Pop the two expressions off the stack */
+                        ir_free_register(context, proto, 1);
+
+                        ir_append(proto->code, instruction);
+                    }
                     break;
                 }
                 case BINOP_CONCAT: {

@@ -1,6 +1,6 @@
 #define LUA_CORE
-#include "lua/lvm.h"
 #include "lua/lgc.h"
+#include "lua/lvm.h"
 
 #include "../../common/opcodes.h"
 
@@ -14,6 +14,15 @@
         base = L->base;                                                                            \
     }
 
+#define DO_ARITH(op, ra, rb, rc, tm)                                                               \
+    {                                                                                              \
+        if (ttisnumber(rb) && ttisnumber(rc)) {                                                    \
+            lua_Number nb = nvalue(rb), nc = nvalue(rc);                                           \
+            setnvalue(ra, op(nb, nc));                                                             \
+        } else                                                                                     \
+            PROTECT(luaV_arith(L, ra, rb, rc, tm));                                                \
+    }
+
 /* Performs basic arithmetic operation and invokes luaV_arith if needed */
 #define ARITH(op, tm)                                                                              \
     {                                                                                              \
@@ -21,11 +30,16 @@
         StkId rb = RB(i);                                                                          \
         StkId rc = RC(i);                                                                          \
                                                                                                    \
-        if (ttisnumber(rb) && ttisnumber(rc)) {                                                    \
-            lua_Number nb = nvalue(rb), nc = nvalue(rc);                                           \
-            setnvalue(ra, op(nb, nc));                                                             \
-        } else                                                                                     \
-            PROTECT(luaV_arith(L, ra, rb, rc, tm));                                                \
+        DO_ARITH(op, ra, rb, rc, tm);                                                              \
+    }
+
+#define ARITHK(op, tm)                                                                             \
+    {                                                                                              \
+        StkId ra = RA(i);                                                                          \
+        StkId rb = RB(i);                                                                          \
+        StkId rk = KC(i);                                                                          \
+                                                                                                   \
+        DO_ARITH(op, ra, rb, rk, tm);                                                              \
     }
 
 /* Register manipulation */
@@ -35,6 +49,7 @@
 
 /* Constant manipulation */
 #define KD(i) (lua_assert(GETARG_D(i) < cl->p->sizek), (&k[GETARG_D(i)]))
+#define KC(i) (lua_assert(GETARG_C(i) < cl->p->sizek), (&k[GETARG_C(i)]))
 #define K(i) (lua_assert((i) < (uint32_t)cl->p->sizek), (&k[i]))
 
 void luapp_execute(lua_State *L, int nexeccalls)
@@ -124,6 +139,30 @@ reentry:
             }
             case OP_MOD: {
                 ARITH(luai_nummod, TM_MOD);
+                break;
+            }
+            case OP_ADDK: {
+                ARITHK(luai_numadd, TM_ADD);
+                break;
+            }
+            case OP_SUBK: {
+                ARITHK(luai_numsub, TM_SUB);
+                break;
+            }
+            case OP_MULK: {
+                ARITHK(luai_nummul, TM_MUL);
+                break;
+            }
+            case OP_DIVK: {
+                ARITHK(luai_numdiv, TM_DIV);
+                break;
+            }
+            case OP_POWK: {
+                ARITHK(luai_numpow, TM_POW);
+                break;
+            }
+            case OP_MODK: {
+                ARITHK(luai_nummod, TM_MOD);
                 break;
             }
             case OP_GETENV: {

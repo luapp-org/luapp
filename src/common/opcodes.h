@@ -1,8 +1,8 @@
 #ifndef _OPCODES_H
 #define _OPCODES_H
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #if defined(luaall_c)
 #define LUAI_FUNC static
@@ -30,8 +30,8 @@ enum opcode {
     /* OP_LOADNN: sets a target register to a negative number literal
      * A: target register
      * D: the value (65535 .. 0)
-     * 
-     * Note: The D operand is represented as an unsigned 
+     *
+     * Note: The D operand is represented as an unsigned
      */
     OP_LOADNN,
     OP_LOADK,
@@ -69,6 +69,19 @@ enum opcode {
     OP_DIV,
     OP_MOD,
     OP_POW,
+
+    /* OP_Ks: sets a target register to an arithmetic operation of two integers
+     * A: target register
+     * B: register containing first arg
+     * C: constant index (0 to 255)
+     */
+    OP_ADDK,
+    OP_SUBK,
+    OP_MULK,
+    OP_DIVK,
+    OP_MODK,
+    OP_POWK,
+
     OP_UNM,
     OP_NOT,
     OP_LEN,
@@ -133,7 +146,7 @@ enum opcode {
  */
 #define GETARG_E(i) ((int32_t)i >> 24)
 
-#define NUM_OPCODES (int32_t)OP_VARARG + 1
+#define NUM_OPCODES (int32_t) OP_VARARG + 1
 
 LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
 
