@@ -9,11 +9,11 @@ sudo apt install flex
 sudo apt install bison
 sudo apt install make
 ```
-2. Enter the main source folder and run ``make compiler`` or ``make vm`` based on the project you would like to build. 
-3. Then run the binary file located in `src/bin`.
+2. Enter the main source folder and build the desired project (e.g. ```make interpreter```)
+3. Then run the binary that was produced by this command
 ```
-make
-./bin/luappc ...
+./bin/luapp
+...
 ```
 
 ### Compiler
