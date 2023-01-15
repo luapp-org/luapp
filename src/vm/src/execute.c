@@ -109,6 +109,13 @@ reentry:
                 setobj2s(L, RA(i), K(sub));
                 continue;
             }
+            case OP_LOADBOOL: {
+                setbvalue(RA(i), GETARG_B(i));
+
+                if (GETARG_C(i))
+                    pc++;
+                continue;
+            }
             case OP_LOADNN: {
                 setnvalue(RA(i), -(double)(GETARG_Du(i)));
                 continue;
