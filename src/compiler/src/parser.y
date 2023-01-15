@@ -107,24 +107,15 @@
 
 %start program
 
+%left LESS_THAN_T GREATER_THAN_T GREATER_EQUAL_T LESS_EQUAL_T NOT_EQUAL_T DOUBLE_EQUAL_T AND_T OR_T
+%left PLUS_T MINUS_T
+%left ASTERISK_T SLASH_T
+%left CARROT_T PERCENT_T
+
 %%
 
 binary_operation
-  : expression PLUS_T expression
-      { $$ = node_binary_operation(@2, BINOP_ADD, $1, $3); }
-  | expression MINUS_T expression
-      { $$ = node_binary_operation(@2, BINOP_SUB, $1, $3); }
-  | expression ASTERISK_T expression
-      { $$ = node_binary_operation(@2, BINOP_MUL, $1, $3); }
-  | expression SLASH_T expression
-      { $$ = node_binary_operation(@2, BINOP_DIV, $1, $3); }
-  | expression CARROT_T expression
-      { $$ = node_binary_operation(@2, BINOP_POW, $1, $3); }
-  | expression PERCENT_T expression
-      { $$ = node_binary_operation(@2, BINOP_MOD, $1, $3); }
-  | expression CONCAT_T expression
-      { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $3); }
-  | expression LESS_THAN_T expression
+  : expression LESS_THAN_T expression
       { $$ = node_binary_operation(@2, BINOP_LT, $1, $3); }
   | expression GREATER_THAN_T expression
       { $$ = node_binary_operation(@2, BINOP_GT, $1, $3); }
@@ -140,7 +131,22 @@ binary_operation
       { $$ = node_binary_operation(@2, BINOP_AND, $1, $3); }
   | expression OR_T expression
       { $$ = node_binary_operation(@2, BINOP_OR, $1, $3); }
+  | expression PLUS_T expression
+      { $$ = node_binary_operation(@2, BINOP_ADD, $1, $3); }
+  | expression MINUS_T expression
+      { $$ = node_binary_operation(@2, BINOP_SUB, $1, $3); }
+  | expression ASTERISK_T expression
+      { $$ = node_binary_operation(@2, BINOP_MUL, $1, $3); }
+  | expression SLASH_T expression
+      { $$ = node_binary_operation(@2, BINOP_DIV, $1, $3); }
+  | expression CARROT_T expression
+      { $$ = node_binary_operation(@2, BINOP_POW, $1, $3); }
+  | expression PERCENT_T expression
+      { $$ = node_binary_operation(@2, BINOP_MOD, $1, $3); }
+  | expression CONCAT_T expression
+      { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $3); }
 ;
+
 
 unary_operation
   : MINUS_T expression

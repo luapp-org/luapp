@@ -1,0 +1,5 @@
+digraph G
+{
+	node[fontname=Monospace]
+	n0[label="program"]
+}

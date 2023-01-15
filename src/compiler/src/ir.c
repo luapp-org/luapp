@@ -656,6 +656,13 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 break;
             }
         }
+        case NODE_BOOLEAN: {
+            struct ir_instruction *instruction = ir_instruction_ABC(OP_LOADBOOL, ir_allocate_register(context, proto, 1), 
+                                                                    node->data.boolean.value, 0);
+            
+            ir_append(proto->code, instruction);
+            break;
+        }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
 
