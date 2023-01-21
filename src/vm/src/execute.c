@@ -23,6 +23,12 @@
             PROTECT(luaV_arith(L, ra, rb, rc, tm));                                                \
     }
 
+#define JUMP(L, pc, i)                                                                             \
+    {                                                                                              \
+        (pc) += (i);                                                                               \
+        luai_threadyield(L);                                                                       \
+    }
+
 /* Performs basic arithmetic operation and invokes luaV_arith if needed */
 #define ARITH(op, tm)                                                                              \
     {                                                                                              \
@@ -49,6 +55,7 @@
 
 /* Constant manipulation */
 #define KD(i) (lua_assert(GETARG_D(i) < cl->p->sizek), (&k[GETARG_D(i)]))
+#define KB(i) (lua_assert(GETARG_C(i) < cl->p->sizek), (&k[GETARG_C(i)]))
 #define KC(i) (lua_assert(GETARG_C(i) < cl->p->sizek), (&k[GETARG_C(i)]))
 #define K(i) (lua_assert((i) < (uint32_t)cl->p->sizek), (&k[i]))
 
@@ -111,7 +118,7 @@ reentry:
             }
             case OP_LOADBOOL: {
                 setbvalue(RA(i), GETARG_B(i));
-
+                
                 if (GETARG_C(i))
                     pc++;
                 continue;
@@ -216,6 +223,20 @@ reentry:
                         return; /* yield */
                     }
                 }
+            }
+            case OP_NEJMP:
+            case OP_EQJMP: {
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                /* empty sub instruction */
+                const Instruction sub = *pc++;
+                
+                int result;
+                PROTECT(if (result = equalobj(L, rb, rc)) JUMP(L, pc, sub););
+
+                setbvalue(RA(i), GET_OPCODE(i) == OP_NEJMP ? !result : result);
+                continue;
             }
             case OP_RETURN:
                 goto exit;

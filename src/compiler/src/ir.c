@@ -478,6 +478,24 @@ static enum opcode get_arith_opcode(enum node_binary_operation op, bool is_k)
     return 0;
 }
 
+static enum opcode get_compare_opcode(enum node_binary_operation op)
+{
+    switch (op) {
+        case BINOP_NE:
+            return OP_NEJMP;
+        case BINOP_EQ:
+            return OP_EQJMP;
+        case BINOP_GE:
+        case BINOP_LE:
+            return OP_LEJMP;
+        case BINOP_GT:
+        case BINOP_LT:
+            return OP_LTJMP;
+        default:
+            break;
+    }
+}
+
 /* ir_join() -- joins two IR proto lists together to shape a new list of protos
  *      args: first proto, second proto
  *      rets: new proto list
@@ -544,7 +562,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_BINARY_OPERATION: {
             /* ir build proto will alloc */
-            uint8_t target = proto->top_register;
+            const uint8_t target = proto->top_register;
 
             /* Determine operation code for binary operation */
             switch (node->data.binary_operation.operation) {
@@ -600,6 +618,22 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                     ir_append(proto->code, instruction);
                     break;
                 }
+                case BINOP_NE:
+                case BINOP_EQ: {
+                    enum opcode op = get_compare_opcode(node->data.binary_operation.operation);
+
+                    ir_build_proto(context, proto, node->data.binary_operation.left);
+                    ir_build_proto(context, proto, node->data.binary_operation.right);
+
+                    const uint8_t end = proto->top_register - 1;
+
+                    ir_append(proto->code, ir_instruction_ABC(op, target, target, end));
+                    ir_append(proto->code, ir_instruction_sub(0)); /* skip none */
+
+                    /* Pop all experssions from the stack */
+                    ir_free_register(context, proto, end - target);
+                    break;
+                }
                 default:
                     break;
             }
@@ -617,6 +651,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_NAME_REFERENCE: {
             ir_build_proto(context, proto, node->data.name_reference.identifier);
+            break;
+        }
+        case NODE_EXPRESSION_GROUP: {
+            ir_build_proto(context, proto, node->data.expression_group.expression);
             break;
         }
         case NODE_NUMBER: {
@@ -657,9 +695,9 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
         }
         case NODE_BOOLEAN: {
-            struct ir_instruction *instruction = ir_instruction_ABC(OP_LOADBOOL, ir_allocate_register(context, proto, 1), 
-                                                                    node->data.boolean.value, 0);
-            
+            struct ir_instruction *instruction = ir_instruction_ABC(
+                OP_LOADBOOL, ir_allocate_register(context, proto, 1), node->data.boolean.value, 0);
+
             ir_append(proto->code, instruction);
             break;
         }
@@ -721,8 +759,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             if (expression == NULL)
                 ir_build_proto(context, proto, init);
             else {
-                ir_build_proto(context, proto, init);
                 ir_build_proto(context, proto, expression);
+                ir_build_proto(context, proto, init);
             }
             break;
         }

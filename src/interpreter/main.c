@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 {
     int opt, error_count;
     size_t bufsize;
-    char *stage, *dot, *buff;
+    char *dot, *buff;
     FILE *input, *output;
     struct symbol_table symbol_table;
 
