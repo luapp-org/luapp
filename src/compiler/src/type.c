@@ -413,6 +413,11 @@ static void type_handle_name_reference(struct type_context *context, struct node
     }
 }
 
+static bool type_can_concat(struct type *t)
+{
+    return type_is_primitive(t, TYPE_BASIC_STRING) || type_is_primitive(t, TYPE_BASIC_NUMBER);
+}
+
 static void type_handle_binary_operation(struct type_context *context,
                                          struct node *binary_operation)
 {
@@ -450,15 +455,26 @@ static void type_handle_binary_operation(struct type_context *context,
                                type_to_string(right->node_type), type_to_string(left->node_type));
                 context->error_count++;
             }
-        case BINOP_CONCAT:
         case BINOP_EQ:
         case BINOP_NE:
             free(binary_operation->node_type);
-            binary_operation->node_type =
-                type_basic(binary_operation->data.binary_operation.operation == BINOP_CONCAT
-                               ? TYPE_BASIC_STRING
-                               : TYPE_BASIC_BOOLEAN);
+
+            binary_operation->node_type = type_basic(TYPE_BASIC_BOOLEAN);
             break;
+        /* Concat is special: only strings or numbers can be concatenated */
+        case BINOP_CONCAT: {
+            free(binary_operation->node_type);
+
+            if (!type_can_concat(left->node_type) || !type_can_concat(right->node_type)) {
+                compiler_error(binary_operation->location,
+                               "attempt to concatenate \"%s\" with \"%s\"",
+                               type_to_string(left->node_type), type_to_string(right->node_type));
+                context->error_count++;
+            }
+            binary_operation->node_type = type_basic(TYPE_BASIC_STRING);
+            break;
+        }
+
         /* Lua has some weird 'and' and 'or' operations */
         case BINOP_AND:
         case BINOP_OR:
