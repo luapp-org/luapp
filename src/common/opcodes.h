@@ -90,10 +90,6 @@ enum opcode {
 
     OP_JMP,
 
-    OP_EQ,
-    OP_LT,
-    OP_LE,
-
     OP_TEST,
     OP_TESTSET,
 
@@ -114,7 +110,34 @@ enum opcode {
      * A: number of fixed arguments
      */
     OP_VARARGPREP,
-    OP_VARARG
+
+    /* OP_EQJMP: compares two registers, jumps if equal
+     * A: result
+     * B: first register
+     * C: second register
+     * SUB: pc jump size
+     */
+    OP_NEJMP,
+    OP_EQJMP,
+
+    /* OP_LTJMP: compares two registers, jumps if less than
+     * A: result
+     * B: first register
+     * C: second register
+     * SUB: pc jump size
+     */
+    OP_LTJMP,
+
+    /* OP_LTJMP: compares two registers, jumps if less than or equals
+     * A: result
+     * B: first register
+     * C: second register
+     * SUB: pc jump size
+     */
+    OP_LEJMP,
+
+    OP_VARARG,
+
 };
 
 /* Retrieve the one byte instruction operation code */

@@ -21,4 +21,6 @@ runtime: $(VM_OBJS)
 	gcc -o bin/luappvm $^ -lm
 
 interpreter: $(INTERPRETER_OBJS)
-		gcc -o bin/luapp $^ -lm
+	gcc -o bin/luapp $^ -lm
+
+.PHONY: interpreter runtime compiler

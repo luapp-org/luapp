@@ -42,6 +42,12 @@
         DO_ARITH(op, ra, rb, rk, tm);                                                              \
     }
 
+#define JUMP(L, pc, i)                                                                             \
+    {                                                                                              \
+        (pc) += (i);                                                                               \
+        luai_threadyield(L);                                                                       \
+    }
+
 /* Register manipulation */
 #define RA(i) (lua_assert(GETARG_A(i) < L->top - base), (&base[GETARG_A(i)]))
 #define RB(i) (lua_assert(GETARG_B(i) < L->top - base), (&base[GETARG_B(i)]))
@@ -75,27 +81,27 @@ reentry:
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
-                /* Prepare the stack for any possible varargs */
-                int32_t numparams = GETARG_A(i);
+                // /* Prepare the stack for any possible varargs */
+                // int32_t numparams = GETARG_A(i);
 
-                /* Get more stack space as each argument is copied over */
-                PROTECT(luaD_checkstack(L, cl->p->maxstacksize + numparams));
+                // /* Get more stack space as each argument is copied over */
+                // PROTECT(luaD_checkstack(L, cl->p->maxstacksize + numparams));
 
-                lua_assert(cast_int(L->top - base) >= numparams);
+                // lua_assert(cast_int(L->top - base) >= numparams);
 
-                StkId fixed = base;
-                base = L->top;
+                // StkId fixed = base;
+                // base = L->top;
 
-                for (int32_t i = 0; i < numparams; ++i)
-                    setobj2s(L, base + i, fixed + i);
-                setnilvalue(fixed + i);
+                // for (int32_t i = 0; i < numparams; ++i)
+                //     setobj2s(L, base + i, fixed + i);
+                // setnilvalue(fixed + i);
 
-                /* Rewire our stack frame to point to the new base */
-                L->ci->base = base;
-                L->ci->top = base + cl->p->maxstacksize;
+                // /* Rewire our stack frame to point to the new base */
+                // L->ci->base = base;
+                // L->ci->top = base + cl->p->maxstacksize;
 
-                L->base = base;
-                L->top = L->ci->top;
+                // L->base = base;
+                // L->top = L->ci->top;
                 continue;
             }
             case OP_LOADK: {
@@ -217,10 +223,24 @@ reentry:
                     }
                 }
             }
+            case OP_NEJMP:
+            case OP_EQJMP: {
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                /* empty sub instruction */
+                const Instruction sub = *pc++;
+
+                int result;
+                PROTECT(if (result = equalobj(L, rb, rc)) JUMP(L, pc, sub););
+
+                setbvalue(RA(i), GET_OPCODE(i) == OP_NEJMP ? !result : result);
+                continue;
+            }
             case OP_RETURN:
                 goto exit;
         }
     }
 /* exit point */
-exit:
+exit:;
 }
