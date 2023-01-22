@@ -701,10 +701,6 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_append(proto->code, instruction);
             break;
         }
-        case NODE_EXPRESSION_GROUP: {
-            ir_build_proto(context, proto, node->data.expression_group.expression);
-            break;
-        }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
 
