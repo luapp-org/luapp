@@ -562,7 +562,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_BINARY_OPERATION: {
             /* ir build proto will alloc */
-            uint8_t target = proto->top_register;
+            const uint8_t target = proto->top_register;
 
             /* Determine operation code for binary operation */
             switch (node->data.binary_operation.operation) {
@@ -651,6 +651,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_NAME_REFERENCE: {
             ir_build_proto(context, proto, node->data.name_reference.identifier);
+            break;
+        }
+        case NODE_EXPRESSION_GROUP: {
+            ir_build_proto(context, proto, node->data.expression_group.expression);
             break;
         }
         case NODE_NUMBER: {
