@@ -618,6 +618,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                     ir_append(proto->code, instruction);
                     break;
                 }
+                case BINOP_GE:
+                case BINOP_LE:
+                case BINOP_GT:
+                case BINOP_LT:
                 case BINOP_NE:
                 case BINOP_EQ: {
                     enum opcode op = get_compare_opcode(node->data.binary_operation.operation);
@@ -627,7 +631,12 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
                     const uint8_t end = proto->top_register - 1;
 
-                    ir_append(proto->code, ir_instruction_ABC(op, target, target, end));
+                    if (node->data.binary_operation.operation == BINOP_GE ||
+                        node->data.binary_operation.operation == BINOP_GT)
+                        ir_append(proto->code, ir_instruction_ABC(op, target, end, target));
+                    else
+                        ir_append(proto->code, ir_instruction_ABC(op, target, target, end));
+
                     ir_append(proto->code, ir_instruction_sub(0)); /* skip none */
 
                     /* Pop all experssions from the stack */

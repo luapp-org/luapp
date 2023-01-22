@@ -124,7 +124,7 @@ reentry:
             }
             case OP_LOADBOOL: {
                 setbvalue(RA(i), GETARG_B(i));
-                
+
                 if (GETARG_C(i))
                     pc++;
                 continue;
@@ -235,12 +235,33 @@ reentry:
                 TValue *rb = RB(i);
                 TValue *rc = RC(i);
 
-                /* empty sub instruction */
                 const Instruction sub = *pc++;
                 int result;
                 PROTECT(if (result = equalobj(L, rb, rc)) JUMP(L, pc, sub););
 
                 setbvalue(RA(i), GET_OPCODE(i) == OP_NEJMP ? !result : result);
+                continue;
+            }
+            case OP_LEJMP: {
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                const Instruction sub = *pc++;
+                int result;
+                PROTECT(if (result = luaV_lessequal(L, rb, rc)) JUMP(L, pc, sub););
+
+                setbvalue(RA(i), result);
+                continue;
+            }
+            case OP_LTJMP: {
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                const Instruction sub = *pc++;
+                int result;
+                PROTECT(if (result = luaV_lessthan(L, rb, rc)) JUMP(L, pc, sub););
+
+                setbvalue(RA(i), result);
                 continue;
             }
             case OP_RETURN:

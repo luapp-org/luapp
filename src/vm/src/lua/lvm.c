@@ -235,7 +235,7 @@ int luaV_lessthan(lua_State *L, const TValue *l, const TValue *r)
     return luaG_ordererror(L, l, r);
 }
 
-static int lessequal(lua_State *L, const TValue *l, const TValue *r)
+int luaV_lessequal(lua_State *L, const TValue *l, const TValue *r)
 {
     int res;
     if (ttype(l) != ttype(r))
@@ -597,7 +597,7 @@ reentry: /* entry point */
                 continue;
             }
             case OP_LE: {
-                Protect(if (lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
+                Protect(if (luaV_lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
                             dojump(L, pc, GETARG_D(*pc));) pc++;
                 continue;
             }
