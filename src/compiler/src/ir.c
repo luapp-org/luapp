@@ -18,12 +18,13 @@
  */
 static struct ir_section *ir_section(struct ir_instruction *first, struct ir_instruction *last)
 {
+
     struct ir_section *code;
     code = smalloc(sizeof(struct ir_section));
 
     code->first = first;
     code->last = last;
-    code->size = 1;
+    code->size = first && last ? 1 : 0;
     return code;
 }
 
@@ -60,6 +61,7 @@ static struct ir_section *ir_join(struct ir_section *first, struct ir_section *s
  */
 static struct ir_section *ir_append(struct ir_section *section, struct ir_instruction *instruction)
 {
+
     /* section is empty */
     if (section == NULL)
         section = ir_section(instruction, instruction);
@@ -394,6 +396,27 @@ static int32_t ir_get_constant_number(struct ir_proto *proto, struct node *node)
     return ir_constant_number(proto, node->data.number.value);
 }
 
+typedef struct register_data {
+    int32_t reg;
+} register_data_t;
+
+static int32_t ir_get_local_register(struct ir_context *context, char *name)
+{
+    register_data_t *data;
+
+    if (hashmap_get(context->local_map, name, (void **)(&data)) == MAP_OK)
+        return data->reg;
+    return -1;
+}
+
+static void ir_set_local_register(struct ir_context *context, char *name, uint8_t reg)
+{
+    register_data_t *data = malloc(sizeof(register_data_t));
+    data->reg = reg;
+
+    assert(hashmap_put(context->local_map, name, data) == MAP_OK);
+}
+
 /* ir_constant_number() -- allocate memory for a new function prototype list
  *      args: first proto, last proto
  *      rets: new list
@@ -424,6 +447,7 @@ static struct ir_proto *ir_proto()
     p->parameters_size = 0;
     p->top_register = 0;
     p->upvalues_size = 0;
+    p->code = ir_section(NULL, NULL);
 
     p->protos = ir_proto_list(NULL, NULL);
 
@@ -520,7 +544,22 @@ static struct ir_proto_list *ir_proto_join(struct ir_proto_list *first,
  *      args: context
  *      rets: none
  */
-void ir_init(struct ir_context *context) { context->main_proto = ir_proto(); }
+void ir_init(struct ir_context *context)
+{
+
+    context->main_proto = ir_proto();
+    context->local_map = hashmap_new();
+}
+
+/* ir_destroy() -- destroys the IR context. Must be called if initialized.
+ *      args: context
+ *      rets: none
+ */
+void ir_destroy(struct ir_context *context)
+{
+    if (context->local_map)
+        hashmap_free(context->local_map);
+}
 
 struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto,
                                 struct node *node)
@@ -712,15 +751,19 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
+            int32_t reg;
 
             if (node->data.identifier.is_global) {
                 unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
                 instruction =
                     ir_instruction_AD(OP_GETENV, ir_allocate_register(context, proto, 1), index);
+            } else if ((reg = ir_get_local_register(context, node->data.identifier.name)) >= 0) {
+                instruction =
+                    ir_instruction_ABC(OP_MOVE, ir_allocate_register(context, proto, 1), reg, 0);
             }
-
-            ir_append(proto->code, instruction);
+            if (instruction)
+                ir_append(proto->code, instruction);
             break;
         }
         case NODE_BLOCK: {
@@ -773,6 +816,32 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
             break;
         }
+        case NODE_LOCAL: {
+            uint8_t first = proto->top_register;
+
+            ir_build_proto(context, proto, node->data.local.exprlist);
+
+            struct node *namelist = node->data.local.namelist;
+
+            while (true) {
+                struct node *n = NULL;
+
+                if (namelist->type == NODE_NAME_LIST)
+                    n = namelist->data.name_list.name;
+                else
+                    n = namelist;
+
+                if (n->type == NODE_TYPE_ANNOTATION) {
+                    ir_set_local_register(
+                        context, n->data.type_annotation.identifier->data.identifier.name, first++);
+                } else if (n->type == NODE_IDENTIFIER)
+                    ir_set_local_register(context, n->data.identifier.name, first++);
+
+                if (namelist->type != NODE_NAME_LIST)
+                    break;
+            }
+            break;
+        }
     }
 }
 
@@ -789,6 +858,7 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
 
     /* Build the initial argument preparation instruction */
     struct ir_instruction *instruction = ir_instruction_ABC(OP_VARARGPREP, 0, 0, 0);
+
     proto->code = ir_append(proto->code, instruction);
 
     /* Build the content of the main block */
@@ -860,7 +930,8 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
     fprintf(output, "proto->parameters_size %7d\n", proto->parameters_size);
     fprintf(output, "proto->max_stack_size  %7d\n", proto->max_stack_size);
     fprintf(output, "proto->upvalues_size   %7d\n", proto->upvalues_size);
-
+    fprintf(output, "proto->sizecode        %7d\n", proto->code->size);
+    
     /* Spacing... lol */
     fputc('\n', output);
 

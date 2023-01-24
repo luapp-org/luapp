@@ -314,7 +314,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
     while (true) {
 
         /* Both are lists -> check first values of each */
-        if ((vars && values) && vars->type == NODE_VARIABLE_LIST &&
+        if ((vars && values) && vars->type == NODE_NAME_LIST &&
             values->type == NODE_EXPRESSION_LIST) {
 
             type_handle_local_assignment(context, vars->data.name_list.name,
@@ -324,7 +324,7 @@ static void type_handle_local(struct type_context *context, struct node *local)
             values = values->data.expression_list.init;
         }
         /* first is list second is NULL -> continue first */
-        else if ((vars) && vars->type == NODE_VARIABLE_LIST) {
+        else if ((vars) && vars->type == NODE_NAME_LIST) {
             type_handle_local_assignment(context, vars->data.name_list.name, values);
 
             vars = vars->data.variable_list.init;

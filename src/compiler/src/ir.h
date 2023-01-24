@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "compiler.h"
+#include "util/hashmap.h"
 
 /* Blind definitions */
 struct node;
@@ -76,12 +77,16 @@ struct ir_context {
     /* What will be serialized */
     struct symbol_table *table;
     struct ir_proto *main_proto;
+
+    /* IR 'local' register map */
+    map_t local_map;
 };
 
-struct ir_proto *ir_build(struct ir_context *context, struct node *node);
 void ir_init(struct ir_context *context);
+void ir_destroy(struct ir_context *context);
 
 void ir_print_context(FILE *output, struct ir_context *context);
+struct ir_proto *ir_build(struct ir_context *context, struct node *node);
 struct ir_proto_list *ir_collect_protos(struct ir_proto *main);
 
 #endif

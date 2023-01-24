@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "codegen.h"
 #include "compiler.h"
 #include "ir.h"
 #include "lexer.h"
@@ -16,7 +17,6 @@
 #include "parser.h"
 #include "symbol.h"
 #include "type.h"
-#include "codegen.h"
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors)
@@ -171,6 +171,8 @@ int main(int argc, char **argv)
 
     ir_context.main_proto = ir_build(&ir_context, tree);
     error_count = context.error_count;
+
+    ir_destroy(&ir_context);
 
     if (error_count) {
         print_summary("IR", error_count, start);

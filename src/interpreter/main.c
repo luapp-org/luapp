@@ -75,6 +75,7 @@ int compile(FILE *input, FILE *output)
 
     ir_context.main_proto = ir_build(&ir_context, tree);
     error_count = context.error_count;
+    ir_destroy(&ir_context);
 
     if (error_count) {
         print_summary("IR", error_count);

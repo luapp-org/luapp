@@ -88,27 +88,11 @@ reentry:
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
-                // /* Prepare the stack for any possible varargs */
-                // int32_t numparams = GETARG_A(i);
-
-                // /* Get more stack space as each argument is copied over */
-                // PROTECT(luaD_checkstack(L, cl->p->maxstacksize + numparams));
-
-                // lua_assert(cast_int(L->top - base) >= numparams);
-
-                // StkId fixed = base;
-                // base = L->top;
-
-                // for (int32_t i = 0; i < numparams; ++i)
-                //     setobj2s(L, base + i, fixed + i);
-                // setnilvalue(fixed + i);
-
-                // /* Rewire our stack frame to point to the new base */
-                // L->ci->base = base;
-                // L->ci->top = base + cl->p->maxstacksize;
-
-                // L->base = base;
-                // L->top = L->ci->top;
+                /* TODO: #6 Remove stackprep from luaD_precall and move here. */
+                continue;
+            }
+            case OP_MOVE: {
+                setobjs2s(L, RA(i), RB(i));
                 continue;
             }
             case OP_LOADK: {

@@ -87,7 +87,7 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
 
 void codegen_write_program(FILE *output, struct ir_context *context)
 {
-    /* Write bytecode size */
+    /* Write bytecode version */
     codegen_write_byte(output, VERSION_1);
 
     codegen_write_symbol_table(output, context->table);
