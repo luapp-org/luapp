@@ -220,8 +220,9 @@ static void type_add(struct type_context *context, struct node *identifier, stru
 {
     void *s;
     if (type_name_exists(context, identifier->data.identifier.name)) {
-        compiler_error(identifier->location, "this variable has already been defined");
-        hashmap_print(context->type_map);
+        compiler_error(identifier->location,
+                       "local variable \"%s\" has already been defined in this context",
+                       identifier->data.identifier.name);
         context->error_count++;
         return;
     }
@@ -261,23 +262,20 @@ static void type_handle_local_assignment(struct type_context *context, struct no
 {
     struct node *identifier;
 
-    if (name && expr) {
-        if (name->data.type_annotation.type->node_type == NULL) {
-            free(name->node_type);
-            name->node_type = expr->node_type;
-            name->data.type_annotation.type->node_type = expr->node_type;
-        } else if (name->type != NODE_TYPE_ANNOTATION) {
-            free(name->node_type);
-            name->node_type = expr->node_type;
-
-            if (context->is_strict && name->type != NODE_TYPE_ANNOTATION) {
-                compiler_error(name->location,
-                               "expected type annotation; compiler is in \"strict\" mode");
-                context->error_count++;
-            }
+    /* Set the identifier and assign types */
+    if (name && expr && name->type != NODE_TYPE_ANNOTATION) {
+        /* strict context and node isn't type annotation */
+        if (context->is_strict) {
+            compiler_error(name->location,
+                           "expected type annotation; compiler is in \"strict\" mode");
+            context->error_count++;
         }
 
-        identifier = name;
+        /* assign new type to the node */
+        if (name->node_type)
+            free(name->node_type);
+
+        name->node_type = expr->node_type;
     } else if (name)
         identifier = name->data.type_annotation.identifier;
 
@@ -292,6 +290,7 @@ static void type_handle_local_assignment(struct type_context *context, struct no
             } else
                 name->node_type = expr->node_type;
         }
+
         type_add(context, identifier, name->node_type);
     } else if (name) {
         if (context->is_strict) {
@@ -965,7 +964,6 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     struct type_context new_context = {context->is_strict, context->error_count, NULL,
                                        context->global_type_map};
-
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);
