@@ -436,13 +436,12 @@ static void type_handle_binary_operation(struct type_context *context,
             if (!type_is_primitive(right->node_type, TYPE_BASIC_NUMBER) ||
                 !type_is_primitive(left->node_type, TYPE_BASIC_NUMBER)) {
                 compiler_error(binary_operation->location,
-                               "unable to perform '%c' on values of type \"%s\" and \"%s\"",
+                               "unable to perform '%s' on values of type \"%s\" and \"%s\"",
                                binary_operations[binary_operation->data.binary_operation.operation],
-                               type_to_string(right->node_type), type_to_string(left->node_type));
+                               type_to_string(left->node_type), type_to_string(right->node_type));
                 context->error_count++;
-            } else {
-                binary_operation->node_type = type_basic(TYPE_BASIC_NUMBER);
             }
+            binary_operation->node_type = type_basic(TYPE_BASIC_NUMBER);
             break;
         case BINOP_GE:
         case BINOP_LE:
@@ -451,9 +450,11 @@ static void type_handle_binary_operation(struct type_context *context,
             if (!type_is(right->node_type, left->node_type)) {
                 compiler_error(binary_operation->location,
                                "attempt to compare value of type \"%s\" with value of type \"%s\"",
-                               type_to_string(right->node_type), type_to_string(left->node_type));
+                               type_to_string(left->node_type), type_to_string(right->node_type));
                 context->error_count++;
             }
+            binary_operation->node_type = type_basic(TYPE_BASIC_BOOLEAN);
+            break;
         case BINOP_EQ:
         case BINOP_NE:
             free(binary_operation->node_type);
@@ -951,6 +952,13 @@ static void type_handle_call(struct type_context *context, struct node *call)
     }
 }
 
+static void type_handle_expression_group(struct type_context *context, struct node *node)
+{
+    free(node->node_type);
+
+    node->node_type = node->data.expression_group.expression->node_type;
+}
+
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
  *      args: context, node, flag that determines whether to not copy the context.
  *      returns: none
@@ -967,6 +975,11 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);
+            break;
+        case NODE_EXPRESSION_GROUP:
+            type_ast_traversal(context, node->data.expression_group.expression, false);
+
+            type_handle_expression_group(context, node);
             break;
         case NODE_NAME_REFERENCE:
             type_ast_traversal(context, node->data.name_reference.identifier, false);
@@ -1039,6 +1052,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             /* Check if everything is legal */
             type_handle_call(context, node);
+            break;
         case NODE_IF:
             type_ast_traversal(context, node->data.if_statement.condition, false);
             type_ast_traversal(context, node->data.if_statement.body, false);

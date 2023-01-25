@@ -56,6 +56,10 @@ enum node_type {
     NODE_TABLE_CONSTRUCTOR,
 };
 
+#define NODE_SIZE (int32_t) NODE_TABLE_CONSTRUCTOR + 1
+
+extern const char *const node_names[NODE_SIZE + 1];
+
 /* Binary operations */
 enum node_binary_operation {
     /* Arithmetic operations */

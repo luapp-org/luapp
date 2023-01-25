@@ -705,6 +705,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.expression_group.expression);
             break;
         }
+        case NODE_ASSIGNMENT: {
+            
+            break;
+        }
         case NODE_NUMBER: {
             struct ir_instruction *instruction, *sub;
 

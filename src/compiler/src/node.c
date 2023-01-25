@@ -10,6 +10,47 @@
 static int parent_id = 0;
 static int id = 0;
 
+/* Name array for nodes */
+const char *const node_names[NODE_SIZE + 1] = {"NODE_NUMBER",
+                                               "NODE_IDENTIFIER",
+                                               "NODE_STRING",
+                                               "NODE_BOOLEAN",
+                                               "NODE_NIL",
+                                               "NODE_TYPE_ANNOTATION",
+                                               "NODE_BINARY_OPERATION",
+                                               "NODE_UNARY_OPERATION",
+                                               "NODE_EXPRESSION_LIST",
+                                               "NODE_NAME_LIST",
+                                               "NODE_VARIABLE_LIST",
+                                               "NODE_PARAMETER_LIST",
+                                               "NODE_CALL",
+                                               "NODE_EXPRESSION_GROUP",
+                                               "NODE_NAME_INDEX",
+                                               "NODE_EXPRESSION_INDEX",
+                                               "NODE_EXPRESSION_STATEMENT",
+                                               "NODE_BLOCK",
+                                               "NODE_ASSIGNMENT",
+                                               "NODE_WHILELOOP",
+                                               "NODE_REPEATLOOP",
+                                               "NODE_IF",
+                                               "NODE_NUMERICFORLOOP",
+                                               "NODE_GENERICFORLOOP",
+                                               "NODE_LOCAL",
+                                               "NODE_RETURN",
+                                               "NODE_BREAK",
+                                               "NODE_FUNCTION_BODY",
+                                               "NODE_VARARG",
+                                               "NODE_TYPE_LIST",
+                                               "NODE_TYPE",
+                                               "NODE_TYPE_ARRAY",
+                                               "NODE_TYPE_TABLE",
+                                               "NODE_TYPE_FUNCTION",
+                                               "NODE_NAME_REFERENCE",
+                                               "NODE_ARRAY_CONSTRUCTOR",
+                                               "NODE_KEY_VALUE_PAIR",
+                                               "NODE_TABLE_CONSTRUCTOR",
+                                               NULL};
+
 /*  node_create - allocate and initialize a generic node
  *      args: location, node type
  *      rets: allocated node
@@ -804,7 +845,7 @@ void print_ast(FILE *output, struct node *node, bool first)
             /* Print expressions */
             print_ast(output, node->data.type_annotation.identifier, false);
             print_ast(output, node->data.type_annotation.type, false);
-            
+
             parent_id = previous;
             break;
         case NODE_TYPE:
