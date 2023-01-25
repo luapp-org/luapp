@@ -2,18 +2,13 @@
  */
 
 /* compiler dependencies */
-#include "../compiler/src/codegen.h"
 #include "../compiler/src/compiler.h"
-#include "../compiler/src/ir.h"
-#include "../compiler/src/lexer.h"
-#include "../compiler/src/node.h"
-#include "../compiler/src/parser.h"
-#include "../compiler/src/symbol.h"
-#include "../compiler/src/type.h"
 
 #include "../vm/src/lua/lauxlib.h"
 #include "../vm/src/lua/lua.h"
 #include "../vm/src/lua/lualib.h"
+
+#include <getopt.h>
 
 /*  print_summary - prints a quick summary of a pass (elapsed time and number of
  *  errors)
@@ -25,74 +20,12 @@ static void print_summary(char *pass, int error_count)
     printf("\n%s encountered %d %s.\n", pass, error_count, (error_count == 1 ? "error" : "errors"));
 }
 
-int compile(FILE *input, FILE *output)
-{
-    yyscan_t lexer;
-    int error_count = 0;
-    struct node *tree;
-    struct symbol_table symbol_table;
-
-    lex_init(&lexer, input);
-
-    /* Run the parser, it's needed for all later passes */
-    tree = parser_parse(&error_count, lexer);
-    lex_destroy(&lexer);
-
-    /* Make sure the parser did not return any errors */
-    if (tree == NULL) {
-        print_summary("Parser", error_count);
-        return 1;
-    }
-
-    struct type_context type_context = {true, 0};
-    type_init(&type_context);
-
-    /* Run the parser, it's needed for all later passes */
-    type_ast_traversal(&type_context, tree, true);
-    error_count = type_context.error_count;
-
-    if (error_count) {
-        print_summary("Type checker", error_count);
-        type_destroy(&type_context);
-        return 1;
-    }
-
-    type_destroy(&type_context);
-
-    symbol_initialize_table(&symbol_table);
-    struct symbol_context context = {&symbol_table, error_count};
-
-    symbol_ast_traversal(&context, tree);
-    error_count = context.error_count;
-
-    if (error_count) {
-        print_summary("Symbol table", error_count);
-        return 1;
-    }
-
-    struct ir_context ir_context = {0, &symbol_table};
-    ir_init(&ir_context);
-
-    ir_context.main_proto = ir_build(&ir_context, tree);
-    error_count = context.error_count;
-    ir_destroy(&ir_context);
-
-    if (error_count) {
-        print_summary("IR", error_count);
-        return 1;
-    }
-
-    codegen_write_program(output, &ir_context);
-    return 0;
-}
-
 int main(int argc, char **argv)
 {
     int opt, error_count;
     size_t bufsize;
     char *dot, *buff;
     FILE *input, *output;
-    struct symbol_table symbol_table;
 
     time_t start;
     struct node *tree;
@@ -124,7 +57,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (compile(input, output))
+    compiler_context_t context = {"codegen", 0};
+    if (!compile(&context, input, output))
         return 1;
 
     fclose(output);
@@ -150,6 +84,7 @@ int main(int argc, char **argv)
     /* Run the closure at L->top + 0 */
     lua_resume(L, 0);
     lua_close(L);
+    
     fclose(input);
     free(buff);
     return 0;

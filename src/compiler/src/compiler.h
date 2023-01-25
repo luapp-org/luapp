@@ -28,8 +28,17 @@ struct YYLTYPE {
 #define YYLTYPE_IS_TRIVIAL 1
 #endif
 
+typedef struct compiler_context
+{
+    char *stage;
+    int error_count;
+    time_t time;
+} compiler_context_t;
+
 void compiler_error(YYLTYPE location, const char *format, ...);
 void unhandled_compiler_error(const char *format, ...);
+
+bool compile(compiler_context_t *context, FILE *input, FILE *output);
 
 const char *token_to_string(int token);
 void clear(char arr[]);
