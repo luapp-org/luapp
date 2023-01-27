@@ -136,6 +136,14 @@ enum opcode {
      */
     OP_LEJMP,
 
+    /* OP_JMPIF: performs a jump if R(A) equals the value in C
+     * A: register
+     * B: 
+     * C: value
+     * SUB: pc jump size
+     */
+    OP_JMPIF,
+
     OP_VARARG,
 
 };

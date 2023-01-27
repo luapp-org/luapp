@@ -2,6 +2,8 @@
 #include "lua/lgc.h"
 #include "lua/lvm.h"
 
+#include <stdbool.h>
+
 #include "../../common/opcodes.h"
 
 /* Protects the stack pointer from any external Lua calls that could reallocate the stack. */
@@ -246,6 +248,15 @@ reentry:
                 PROTECT(if (result = luaV_lessthan(L, rb, rc)) JUMP(L, pc, sub););
 
                 setbvalue(RA(i), result);
+                continue;
+            }
+            case OP_JMPIF: {
+                TValue *ra = RA(i);
+                bool value = GETARG_C(i);
+
+                const Instruction sub = *pc++ - 1;
+
+                PROTECT(if (bvalue(ra) == value) JUMP(L, pc, sub););
                 continue;
             }
             case OP_RETURN:

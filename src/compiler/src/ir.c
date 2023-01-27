@@ -599,6 +599,27 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_append(proto->code, instruction);
             break;
         }
+        case NODE_IF: {
+            const uint8_t top = proto->top_register;
+
+            ir_build_proto(context, proto, node->data.if_statement.condition);
+
+            ir_append(proto->code, ir_instruction_ABC(OP_JMPIF, top, 0, 0));
+
+            /* cache old program counter for jump calculation */
+            const uint32_t old_pc = proto->code->size;
+
+            struct ir_instruction *sub = ir_instruction_sub(0);
+            ir_append(proto->code, sub);
+
+            ir_build_proto(context, proto, node->data.if_statement.body);
+
+            /* calculate jump size */
+            sub->value = proto->code->size - old_pc;
+
+            ir_build_proto(context, proto, node->data.if_statement.else_body);
+            break;
+        }
         case NODE_BINARY_OPERATION: {
             /* ir build proto will alloc */
             const uint8_t target = proto->top_register;
@@ -706,7 +727,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             break;
         }
         case NODE_ASSIGNMENT: {
-            
+
             break;
         }
         case NODE_NUMBER: {
@@ -935,7 +956,7 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
     fprintf(output, "proto->max_stack_size  %7d\n", proto->max_stack_size);
     fprintf(output, "proto->upvalues_size   %7d\n", proto->upvalues_size);
     fprintf(output, "proto->sizecode        %7d\n", proto->code->size);
-    
+
     /* Spacing... lol */
     fputc('\n', output);
 

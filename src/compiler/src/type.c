@@ -244,7 +244,7 @@ void type_init(struct type_context *context)
     /* Todo add function calls! */
     type_add_name(context->global_type_map, "print",
                   type_function(node_type(loc, type_basic(TYPE_BASIC_VARARG)),
-                                node_type(loc, type_basic(TYPE_BASIC_NIL))));
+                                node_type(loc, type_basic(TYPE_BASIC_ANY))));
 }
 
 /* type_destroy() -- deallocates space for the type context

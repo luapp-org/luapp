@@ -8,4 +8,4 @@ const char *const opcode_names[NUM_OPCODES + 1] = {
     "UNM",      "NOT",      "LEN",        "CONCAT",   "JMP",       "TEST",     "TESTSET",
     "CALL",     "TAILCALL", "RETURN",     "FORLOOP",  "FORPREP",   "TFORLOOP", "SETLIST",
     "CLOSE",    "CLOSURE",  "VARARGPREP", "NEJMP",    "EQJMP",     "LTJMP",    "LEJMP",
-    "VARARG",   NULL};
+    "JMPIF",    "VARARG",   NULL};
