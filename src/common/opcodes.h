@@ -88,7 +88,10 @@ enum opcode {
 
     OP_CONCAT,
 
-    OP_JMP,
+    /* OP_JMPBACK: jumps back x instructions
+     * E: amount of instructions to jump
+     */
+    OP_JMPBACK,
 
     OP_TEST,
     OP_TESTSET,
@@ -175,7 +178,7 @@ enum opcode {
 /* iE
  * E:    24 bits
  */
-#define GETARG_E(i) ((int32_t)i >> 24)
+#define GETARG_E(i) ((int32_t)i >> 8)
 
 #define NUM_OPCODES (int32_t) OP_VARARG + 1
 

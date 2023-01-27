@@ -615,9 +615,32 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.if_statement.body);
 
             /* calculate jump size */
-            sub->value = proto->code->size - old_pc;
+            sub->value = proto->code->size - old_pc - 1;
 
             ir_build_proto(context, proto, node->data.if_statement.else_body);
+            break;
+        }
+        case NODE_WHILELOOP: {
+            const uint8_t top = proto->top_register;
+
+            ir_build_proto(context, proto, node->data.while_loop.condition);
+
+            ir_append(proto->code, ir_instruction_ABC(OP_JMPIF, top, 0, 0));
+
+            /* cache old program counter for jump calculation */
+            const uint32_t old_pc = proto->code->size;
+
+            struct ir_instruction *sub = ir_instruction_sub(0);
+            ir_append(proto->code, sub);
+
+            ir_build_proto(context, proto, node->data.while_loop.body);
+
+            /* calculate jump size */
+            const uint32_t jmp = proto->code->size - old_pc;
+
+            ir_append(proto->code, ir_instruction_E(OP_JMPBACK, -jmp));
+
+            sub->value = jmp;
             break;
         }
         case NODE_BINARY_OPERATION: {

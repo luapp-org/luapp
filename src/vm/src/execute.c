@@ -254,9 +254,13 @@ reentry:
                 TValue *ra = RA(i);
                 bool value = GETARG_C(i);
 
-                const Instruction sub = *pc++ - 1;
+                const Instruction sub = *pc++;
 
                 PROTECT(if (bvalue(ra) == value) JUMP(L, pc, sub););
+                continue;
+            }
+            case OP_JMPBACK: {
+                PROTECT(JUMP(L, pc, GETARG_E(i)));
                 continue;
             }
             case OP_RETURN:
