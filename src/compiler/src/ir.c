@@ -653,13 +653,45 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
                 if (name->type == NODE_IDENTIFIER) {
                     /* top register will now be local's register */
-                    proto->target_register =
+                    const uint8_t target =
                         ir_get_local_register(context, name->data.identifier.name);
 
                     switch (node->data.assignment.type) {
-                        case ASSIGN:
+                        case ASSIGN: {
+                            proto->target_register = target;
+
                             ir_build_proto(context, proto, expr);
+
+                            proto->target_register = -1;
                             break;
+                        }
+                        case ASSIGN_DIV:
+                        case ASSIGN_MOD:
+                        case ASSIGN_POW:
+                        case ASSIGN_SUB:
+                        case ASSIGN_MUL:
+                        case ASSIGN_ADD: {
+                            const uint8_t top = proto->top_register;
+                            enum opcode code =
+                                get_arith_opcode(node->data.assignment.type - 1, false);
+
+                            ir_build_proto(context, proto, expr);
+
+                            ir_append(proto->code, ir_instruction_ABC(code, target, target, top));
+                            break;
+                        }
+                        case ASSIGN_CON: {
+                            const uint8_t top = ir_allocate_register(context, proto, 1);
+                            ir_append(proto->code, ir_instruction_ABC(OP_MOVE, top, target, 0));
+                            
+                            ir_build_proto(context, proto, expr);
+
+                            const uint8_t bottom = proto->top_register - 1;
+
+                            ir_append(proto->code,
+                                      ir_instruction_ABC(OP_CONCAT, target, top, bottom));
+                            break;
+                        }
                     }
                 }
 

@@ -87,12 +87,12 @@ enum node_unary_operation { UNOP_NEG, UNOP_NOT, UNOP_LEN };
 /* Assignment types */
 enum node_assignment_type {
     ASSIGN,
-    ASSIGN_ADD,
-    ASSIGN_SUB,
     ASSIGN_MUL,
     ASSIGN_DIV,
-    ASSIGN_MOD,
+    ASSIGN_ADD,
+    ASSIGN_SUB,
     ASSIGN_POW,
+    ASSIGN_MOD,
     ASSIGN_CON
 };
 
