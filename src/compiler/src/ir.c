@@ -188,6 +188,9 @@ static struct ir_instruction *ir_instruction_sub(unsigned int value)
 static unsigned char ir_allocate_register(struct ir_context *context, struct ir_proto *proto,
                                           unsigned char count)
 {
+    if (proto->target_register > -1)
+        return proto->target_register;
+
     unsigned char top = proto->top_register;
 
     /* Can not exceed max byte size */
@@ -446,6 +449,7 @@ static struct ir_proto *ir_proto()
     p->max_stack_size = 0;
     p->parameters_size = 0;
     p->top_register = 0;
+    p->target_register = -1;
     p->upvalues_size = 0;
     p->code = ir_section(NULL, NULL);
 
@@ -561,6 +565,17 @@ void ir_destroy(struct ir_context *context)
         hashmap_free(context->local_map);
 }
 
+uint8_t ir_target_register(struct ir_proto *proto)
+{
+    const uint8_t result =
+        proto->target_register == -1 ? proto->top_register : proto->target_register;
+
+    /* Reset target register for future instructions */
+    proto->target_register = -1;
+
+    return result;
+}
+
 struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto,
                                 struct node *node)
 {
@@ -620,6 +635,40 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.if_statement.else_body);
             break;
         }
+        case NODE_ASSIGNMENT: {
+            struct node *exprlist = node->data.assignment.values;
+            struct node *namelist = node->data.assignment.variables;
+
+            while (true) {
+                struct node *name = NULL;
+                struct node *expr = NULL;
+
+                if (namelist->type == NODE_NAME_LIST) {
+                    name = namelist->data.name_list.name->data.name_reference.identifier;
+                    expr = exprlist->data.expression_list.expression;
+                } else {
+                    name = namelist->data.name_reference.identifier;
+                    expr = exprlist;
+                }
+
+                if (name->type == NODE_IDENTIFIER) {
+                    /* top register will now be local's register */
+                    proto->target_register =
+                        ir_get_local_register(context, name->data.identifier.name);
+
+                    switch (node->data.assignment.type) {
+                        case ASSIGN:
+                            ir_build_proto(context, proto, expr);
+                            break;
+                    }
+                }
+
+                if (namelist->type != NODE_NAME_LIST)
+                    break;
+            }
+
+            break;
+        }
         case NODE_WHILELOOP: {
             const uint8_t top = proto->top_register;
 
@@ -645,7 +694,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_BINARY_OPERATION: {
             /* ir build proto will alloc */
-            const uint8_t target = proto->top_register;
+            const uint8_t target = ir_target_register(proto);
 
             /* Determine operation code for binary operation */
             switch (node->data.binary_operation.operation) {
@@ -732,13 +781,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             break;
         }
         case NODE_STRING: {
-            struct ir_instruction *instruction;
-            unsigned int index = ir_constant_string(proto, node->data.string.s);
+            const uint32_t index = ir_constant_string(proto, node->data.string.s);
+            const uint8_t target = ir_allocate_register(context, proto, 1);
 
-            instruction =
-                ir_instruction_AD(OP_LOADK, ir_allocate_register(context, proto, 1), index);
-
-            ir_append(proto->code, instruction);
+            ir_append(proto->code, ir_instruction_AD(OP_LOADK, target, index));
             break;
         }
         case NODE_NAME_REFERENCE: {
@@ -749,12 +795,9 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.expression_group.expression);
             break;
         }
-        case NODE_ASSIGNMENT: {
-
-            break;
-        }
         case NODE_NUMBER: {
             struct ir_instruction *instruction, *sub;
+            const uint8_t target = ir_allocate_register(context, proto, 1);
 
             if (node->data.number.value <= USHRT_MAX && node->data.number.value >= -USHRT_MAX &&
                 floor(node->data.number.value) == node->data.number.value) {
@@ -762,8 +805,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 const bool is_positive = node->data.number.value >= 0;
 
                 /* We have a whole number that is large enough to fit in the Du operand */
-                instruction = ir_instruction_ADu(is_positive ? OP_LOADPN : OP_LOADNN,
-                                                 ir_allocate_register(context, proto, 1),
+                instruction = ir_instruction_ADu(is_positive ? OP_LOADPN : OP_LOADNN, target,
                                                  node->data.number.value);
                 ir_append(proto->code, instruction);
                 break;
@@ -773,16 +815,14 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
-                instruction =
-                    ir_instruction_AD(OP_LOADK, ir_allocate_register(context, proto, 1), index);
+                instruction = ir_instruction_AD(OP_LOADK, target, index);
 
                 ir_append(proto->code, instruction);
                 break;
             } else {
                 /* Here we use a sub instruction. An operation less instruction that simply stores a
                  * singular value */
-                instruction =
-                    ir_instruction_AD(OP_LOADKX, ir_allocate_register(context, proto, 1), 0);
+                instruction = ir_instruction_AD(OP_LOADKX, target, 0);
                 sub = ir_instruction_sub(index);
 
                 ir_append(proto->code, instruction);
@@ -791,24 +831,25 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
         }
         case NODE_BOOLEAN: {
-            struct ir_instruction *instruction = ir_instruction_ABC(
-                OP_LOADBOOL, ir_allocate_register(context, proto, 1), node->data.boolean.value, 0);
+            const uint8_t target = ir_allocate_register(context, proto, 1);
+
+            struct ir_instruction *instruction =
+                ir_instruction_ABC(OP_LOADBOOL, target, node->data.boolean.value, 0);
 
             ir_append(proto->code, instruction);
             break;
         }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
+            const uint8_t target = ir_allocate_register(context, proto, 1);
             int32_t reg;
 
             if (node->data.identifier.is_global) {
                 unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
-                instruction =
-                    ir_instruction_AD(OP_GETENV, ir_allocate_register(context, proto, 1), index);
+                instruction = ir_instruction_AD(OP_GETENV, target, index);
             } else if ((reg = ir_get_local_register(context, node->data.identifier.name)) >= 0) {
-                instruction =
-                    ir_instruction_ABC(OP_MOVE, ir_allocate_register(context, proto, 1), reg, 0);
+                instruction = ir_instruction_ABC(OP_MOVE, target, reg, 0);
             }
             if (instruction)
                 ir_append(proto->code, instruction);
