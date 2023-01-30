@@ -359,7 +359,7 @@ statement
         { $$ = node_block(@$, $2, NULL); }
     | WHILE_T expression DO_T block END_T
         { $$ = node_while_loop(@$, $2, $4); }
-    | REPEAT_T block UNTIL_T expression END_T
+    | REPEAT_T block UNTIL_T expression
         { $$ = node_repeat_loop(@$, $2, $4); }
     | IF_T expression THEN_T block END_T
         { $$ = node_if_statement(@$, $2, $4, NULL); }

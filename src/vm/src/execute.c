@@ -86,7 +86,7 @@ reentry:
     for (;;) {
         /* Prep instruction for execution */
         const Instruction i = *pc++;
-
+    
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
@@ -252,11 +252,16 @@ reentry:
             }
             case OP_JMPIF: {
                 TValue *ra = RA(i);
-                bool value = GETARG_C(i);
+                int16_t jmp = GETARG_D(i);
 
-                const Instruction sub = *pc++;
+                PROTECT(if (bvalue(ra)) JUMP(L, pc, jmp););
+                continue;
+            }
+            case OP_JMPIFNOT: {
+                TValue *ra = RA(i);
+                int16_t jmp = GETARG_D(i);
 
-                PROTECT(if (bvalue(ra) == value) JUMP(L, pc, sub););
+                PROTECT(if (!bvalue(ra)) JUMP(L, pc, jmp););
                 continue;
             }
             case OP_JMPBACK: {

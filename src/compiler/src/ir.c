@@ -619,18 +619,17 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_build_proto(context, proto, node->data.if_statement.condition);
 
-            ir_append(proto->code, ir_instruction_ABC(OP_JMPIF, top, 0, 0));
+            /* jump will be overriden later */
+            struct ir_instruction *jump = ir_instruction_AD(OP_JMPIF, top, 0);
+            ir_append(proto->code, jump);
 
             /* cache old program counter for jump calculation */
             const uint32_t old_pc = proto->code->size;
 
-            struct ir_instruction *sub = ir_instruction_sub(0);
-            ir_append(proto->code, sub);
-
             ir_build_proto(context, proto, node->data.if_statement.body);
 
             /* calculate jump size */
-            sub->value = proto->code->size - old_pc - 1;
+            jump = ir_instruction_AD(OP_JMPIF, top, proto->code->size - old_pc - 1);
 
             ir_build_proto(context, proto, node->data.if_statement.else_body);
             break;
@@ -683,7 +682,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                         case ASSIGN_CON: {
                             const uint8_t top = ir_allocate_register(context, proto, 1);
                             ir_append(proto->code, ir_instruction_ABC(OP_MOVE, top, target, 0));
-                            
+
                             ir_build_proto(context, proto, expr);
 
                             const uint8_t bottom = proto->top_register - 1;
@@ -706,13 +705,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_build_proto(context, proto, node->data.while_loop.condition);
 
-            ir_append(proto->code, ir_instruction_ABC(OP_JMPIF, top, 0, 0));
+            struct ir_instruction *jump = ir_instruction_AD(OP_JMPIF, top, 0);
+            ir_append(proto->code, jump);
 
             /* cache old program counter for jump calculation */
             const uint32_t old_pc = proto->code->size;
-
-            struct ir_instruction *sub = ir_instruction_sub(0);
-            ir_append(proto->code, sub);
 
             ir_build_proto(context, proto, node->data.while_loop.body);
 
@@ -721,7 +718,22 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_append(proto->code, ir_instruction_E(OP_JMPBACK, -jmp));
 
-            sub->value = jmp;
+            jump = ir_instruction_AD(OP_JMPIF, top, jmp);
+            break;
+        }
+        case NODE_REPEATLOOP: {
+            /* cache instruction position for jump */
+            const int32_t jump_back_pc = proto->code->size;
+
+            ir_build_proto(context, proto, node->data.repeat_loop.body);
+
+            const uint8_t top = proto->top_register;
+
+            ir_build_proto(context, proto, node->data.repeat_loop.condition);
+
+            const int32_t jump = -(proto->code->size - jump_back_pc) - 2;
+            ir_append(proto->code, ir_instruction_AD(OP_JMPIF, top, 1));
+            ir_append(proto->code, ir_instruction_E(OP_JMPBACK, jump));
             break;
         }
         case NODE_BINARY_OPERATION: {
