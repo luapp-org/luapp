@@ -145,7 +145,7 @@ enum opcode {
      */
     OP_JMPIF,
 
-    /* OP_JMPIFNOT: performs a jump if R(A) is not false
+    /* OP_JMPIFNOT: performs a jump if R(A) is not true
      * A: register
      * D: jump
      */
