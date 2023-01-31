@@ -16,6 +16,9 @@
 #include "lstate.h"
 #include "lstring.h"
 
+/* SPOOKY hash algorithm */
+#include "../util/spooky.h"
+
 void luaS_resize(lua_State *L, int newsize)
 {
     GCObject **newhash;
@@ -72,11 +75,8 @@ static TString *newlstr(lua_State *L, const char *str, size_t l, unsigned int h)
 TString *luaS_newlstr(lua_State *L, const char *str, size_t l)
 {
     GCObject *o;
-    unsigned int h = cast(unsigned int, l); /* seed */
-    size_t step = (l >> 5) + 1;             /* if string is too long, don't hash all its chars */
-    size_t l1;
-    for (l1 = l; l1 >= step; l1 -= step) /* compute hash */
-        h = h ^ ((h << 5) + (h >> 2) + cast(unsigned char, str[l1 - 1]));
+    unsigned int h = spooky_hash32(str, l, cast(unsigned int, l));
+
     for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)]; o != NULL; o = o->gch.next) {
         TString *ts = rawgco2ts(o);
         if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
