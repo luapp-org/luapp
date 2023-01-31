@@ -190,4 +190,7 @@ LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
 
 typedef enum opcode_mode { iABC, iAD, iADu, iE, SUB } opcode_t;
 
+/* Number of list items to accumulate before a SETLIST instruction */
+#define LFIELDS_PER_FLUSH 50
+
 #endif

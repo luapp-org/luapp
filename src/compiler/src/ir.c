@@ -587,6 +587,17 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.expression_statement.expression);
             break;
         }
+        case NODE_ARRAY_CONSTRUCTOR: {
+            const uint8_t top = ir_allocate_register(context, proto, 1);
+            const size_t size = node->data.array_constructor.exprlist->data.expression_list.size;
+
+            ir_append(proto->code, ir_instruction_ABC(OP_NEWTABLE, top, size, 0));
+
+            if (size) {
+                /* TODO: OP_SETLIST */
+            }
+            break;
+        }
         case NODE_CALL: {
             struct ir_instruction *instruction;
             struct node *function = node->data.call.prefix_expression;
