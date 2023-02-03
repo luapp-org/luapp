@@ -332,6 +332,25 @@ reentry:
                 PROTECT(luaV_gettable(L, rb, &n, ra));
                 continue;
             }
+            case OP_GETTABLE: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                /* Fast path for arrays with preallocated memory space */
+                if (ttistable(rb) && ttisnumber(rc)) {
+                    Table *h = hvalue(rb);
+                    int32_t index = (int32_t)nvalue(rc) - 1;
+
+                    if (index < h->sizearray && !h->metatable) {
+                        setobj2s(L, ra, &h->array[index]);
+                        continue;
+                    }
+                }
+
+                PROTECT(luaV_gettable(L, rb, rc, ra));
+                continue;
+            }
             case OP_RETURN:
                 goto exit;
         }
