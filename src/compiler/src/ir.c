@@ -576,6 +576,31 @@ uint8_t ir_target_register(struct ir_proto *proto)
     return result;
 }
 
+void ir_build_assignment(struct ir_context *context, struct ir_proto *proto,
+                         struct node *expression, const uint8_t value)
+{
+    const uint8_t target = proto->top_register;
+
+    switch (expression->type) {
+        case NODE_EXPRESSION_INDEX: {
+            struct node *expr =
+                expression->data.expression_index.expression->data.name_reference.identifier;
+
+            int32_t top;
+            if ((top = ir_get_local_register(context, expr->data.identifier.name)) == -1)
+                ir_build_proto(context, proto, expression->data.expression_index.expression);
+
+            const uint8_t index = proto->top_register;
+            ir_build_proto(context, proto, expression->data.expression_index.index);
+
+            ir_append(proto->code, ir_instruction_ABC(OP_SETTABLE, top == -1 ? target : top, index, value));
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto,
                                 struct node *node)
 {
@@ -684,49 +709,50 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                     expr = exprlist;
                 }
 
-                if (name->type == NODE_IDENTIFIER) {
-                    /* top register will now be local's register */
-                    const uint8_t target =
-                        ir_get_local_register(context, name->data.identifier.name);
+                /* top register will now be local's register */
+                const uint8_t target =
+                    name->type == NODE_IDENTIFIER
+                        ? ir_get_local_register(context, name->data.identifier.name)
+                        : ir_allocate_register(context, proto, 1);
 
-                    switch (node->data.assignment.type) {
-                        case ASSIGN: {
-                            proto->target_register = target;
+                switch (node->data.assignment.type) {
+                    case ASSIGN: {
+                        proto->target_register = target;
 
-                            ir_build_proto(context, proto, expr);
+                        ir_build_proto(context, proto, expr);
 
-                            proto->target_register = -1;
-                            break;
-                        }
-                        case ASSIGN_DIV:
-                        case ASSIGN_MOD:
-                        case ASSIGN_POW:
-                        case ASSIGN_SUB:
-                        case ASSIGN_MUL:
-                        case ASSIGN_ADD: {
-                            const uint8_t top = proto->top_register;
-                            enum opcode code =
-                                get_arith_opcode(node->data.assignment.type - 1, false);
+                        proto->target_register = -1;
+                        break;
+                    }
+                    case ASSIGN_DIV:
+                    case ASSIGN_MOD:
+                    case ASSIGN_POW:
+                    case ASSIGN_SUB:
+                    case ASSIGN_MUL:
+                    case ASSIGN_ADD: {
+                        const uint8_t top = proto->top_register;
+                        enum opcode code = get_arith_opcode(node->data.assignment.type - 1, false);
 
-                            ir_build_proto(context, proto, expr);
+                        ir_build_proto(context, proto, expr);
 
-                            ir_append(proto->code, ir_instruction_ABC(code, target, target, top));
-                            break;
-                        }
-                        case ASSIGN_CON: {
-                            const uint8_t top = ir_allocate_register(context, proto, 1);
-                            ir_append(proto->code, ir_instruction_ABC(OP_MOVE, top, target, 0));
+                        ir_append(proto->code, ir_instruction_ABC(code, target, target, top));
+                        break;
+                    }
+                    case ASSIGN_CON: {
+                        const uint8_t top = ir_allocate_register(context, proto, 1);
+                        ir_append(proto->code, ir_instruction_ABC(OP_MOVE, top, target, 0));
 
-                            ir_build_proto(context, proto, expr);
+                        ir_build_proto(context, proto, expr);
 
-                            const uint8_t bottom = proto->top_register - 1;
+                        const uint8_t bottom = proto->top_register - 1;
 
-                            ir_append(proto->code,
-                                      ir_instruction_ABC(OP_CONCAT, target, top, bottom));
-                            break;
-                        }
+                        ir_append(proto->code, ir_instruction_ABC(OP_CONCAT, target, top, bottom));
+                        break;
                     }
                 }
+
+                if (name->type != NODE_IDENTIFIER)
+                    ir_build_assignment(context, proto, name, target);
 
                 if (namelist->type != NODE_NAME_LIST)
                     break;
@@ -919,14 +945,18 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_IDENTIFIER: {
             struct ir_instruction *instruction;
+
             const uint8_t target = ir_allocate_register(context, proto, 1);
+            const bool allocated = target == proto->target_register;
+
             int32_t reg;
 
             if (node->data.identifier.is_global) {
                 unsigned int index = ir_constant_env(proto, node->data.identifier.s);
 
                 instruction = ir_instruction_AD(OP_GETENV, target, index);
-            } else if ((reg = ir_get_local_register(context, node->data.identifier.name)) >= 0) {
+            } else if ((reg = ir_get_local_register(context, node->data.identifier.name)) >= 0 &&
+                       !allocated) {
                 instruction = ir_instruction_ABC(OP_MOVE, target, reg, 0);
             }
             if (instruction)
