@@ -592,9 +592,29 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             const size_t size = node->data.array_constructor.exprlist->data.expression_list.size;
 
             ir_append(proto->code, ir_instruction_ABC(OP_NEWTABLE, top, size, 0));
-
+            
             if (size) {
-                /* TODO: OP_SETLIST */
+                ir_build_proto(context, proto, node->data.array_constructor.exprlist);
+
+                ir_append(proto->code, ir_instruction_ABC(OP_SETLIST, top, size, 1));
+            }
+            
+            break;
+        }
+        case NODE_EXPRESSION_INDEX: {
+            const uint8_t target = ir_allocate_register(context, proto, 1);
+
+            const uint8_t var = proto->top_register;
+            ir_build_proto(context, proto, node->data.expression_index.expression);
+
+            struct node *index = node->data.expression_index.index;
+            switch (index->type) {
+                case NODE_NUMBER:
+                    double number = index->data.number.value;
+
+                    if (number >= 1 && number <= 256)
+                        ir_append(proto->code, ir_instruction_ABC(OP_GETTABLEN, target, var, number));
+                    break;
             }
             break;
         }

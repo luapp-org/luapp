@@ -55,6 +55,13 @@ enum opcode {
     OP_GETGLOBAL,
     OP_GETTABLE,
 
+    /* OP_GETTABLEN: gets a value in a table with key as number (arrays)
+     * A: result register
+     * B: table register
+     * C: index number (0 .. 256)
+     */
+    OP_GETTABLEN,
+
     OP_SETGLOBAL,
     OP_SETUPVAL,
     OP_SETTABLE,

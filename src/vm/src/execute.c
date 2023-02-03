@@ -289,12 +289,12 @@ reentry:
                 int32_t n = GETARG_B(i);
                 int32_t c = GETARG_C(i);
 
-                if (!n) {
+                if (n == 0) {
                     n = cast_int(L->top - ra) - 1;
                     L->top = L->ci->top;
                 }
 
-                if (!c)
+                if (c == 0)
                     c = cast_int(*pc++);
 
                 RUNTIME_CHECK(L, ttistable(ra));
@@ -310,6 +310,26 @@ reentry:
                     setobj2t(L, luaH_setnum(L, h, last--), val);
                     luaC_barriert(L, h, val);
                 }
+                continue;
+            }
+            case OP_GETTABLEN: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+                int32_t val = GETARG_C(i) - 1;
+
+                if (ttistable(rb)) {
+                    Table *h = hvalue(rb);
+
+                    /* Fast check: in allocated array memory space */
+                    if (val < h->sizearray && !h->metatable) {
+                        setobj2s(L, ra, &h->array[val]);
+                        continue;
+                    }
+                }
+
+                TValue n;
+                setnvalue(&n, val + 1);
+                PROTECT(luaV_gettable(L, rb, &n, ra));
                 continue;
             }
             case OP_RETURN:
