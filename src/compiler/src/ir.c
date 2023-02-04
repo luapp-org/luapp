@@ -195,7 +195,7 @@ static unsigned char ir_allocate_register(struct ir_context *context, struct ir_
 
     /* Can not exceed max byte size */
     if (proto->top_register + count > UCHAR_MAX) {
-        unhandled_compiler_error("out of registers when trying to allocate %d registers", count);
+        lcompiler_error("out of registers when trying to allocate %d registers", count);
         context->error_count++;
     }
 
@@ -215,7 +215,7 @@ static void ir_free_register(struct ir_context *context, struct ir_proto *proto,
                              unsigned char count)
 {
     if (proto->top_register - count < 0) {
-        unhandled_compiler_error(
+        lcompiler_error(
             "attempt to free %d registers setting the stack size below the minimum of 0", count);
         context->error_count++;
     }

@@ -3,6 +3,7 @@
 #include "node.h"
 #include "type.h"
 #include "util/flexstr.h"
+#include <math.h>
 
 #define KEY_MAX_LENGTH (256)
 #define KEY_COUNT (1024 * 1024)
@@ -345,6 +346,14 @@ static void type_handle_local(struct type_context *context, struct node *local)
     }
 }
 
+static bool is_valid_array_index(struct type_context *context, double *number)
+{
+    if (context->use_c_arrays)
+        (*number)++;
+
+    return *number >= 1 && floor(*number) == *number;
+}
+
 static void type_handle_name_reference(struct type_context *context, struct node *name_reference)
 {
     struct node *value = name_reference->data.name_reference.identifier;
@@ -399,6 +408,17 @@ static void type_handle_name_reference(struct type_context *context, struct node
                             type_to_string(index->node_type));
                         context->error_count++;
                     }
+
+                    /* Check for arrays: start at 0 if use_c_arrays is true */
+                    if (expression->node_type->kind == TYPE_ARRAY &&
+                        !is_valid_array_index(context, &index->data.number.value)) {
+                        compiler_error(
+                            index->location, "attempt to index array with invalid value %lf",
+                            index->data.number.value, type_to_string(expression->node_type),
+                            type_to_string(index->node_type));
+                        context->error_count++;
+                    }
+
                     free(name_reference->node_type);
                     name_reference->node_type = expression->node_type->kind == TYPE_ARRAY
                                                     ? expression->node_type->data.array.type
@@ -970,8 +990,8 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     int last_count;
 
-    struct type_context new_context = {context->is_strict, context->error_count, NULL,
-                                       context->global_type_map};
+    struct type_context new_context = {context->is_strict, context->use_c_arrays,
+                                       context->error_count, NULL, context->global_type_map};
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);

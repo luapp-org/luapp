@@ -7,7 +7,7 @@
 	mv parser.tab.h  compiler/src
 	mv parser.tab.c  compiler/src
 
-COMPILER_CORE = compiler/src/lexer.yy.c compiler/src/parser.tab.c compiler/src/compiler.c compiler/src/node.c compiler/src/util/flexstr.c compiler/src/util/hashmap.c compiler/src/type.c compiler/src/symbol.c compiler/src/ir.c compiler/src/codegen.c common/opcodes.c
+COMPILER_CORE = compiler/src/lexer.yy.c compiler/src/parser.tab.c compiler/src/compiler.c compiler/src/node.c compiler/src/util/flexstr.c compiler/src/util/hashmap.c compiler/src/type.c compiler/src/symbol.c compiler/src/ir.c compiler/src/codegen.c compiler/src/macro.c common/opcodes.c
 VM_CORE = vm/src/load.c vm/src/execute.c vm/src/lua/*.c vm/src/util/*.c
 
 COMPILER_OBJS = compiler/src/main.c ${COMPILER_CORE}

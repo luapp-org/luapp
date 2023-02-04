@@ -2,11 +2,11 @@
 #define _COMPILER_H
 
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 #include "../../common/bytecode.h"
 #include "../../common/opcodes.h"
@@ -28,15 +28,19 @@ struct YYLTYPE {
 #define YYLTYPE_IS_TRIVIAL 1
 #endif
 
-typedef struct compiler_context
-{
+typedef struct compiler_context {
     char *stage;
     int error_count;
     time_t time;
+
+    /* Compiler settings */
+    bool is_strict;    /* Strict type context  */
+    bool is_c_array;   /* Arrays start at 0 not 1 */
+    bool is_c_comment; /* C-style comments (//) */
 } compiler_context_t;
 
 void compiler_error(YYLTYPE location, const char *format, ...);
-void unhandled_compiler_error(const char *format, ...);
+void lcompiler_error(const char *format, ...);
 
 bool compile(compiler_context_t *context, FILE *input, FILE *output);
 

@@ -60,6 +60,7 @@ struct type {
 
 struct type_context {
     bool is_strict;  /* Strict context flag */
+    bool use_c_arrays;
     int error_count; /* Number of errors */
 
     map_t type_map;        /* Hashmap of all identifiers and types */

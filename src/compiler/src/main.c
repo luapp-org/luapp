@@ -13,6 +13,7 @@
 #include "compiler.h"
 #include "ir.h"
 #include "lexer.h"
+#include "macro.h"
 #include "node.h"
 #include "parser.h"
 #include "symbol.h"
@@ -96,9 +97,10 @@ int main(int argc, char **argv)
     }
 
     compiler_context_t context = {stage, 0};
+
     bool result = compile(&context, input, output);
-    
-    print_summary(stage, context.error_count, context.time);
+
+    print_summary(context.stage, context.error_count, context.time);
 
     return result;
 }

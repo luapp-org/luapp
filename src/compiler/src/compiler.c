@@ -6,6 +6,7 @@
 #include "codegen.h"
 #include "ir.h"
 #include "lexer.h"
+#include "macro.h"
 #include "node.h"
 #include "parser.h"
 #include "symbol.h"
@@ -27,11 +28,11 @@ void compiler_error(YYLTYPE location, const char *format, ...)
     printf("\n");
 }
 
-/*  unhandled_compiler_error - prints a compiler error to stdout based on params (no location)
+/*  lcompiler_error - prints a compiler error to stdout based on params (no location)
  *      args: format, args
  *      rets: none
  */
-void unhandled_compiler_error(const char *format, ...)
+void lcompiler_error(const char *format, ...)
 {
     va_list ap;
     printf("Error: ");
@@ -63,6 +64,21 @@ bool compile(compiler_context_t *context, FILE *input, FILE *output)
 {
     context->error_count = 0;
     context->time = clock();
+
+    /* Run macro check */
+    macro_init(context, input);
+
+    if (context->error_count) {
+        context->time = clock() - context->time;
+        context->stage = "macro";
+        return false;
+    }
+
+    /* Stop at macro stage if provided */
+    if (strcmp(context->stage, "macro") == 0) {
+        macro_print(context);
+        return true;
+    }
 
     yyscan_t lexer;
     lex_init(&lexer, input);
@@ -96,7 +112,7 @@ bool compile(compiler_context_t *context, FILE *input, FILE *output)
         return true;
     }
 
-    struct type_context type_context = {true, 0};
+    struct type_context type_context = {context->is_strict, context->is_c_array, 0};
     type_init(&type_context);
 
     /* Run the type checker, it's needed for all later passes */
