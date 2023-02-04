@@ -593,7 +593,8 @@ void ir_build_assignment(struct ir_context *context, struct ir_proto *proto,
             const uint8_t index = proto->top_register;
             ir_build_proto(context, proto, expression->data.expression_index.index);
 
-            ir_append(proto->code, ir_instruction_ABC(OP_SETTABLE, top == -1 ? target : top, index, value));
+            ir_append(proto->code,
+                      ir_instruction_ABC(OP_SETTABLE, top == -1 ? target : top, index, value));
             break;
         }
         default:
@@ -628,8 +629,13 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         case NODE_EXPRESSION_INDEX: {
             const uint8_t target = ir_allocate_register(context, proto, 1);
 
-            const uint8_t var = proto->top_register;
-            ir_build_proto(context, proto, node->data.expression_index.expression);
+            struct node *expression = node->data.expression_index.expression;
+            
+            int32_t var;
+            if ((var = ir_get_local_register(context, expression->data.name_reference.identifier->data.identifier.name)) == -1) {
+                var = proto->top_register;
+                ir_build_proto(context, proto, expression);
+            }
 
             struct node *index = node->data.expression_index.index;
 
@@ -710,10 +716,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 }
 
                 /* top register will now be local's register */
-                const uint8_t target =
-                    name->type == NODE_IDENTIFIER
-                        ? ir_get_local_register(context, name->data.identifier.name)
-                        : ir_allocate_register(context, proto, 1);
+                uint8_t target = proto->top_register;
+                if (name->type == NODE_IDENTIFIER)
+                    target = ir_get_local_register(context, name->data.identifier.name);
+                else
+                    ir_build_proto(context, proto, name);
 
                 switch (node->data.assignment.type) {
                     case ASSIGN: {
