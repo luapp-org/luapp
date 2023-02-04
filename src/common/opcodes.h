@@ -55,6 +55,13 @@ enum opcode {
     OP_GETGLOBAL,
     OP_GETTABLE,
 
+    /* OP_GETTABLEN: gets a value in a table with key as number (arrays)
+     * A: result register
+     * B: table register
+     * C: index number (0 .. 256)
+     */
+    OP_GETTABLEN,
+
     OP_SETGLOBAL,
     OP_SETUPVAL,
     OP_SETTABLE,
@@ -189,5 +196,8 @@ enum opcode {
 LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
 
 typedef enum opcode_mode { iABC, iAD, iADu, iE, SUB } opcode_t;
+
+/* Number of list items to accumulate before a SETLIST instruction */
+#define LFIELDS_PER_FLUSH 50
 
 #endif

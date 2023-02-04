@@ -1,5 +1,6 @@
 #define LUA_CORE
 #include "lua/lgc.h"
+#include "lua/ltable.h"
 #include "lua/lvm.h"
 
 #include <stdbool.h>
@@ -14,6 +15,12 @@
             x;                                                                                     \
         };                                                                                         \
         base = L->base;                                                                            \
+    }
+
+#define RUNTIME_CHECK(L, c)                                                                        \
+    {                                                                                              \
+        if (!(c))                                                                                  \
+            break;                                                                                 \
     }
 
 #define DO_ARITH(op, ra, rb, rc, tm)                                                               \
@@ -86,7 +93,7 @@ reentry:
     for (;;) {
         /* Prep instruction for execution */
         const Instruction i = *pc++;
-    
+
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
@@ -266,6 +273,102 @@ reentry:
             }
             case OP_JMPBACK: {
                 PROTECT(JUMP(L, pc, GETARG_E(i)));
+                continue;
+            }
+            case OP_NEWTABLE: {
+                int32_t b = GETARG_B(i);
+                int32_t c = GETARG_C(i);
+
+                sethvalue(L, RA(i), luaH_new(L, luaO_fb2int(b), luaO_fb2int(c)));
+
+                PROTECT(luaC_checkGC(L));
+                continue;
+            }
+            case OP_SETLIST: {
+                TValue *ra = RA(i);
+                int32_t n = GETARG_B(i);
+                int32_t c = GETARG_C(i);
+
+                if (n == 0) {
+                    n = cast_int(L->top - ra) - 1;
+                    L->top = L->ci->top;
+                }
+
+                if (c == 0)
+                    c = cast_int(*pc++);
+
+                RUNTIME_CHECK(L, ttistable(ra));
+
+                Table *h = hvalue(ra);
+                int32_t last = ((c - 1) * LFIELDS_PER_FLUSH) + n;
+
+                if (last > h->sizearray)          /* needs more space? */
+                    luaH_resizearray(L, h, last); /* pre-alloc it at once */
+
+                for (; n > 0; n--) {
+                    TValue *val = ra + n;
+                    setobj2t(L, luaH_setnum(L, h, last--), val);
+                    luaC_barriert(L, h, val);
+                }
+                continue;
+            }
+            case OP_GETTABLEN: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+                int32_t val = GETARG_C(i) - 1;
+
+                if (ttistable(rb)) {
+                    Table *h = hvalue(rb);
+
+                    /* Fast check: in allocated array memory space */
+                    if (val < h->sizearray && !h->metatable) {
+                        setobj2s(L, ra, &h->array[val]);
+                        continue;
+                    }
+                }
+
+                TValue n;
+                setnvalue(&n, val + 1);
+                PROTECT(luaV_gettable(L, rb, &n, ra));
+                continue;
+            }
+            case OP_GETTABLE: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                /* Fast path for arrays with preallocated memory space */
+                if (ttistable(rb) && ttisnumber(rc)) {
+                    Table *h = hvalue(rb);
+                    int32_t index = (int32_t)nvalue(rc) - 1;
+
+                    if (index < h->sizearray && !h->metatable) {
+                        setobj2s(L, ra, &h->array[index]);
+                        continue;
+                    }
+                }
+
+                PROTECT(luaV_gettable(L, rb, rc, ra));
+                continue;
+            }
+            case OP_SETTABLE: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+                TValue *rc = RC(i);
+
+                /* Fast path for arrays with preallocated memory space */
+                if (ttistable(ra) && ttisnumber(rb)) {
+                    Table *h = hvalue(ra);
+                    int32_t index = (int32_t)nvalue(rb) - 1;
+
+                    if (index < h->sizearray && !h->metatable) {
+                        setobj2s(L, &h->array[index], rc);
+                        luaC_barriert(L, h, rc);
+                        continue;
+                    }
+                }
+
+                PROTECT(luaV_settable(L, ra, rb, rc));
                 continue;
             }
             case OP_RETURN:
