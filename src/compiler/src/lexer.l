@@ -27,6 +27,7 @@
     
     flexstr_t s;
     int first_line, first_col;
+    bool comment;
 %}
 
 %x LCOMMENT
@@ -73,7 +74,18 @@ lstring         \[\[(.*?|\n|\r)\]\]
 <LSTRING>\n         { fs_addch(&s, '\n'); yyextra = 1; }
 <LSTRING><<EOF>>    { compiler_error(*yylloc_param, "unexpected EOF", yytext); yyterminate(); }
 
-"--"                { BEGIN(COMMENT); }
+"--"                { if (!comment)
+                        BEGIN(COMMENT);
+                      else 
+                        return DECREMENT_T; 
+                    }
+"//"                { if (comment) 
+                        BEGIN(COMMENT); 
+                      else {
+                          compiler_error(*yylloc_param, "use '--!comment' if c-style comments are perferred"); 
+                          yyterminate();
+                      }
+                    }
 <COMMENT>\n         { yyextra = 1; BEGIN(INITIAL); }
 <COMMENT>.          { }
 
@@ -111,7 +123,10 @@ lstring         \[\[(.*?|\n|\r)\]\]
 \+                  return PLUS_T;
 -                   return MINUS_T;
 \*                  return ASTERISK_T;
-\/                  return SLASH_T;
+\/                  {
+                    slash_label:
+                        return SLASH_T; 
+                    }
 \=                  return EQUAL_T;
 \)                  return RIGHT_PARAN_T;
 \(                  return LEFT_PARAN_T;
@@ -141,6 +156,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "%="                return MOD_EQUAL_T;
 "^="                return CARROT_EQUAL_T;
 "..="               return CONCAT_EQUAL_T;
+"++"                return INCREMENT_T;
 
 {identifier}        { *yylval = node_identifier(*yylloc, yytext); return IDENTIFIER_T; }
 {number}            { *yylval = node_number(*yylloc, yytext); return NUMBER_T; }
@@ -162,12 +178,13 @@ lstring         \[\[(.*?|\n|\r)\]\]
  *      args: lexer, file
  *      rets: none
  */
-void lex_init(yyscan_t *lexer, FILE *input) {
+void lex_init(yyscan_t *lexer, compiler_context_t *context, FILE *input) {
     yylex_init(lexer);
     yyset_in(input, *lexer);
     yyset_extra(1, *lexer);
 
     fs_init(&s, 0);
+    comment = context->is_c_comment;
 }
 
 /*  lex_destroy - frees the lexer instance 

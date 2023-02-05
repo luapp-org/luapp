@@ -81,7 +81,7 @@ bool compile(compiler_context_t *context, FILE *input, FILE *output)
     }
 
     yyscan_t lexer;
-    lex_init(&lexer, input);
+    lex_init(&lexer, context, input);
 
     /* Stop at lexer stage if provided */
     if (strcmp(context->stage, "lexer") == 0) {

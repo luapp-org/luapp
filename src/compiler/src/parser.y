@@ -91,19 +91,21 @@
 %token RIGHT_BRACKET_T/*    }     */
 
 /* Complex symbols */
-%token DOUBLE_EQUAL_T/*     ==    */
-%token NOT_EQUAL_T/*        ~=    */
-%token GREATER_EQUAL_T/*    >=    */
-%token LESS_EQUAL_T/*       <=    */
-%token CONCAT_T/*           ..    */
-%token VARARG_T/*           ...   */
-%token PLUS_EQUAL_T/*       +=    */
-%token MINUS_EQUAL_T/*      -=    */
-%token ASTERISK_EQUAL_T/*   *=    */
-%token SLASH_EQUAL_T/*      /=    */
-%token MOD_EQUAL_T/*        %=    */
-%token CARROT_EQUAL_T/*     ^=    */
-%token CONCAT_EQUAL_T/*     ..=    */
+%token DOUBLE_EQUAL_T/*     ==          */
+%token NOT_EQUAL_T/*        ~=          */
+%token GREATER_EQUAL_T/*    >=          */
+%token LESS_EQUAL_T/*       <=          */
+%token CONCAT_T/*           ..          */
+%token VARARG_T/*           ...         */
+%token PLUS_EQUAL_T/*       +=          */
+%token MINUS_EQUAL_T/*      -=          */
+%token ASTERISK_EQUAL_T/*   *=          */
+%token SLASH_EQUAL_T/*      /=          */
+%token MOD_EQUAL_T/*        %=          */
+%token CARROT_EQUAL_T/*     ^=          */
+%token CONCAT_EQUAL_T/*     ..=         */
+%token DECREMENT_T/*        --- or --   */
+%token INCREMENT_T/*        ++          */
 
 %start program
 
