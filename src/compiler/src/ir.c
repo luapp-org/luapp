@@ -535,6 +535,20 @@ static enum opcode get_compare_opcode(enum node_binary_operation op)
     }
 }
 
+static enum opcode get_unary_opcode(enum node_unary_operation op)
+{
+    switch (op) {
+        case UNOP_NOT:
+            return OP_NOT;
+        case UNOP_NEG:
+            return OP_UNM;
+        case UNOP_LEN:
+            return OP_LEN;
+        default:
+            return OP_NOP;
+    }
+}
+
 /* ir_join() -- joins two IR proto lists together to shape a new list of protos
  *      args: first proto, second proto
  *      rets: new proto list
@@ -908,6 +922,44 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                     break;
                 }
                 default:
+                    break;
+            }
+            break;
+        }
+        case NODE_UNARY_OPERATION: {
+            enum opcode op;
+
+            const uint8_t top = ir_allocate_register(context, proto, 1);
+            const uint8_t reg =
+                ir_get_name_register(context, proto, node->data.unary_operation.expression);
+
+            /* Easy unary operator? */
+            if ((op = get_unary_opcode(node->data.unary_operation.operation)) != OP_NOP) {
+                ir_append(proto->code, ir_instruction_ABC(op, top, reg, 0));
+                break;
+            }
+
+            /* Used for all increment/decrement */
+            int32_t rc = ir_constant_number(proto, 1);
+            ir_free_register(context, proto, 1);
+
+            switch (node->data.unary_operation.operation) {
+                case UNOP_INCRRET:
+                    ir_append(proto->code, ir_instruction_ABC(OP_ADDK, reg, reg, rc));
+                    break;
+                case UNOP_DECRRET:
+                    ir_append(proto->code, ir_instruction_ABC(OP_SUBK, reg, reg, rc));
+                    break;
+            }
+
+            ir_build_proto(context, proto, node->data.unary_operation.expression);
+
+            switch (node->data.unary_operation.operation) {
+                case UNOP_INCR:
+                    ir_append(proto->code, ir_instruction_ABC(OP_ADDK, reg, reg, rc));
+                    break;
+                case UNOP_DECR:
+                    ir_append(proto->code, ir_instruction_ABC(OP_SUBK, reg, reg, rc));
                     break;
             }
             break;

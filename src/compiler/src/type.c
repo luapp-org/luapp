@@ -833,6 +833,20 @@ static void type_handle_unary(struct type_context *context, struct node *unary)
             free(unary->node_type);
             unary->node_type = type_basic(TYPE_BASIC_BOOLEAN);
             break;
+        case UNOP_INCR:
+        case UNOP_DECR:
+        case UNOP_INCRRET:
+        case UNOP_DECRRET:
+            /* Can only be number */
+            if (!type_is_primitive(expr->node_type, TYPE_BASIC_NUMBER)) {
+                compiler_error(unary->location,
+                               "unable to increment/decrement value of \"%s\" type",
+                               type_to_string(expr->node_type));
+                context->error_count++;
+            }
+            free(unary->node_type);
+            unary->node_type = expr->node_type;
+            break;
     }
 }
 

@@ -113,7 +113,6 @@
 %left PLUS_T MINUS_T
 %left ASTERISK_T SLASH_T
 %left CARROT_T PERCENT_T
-
 %%
 
 binary_operation
@@ -149,6 +148,10 @@ binary_operation
       { $$ = node_binary_operation(@2, BINOP_CONCAT, $1, $3); }
 ;
 
+variable_name_reference
+    : variable
+        { $$ = node_name_reference(@$, $1); }
+;
 
 unary_operation
   : MINUS_T expression
@@ -157,6 +160,15 @@ unary_operation
       { $$ = node_unary_operation(@$, UNOP_NOT, $2); }
   | POUND_T expression
       { $$ = node_unary_operation(@$, UNOP_LEN, $2); }
+  | INCREMENT_T variable_name_reference
+      { $$ = node_unary_operation(@$, UNOP_INCRRET, $2); }
+  | DECREMENT_T variable_name_reference
+      { $$ = node_unary_operation(@$, UNOP_DECRRET, $2); }
+  | variable_name_reference INCREMENT_T
+        { $$ = node_unary_operation(@$, UNOP_INCR, $1); }
+  | variable_name_reference DECREMENT_T
+        { $$ = node_unary_operation(@$, UNOP_DECR, $1); }
+  | variable_name_reference
 ;
 
 expression_list 
@@ -269,7 +281,7 @@ call
 
 expression
   : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T
-  | binary_operation | unary_operation | prefix_expression | array_constructor
+  | binary_operation | prefix_expression | unary_operation | array_constructor
   | table_constructor 
   | FUNCTION_T function_body
     { $$ = $2; }

@@ -2,6 +2,7 @@
 #include "lua/lgc.h"
 #include "lua/ltable.h"
 #include "lua/lvm.h"
+#include "lua/lobject.h"
 
 #include <stdbool.h>
 
@@ -73,6 +74,72 @@
 #define KB(i) (lua_assert(GETARG_C(i) < cl->p->sizek), (&k[GETARG_C(i)]))
 #define KC(i) (lua_assert(GETARG_C(i) < cl->p->sizek), (&k[GETARG_C(i)]))
 #define K(i) (lua_assert((i) < (uint32_t)cl->p->sizek), (&k[i]))
+
+static void callTMres(lua_State *L, StkId res, const TValue *f, const TValue *p1, const TValue *p2)
+{
+    ptrdiff_t result = savestack(L, res);
+    setobj2s(L, L->top, f);      /* push function */
+    setobj2s(L, L->top + 1, p1); /* 1st argument */
+    setobj2s(L, L->top + 2, p2); /* 2nd argument */
+    luaD_checkstack(L, 3);
+    L->top += 3;
+    luaD_call(L, L->top - 3, 1);
+    res = restorestack(L, result);
+    L->top--;
+    setobjs2s(L, res, L->top);
+}
+
+static void callTM(lua_State *L, const TValue *f, const TValue *p1, const TValue *p2,
+                   const TValue *p3)
+{
+    setobj2s(L, L->top, f);      /* push function */
+    setobj2s(L, L->top + 1, p1); /* 1st argument */
+    setobj2s(L, L->top + 2, p2); /* 2nd argument */
+    setobj2s(L, L->top + 3, p3); /* 3th argument */
+    luaD_checkstack(L, 4);
+    L->top += 4;
+    luaD_call(L, L->top - 4, 0);
+}
+
+static int call_binTM(lua_State *L, const TValue *p1, const TValue *p2, StkId res, TMS event)
+{
+    const TValue *tm = luaT_gettmbyobj(L, p1, event); /* try first operand */
+    if (ttisnil(tm))
+        tm = luaT_gettmbyobj(L, p2, event); /* try second operand */
+    if (ttisnil(tm))
+        return 0;
+    callTMres(L, res, tm, p1, p2);
+    return 1;
+}
+
+static const TValue *get_compTM(lua_State *L, Table *mt1, Table *mt2, TMS event)
+{
+    const TValue *tm1 = fasttm(L, mt1, event);
+    const TValue *tm2;
+    if (tm1 == NULL)
+        return NULL; /* no metamethod */
+    if (mt1 == mt2)
+        return tm1; /* same metatables => same metamethods */
+    tm2 = fasttm(L, mt2, event);
+    if (tm2 == NULL)
+        return NULL;                /* no metamethod */
+    if (luaO_rawequalObj(tm1, tm2)) /* same metamethods? */
+        return tm1;
+    return NULL;
+}
+
+static int call_orderTM(lua_State *L, const TValue *p1, const TValue *p2, TMS event)
+{
+    const TValue *tm1 = luaT_gettmbyobj(L, p1, event);
+    const TValue *tm2;
+    if (ttisnil(tm1))
+        return -1; /* no metamethod? */
+    tm2 = luaT_gettmbyobj(L, p2, event);
+    if (!luaO_rawequalObj(tm1, tm2)) /* different metamethods? */
+        return -1;
+    callTMres(L, L->top, tm1, p1, p2);
+    return !l_isfalse(L->top);
+}
 
 void luapp_execute(lua_State *L, int nexeccalls)
 {
@@ -342,13 +409,13 @@ reentry:
                     Table *h = hvalue(rb);
 
                     const int32_t raw = (int32_t)nvalue(rc);
-                    int32_t index = (raw < 0 ? h->sizearray + raw + 1: raw);
+                    int32_t index = (raw < 0 ? h->sizearray + raw + 1 : raw);
 
                     if (index - 1 < h->sizearray && !h->metatable) {
                         setobj2s(L, ra, &h->array[index - 1]);
                         continue;
                     }
-                    
+
                     /* Out of bounds, update RC */
                     setnvalue(rc, index);
                 }
@@ -374,6 +441,49 @@ reentry:
                 }
 
                 PROTECT(luaV_settable(L, ra, rb, rc));
+                continue;
+            }
+            case OP_UNM: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+
+                if (ttisnumber(rb)) {
+                    lua_Number nb = nvalue(rb);
+                    setnvalue(ra, luai_numunm(nb));
+                } else {
+                    PROTECT(luaV_arith(L, ra, rb, rb, TM_UNM));
+                }
+                continue;
+            }
+            case OP_LEN: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+
+                if (ttistable(rb)) {
+                    Table *h = hvalue(rb);
+
+                    /* If it has no metamethod, invoke luaH_getn */
+                    if (!fasttm(L, h->metatable, TM_LEN)) {
+                        setnvalue(ra, cast_num(luaH_getn(hvalue(rb))));
+                        continue;
+                    }
+                }
+                /* If we have a string, get it's length */
+                else if (ttisstring(rb)) {
+                    TString *ts = rawtsvalue(rb);
+                    setnvalue(ra, cast_num(ts->tsv.len));
+                    continue;
+                }
+
+                PROTECT(call_binTM(L, rb, luaO_nilobject, ra, TM_LEN));
+                continue;
+            }
+            case OP_NOT: {
+                TValue *ra = RA(i);
+                TValue *rb = RB(i);
+
+                bool res = l_isfalse(rb);
+                setbvalue(ra, res);
                 continue;
             }
             case OP_RETURN:

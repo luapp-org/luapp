@@ -159,7 +159,7 @@ enum opcode {
     OP_JMPIFNOT,
 
     OP_VARARG,
-
+    OP_NOP
 };
 
 /* Retrieve the one byte instruction operation code */
@@ -191,7 +191,7 @@ enum opcode {
  */
 #define GETARG_E(i) ((int32_t)i >> 8)
 
-#define NUM_OPCODES (int32_t) OP_VARARG + 1
+#define NUM_OPCODES (int32_t) OP_NOP + 1
 
 LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
 

@@ -82,7 +82,15 @@ enum node_binary_operation {
 };
 
 /* Unary operations (-, not, #) */
-enum node_unary_operation { UNOP_NEG, UNOP_NOT, UNOP_LEN };
+enum node_unary_operation {
+    UNOP_NEG,
+    UNOP_NOT,
+    UNOP_LEN,
+    UNOP_INCR,/*        a++ */
+    UNOP_INCRRET,/*     ++a */
+    UNOP_DECR,/*        a-- */
+    UNOP_DECRRET/*      --a */
+};
 
 /* Assignment types */
 enum node_assignment_type {
