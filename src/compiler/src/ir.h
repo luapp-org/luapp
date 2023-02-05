@@ -36,6 +36,10 @@ struct ir_constant {
         struct {
             uint32_t index;
         } env;
+        struct {
+            int size;
+            uint32_t *indicies;
+        } array;
     } data;
 
     struct ir_constant *prev, *next;

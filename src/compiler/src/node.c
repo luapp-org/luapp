@@ -1265,3 +1265,29 @@ int node_get_size(struct node *node)
         }
     }
 }
+
+bool node_is_constant_list(struct node *exprlist)
+{
+    for (struct node *iter = exprlist; iter; iter = iter->data.expression_list.init) {
+        /* Check if constant */
+        struct node *expression;
+        switch ((expression = iter->type == NODE_EXPRESSION_LIST
+                                  ? iter->data.expression_list.expression
+                                  : iter)
+                    ->type) {
+            case NODE_NUMBER:
+            case NODE_STRING:
+            case NODE_BOOLEAN:
+                break;
+            case NODE_ARRAY_CONSTRUCTOR:
+                if (node_is_constant_list(expression))
+                    break;
+            default:
+                return false;
+        }
+
+        if (iter->type != NODE_EXPRESSION_LIST)
+            break;
+    }
+    return true;
+}

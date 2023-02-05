@@ -22,7 +22,8 @@ typedef enum constant_type
     CONSTANT_BOOLEAN,
     CONSTANT_NUMBER,
     CONSTANT_STRING,
-    CONSTANT_ENVIRONMENT
+    CONSTANT_ENVIRONMENT,
+    CONSTANT_ARRAY
 } constant_t;
 
 #endif

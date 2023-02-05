@@ -1,6 +1,5 @@
 --!carrays
+local v: number = 1
+local array: Array<number> = { 1, 2, 3, v }
 
-local array: Array<number> = { 1, 2, 3, 4 }
-
-array[0] += 100
-print(array[0])
+print(array[-1])

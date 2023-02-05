@@ -348,10 +348,10 @@ static void type_handle_local(struct type_context *context, struct node *local)
 
 static bool is_valid_array_index(struct type_context *context, double *number)
 {
-    if (context->use_c_arrays)
+    if (context->use_c_arrays && (*number) >= 0)
         (*number)++;
 
-    return *number >= 1 && floor(*number) == *number;
+    return *number != 0 && floor(*number) == *number;
 }
 
 static void type_handle_name_reference(struct type_context *context, struct node *name_reference)

@@ -320,6 +320,11 @@ static unsigned int ir_find_env_constant(struct ir_constant_list *list, unsigned
     return -1;
 }
 
+static struct node *ir_create_array_constant(struct ir_constant_list *list, struct node *n)
+{
+    /* TODO: #7 Add array constant for arrays that consist of constant literals. */
+}
+
 /* ir_constant_symbol() -- allocate memory for a new constant using the symbol value
  *      args: proto, symbol, constant type
  *      rets: index in constant list
@@ -390,6 +395,12 @@ static unsigned int ir_constant_env(struct ir_proto *proto, struct symbol *symbo
     } else
         return index;
 }
+
+/* ir_constant_array() -- allocate memory for a new array constant
+ *       args: array constructor
+ *       rets: constant index
+ */
+static uint32_t ir_constant_array(struct ir_proto *p, struct node *n) {}
 
 static int32_t ir_get_constant_number(struct ir_proto *proto, struct node *node)
 {
@@ -576,6 +587,24 @@ uint8_t ir_target_register(struct ir_proto *proto)
     return result;
 }
 
+uint8_t ir_get_name_register(struct ir_context *context, struct ir_proto *proto, struct node *node)
+{
+    int32_t reg;
+
+    if (node->type == NODE_NAME_REFERENCE &&
+        node->data.name_reference.identifier->type == NODE_IDENTIFIER) {
+
+        node = node->data.name_reference.identifier;
+        if ((reg = ir_get_local_register(context, node->data.identifier.name)) > -1)
+            return reg;
+    }
+
+    reg = proto->top_register;
+    ir_build_proto(context, proto, node);
+
+    return reg;
+}
+
 void ir_build_assignment(struct ir_context *context, struct ir_proto *proto,
                          struct node *expression, const uint8_t value)
 {
@@ -583,18 +612,13 @@ void ir_build_assignment(struct ir_context *context, struct ir_proto *proto,
 
     switch (expression->type) {
         case NODE_EXPRESSION_INDEX: {
-            struct node *expr =
-                expression->data.expression_index.expression->data.name_reference.identifier;
-
-            int32_t top;
-            if ((top = ir_get_local_register(context, expr->data.identifier.name)) == -1)
-                ir_build_proto(context, proto, expression->data.expression_index.expression);
+            const uint8_t target =
+                ir_get_name_register(context, proto, expression->data.expression_index.expression);
 
             const uint8_t index = proto->top_register;
             ir_build_proto(context, proto, expression->data.expression_index.index);
 
-            ir_append(proto->code,
-                      ir_instruction_ABC(OP_SETTABLE, top == -1 ? target : top, index, value));
+            ir_append(proto->code, ir_instruction_ABC(OP_SETTABLE, target, index, value));
             break;
         }
         default:
@@ -621,7 +645,6 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             if (size) {
                 ir_build_proto(context, proto, node->data.array_constructor.exprlist);
-
                 ir_append(proto->code, ir_instruction_ABC(OP_SETLIST, top, size, 1));
             }
             break;
@@ -630,12 +653,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             const uint8_t target = ir_allocate_register(context, proto, 1);
 
             struct node *expression = node->data.expression_index.expression;
-            
-            int32_t var;
-            if ((var = ir_get_local_register(context, expression->data.name_reference.identifier->data.identifier.name)) == -1) {
-                var = proto->top_register;
-                ir_build_proto(context, proto, expression);
-            }
+            int32_t var = ir_get_name_register(context, proto, expression);
 
             struct node *index = node->data.expression_index.index;
 
@@ -649,6 +667,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
 
             const uint8_t idx = proto->top_register;
+            ir_build_proto(context, proto, index);
+
             ir_append(proto->code, ir_instruction_ABC(OP_GETTABLE, target, var, idx));
             break;
         }
@@ -849,7 +869,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                     ir_build_proto(context, proto, node->data.binary_operation.left);
                     ir_build_proto(context, proto, node->data.binary_operation.right);
 
-                    /* top_register contains the next availible register so -1 to get previous */
+                    /* top_register contains the next availible register so -1 to get
+                     * previous */
                     const uint8_t end = proto->top_register - 1;
 
                     struct ir_instruction *instruction =
@@ -915,15 +936,17 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 /* Determine whether we have a negative or positive value */
                 const bool is_positive = node->data.number.value >= 0;
 
-                /* We have a whole number that is large enough to fit in the Du operand */
+                /* We have a whole number that is large enough to fit in the Du operand
+                 */
                 instruction = ir_instruction_ADu(is_positive ? OP_LOADPN : OP_LOADNN, target,
-                                                 node->data.number.value);
+                                                 fabs(node->data.number.value));
                 ir_append(proto->code, instruction);
                 break;
             }
 
             uint32_t index = ir_constant_number(proto, node->data.number.value);
-            /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we need to
+            /* Each Lua++ instruction (like Lua) must strictly be 32-bits in size, so we
+             * need to
              * account for extremely large programs with massive constant pools */
             if (index <= UINT16_MAX) {
                 instruction = ir_instruction_AD(OP_LOADK, target, index);
@@ -931,8 +954,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 ir_append(proto->code, instruction);
                 break;
             } else {
-                /* Here we use a sub instruction. An operation less instruction that simply stores a
-                 * singular value */
+                /* Here we use a sub instruction. An operation less instruction that
+                 * simply stores a singular value */
                 instruction = ir_instruction_AD(OP_LOADKX, target, 0);
                 sub = ir_instruction_sub(index);
 

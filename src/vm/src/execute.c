@@ -340,12 +340,17 @@ reentry:
                 /* Fast path for arrays with preallocated memory space */
                 if (ttistable(rb) && ttisnumber(rc)) {
                     Table *h = hvalue(rb);
-                    int32_t index = (int32_t)nvalue(rc) - 1;
 
-                    if (index < h->sizearray && !h->metatable) {
-                        setobj2s(L, ra, &h->array[index]);
+                    const int32_t raw = (int32_t)nvalue(rc);
+                    int32_t index = (raw < 0 ? h->sizearray + raw + 1: raw);
+
+                    if (index - 1 < h->sizearray && !h->metatable) {
+                        setobj2s(L, ra, &h->array[index - 1]);
                         continue;
                     }
+                    
+                    /* Out of bounds, update RC */
+                    setnvalue(rc, index);
                 }
 
                 PROTECT(luaV_gettable(L, rb, rc, ra));

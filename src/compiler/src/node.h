@@ -309,5 +309,9 @@ void print_ast(FILE *output, struct node *node, bool first);
 /* Helper functions used in other code */
 char *node_to_string(struct node *node);
 int node_get_size(struct node *node);
+bool node_is_constant_list(struct node *exprlist);
+
+typedef bool (*node_iterator_callback)(const struct node *n);
+void node_iterate_expression_list(struct node *list, node_iterator_callback cb);
 
 #endif
