@@ -190,6 +190,9 @@ void symbol_ast_traversal(struct symbol_context *context, struct node *node)
         case NODE_ARRAY_CONSTRUCTOR:
             symbol_ast_traversal(context, node->data.array_constructor.exprlist);
             break;
+        case NODE_TABLE_CONSTRUCTOR:
+            symbol_ast_traversal(context, node->data.table_constructor.pairlist);
+            break;
     }
 }
 

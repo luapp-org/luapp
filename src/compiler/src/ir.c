@@ -663,6 +663,37 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
             break;
         }
+        case NODE_TABLE_CONSTRUCTOR: {
+            const uint8_t top = ir_allocate_register(context, proto, 1);
+
+            struct node *expr = node->data.table_constructor.pairlist;
+            const uint8_t size =
+                expr->type == NODE_EXPRESSION_LIST ? expr->data.expression_list.size : 1;
+
+            ir_append(proto->code, ir_instruction_ABC(OP_NEWTABLE, top, size, 0));
+
+            if (size) {
+                for (expr; expr != NULL; expr = expr->data.expression_list.init) {
+
+                    struct node *n = expr->type == NODE_EXPRESSION_LIST
+                                         ? expr->data.expression_list.expression
+                                         : expr;
+
+                    const uint8_t key = proto->top_register;
+                    ir_build_proto(context, proto, n->data.key_value_pair.key);
+
+                    const uint8_t value = proto->top_register;
+                    ir_build_proto(context, proto, n->data.key_value_pair.value);
+
+                    ir_append(proto->code, ir_instruction_ABC(OP_SETTABLE, top, key, value));
+
+                    ir_free_register(context, proto, value - key + 1);
+                    if (expr->type != NODE_EXPRESSION_LIST)
+                        break;
+                }
+            }
+            break;
+        }
         case NODE_EXPRESSION_INDEX: {
             const uint8_t target = ir_allocate_register(context, proto, 1);
 
