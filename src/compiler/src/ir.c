@@ -109,7 +109,7 @@ static struct ir_instruction *ir_instruction_ABC(enum opcode op, uint8_t a, uint
     struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR instruction */
-    instruction->value = (uint32_t)op | (a << 8) | (b << 16) | (c << 24);
+    instruction->value = CREATE_iABC(op, a, b, c);
 
     instruction->mode = iABC;
 
@@ -125,7 +125,7 @@ static struct ir_instruction *ir_instruction_AD(enum opcode op, uint8_t a, int16
     struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->value = (uint32_t)op | (a << 8) | ((uint16_t)d << 16);
+    instruction->value = CREATE_iAD(op, a, d);
 
     instruction->mode = iAD;
 
@@ -141,7 +141,7 @@ static struct ir_instruction *ir_instruction_ADu(enum opcode op, uint8_t a, uint
     struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->value = (uint32_t)op | (a << 8) | ((int16_t)du << 16);
+    instruction->value = CREATE_iADu(op, a, du);
 
     instruction->mode = iADu;
 
@@ -157,7 +157,7 @@ static struct ir_instruction *ir_instruction_E(enum opcode op, int32_t e)
     struct ir_instruction *instruction = ir_instruction();
 
     /* Set IR operands */
-    instruction->value = (uint32_t)op | ((uint32_t)e << 8);
+    instruction->value = CREATE_iE(op, e);
 
     instruction->mode = iE;
 
@@ -773,7 +773,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, node->data.if_statement.condition);
 
             /* jump will be overriden later */
-            struct ir_instruction *jump = ir_instruction_AD(OP_JMPIF, top, 0);
+            struct ir_instruction *jump = ir_instruction_AD(OP_JMPIFNOT, top, 0);
             ir_append(proto->code, jump);
 
             /* cache old program counter for jump calculation */
@@ -781,10 +781,16 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_build_proto(context, proto, node->data.if_statement.body);
 
+            /* jump out instruction */
+            struct ir_instruction *jump_out = ir_instruction_E(OP_JMPBACK, proto->code->size);
+            ir_append(proto->code, jump_out);
+
             /* calculate jump size */
-            jump = ir_instruction_AD(OP_JMPIF, top, proto->code->size - old_pc - 1);
+            jump->value = CREATE_iAD(OP_JMPIFNOT, top, proto->code->size - old_pc);
 
             ir_build_proto(context, proto, node->data.if_statement.else_body);
+
+            jump_out->value = CREATE_iE(OP_JMPBACK, proto->code->size - GETARG_E(jump_out->value) - 1);
             break;
         }
         case NODE_ASSIGNMENT: {

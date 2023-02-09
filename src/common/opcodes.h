@@ -191,6 +191,11 @@ enum opcode {
  */
 #define GETARG_E(i) ((int32_t)i >> 8)
 
+#define CREATE_iABC(i, a, b, c) ((uint32_t)i | (a << 8) | (b << 16) | (c << 24))
+#define CREATE_iAD(i, a, d) ((uint32_t)i | (a << 8) | ((uint16_t)d << 16))
+#define CREATE_iADu(i, a, du) ((uint32_t)i | (a << 8) | ((int16_t)du << 16))
+#define CREATE_iE(i, e) ((uint32_t)i | ((uint32_t)e << 8))
+
 #define NUM_OPCODES (int32_t) OP_NOP + 1
 
 LUAI_DATA const char *const opcode_names[NUM_OPCODES + 1];
