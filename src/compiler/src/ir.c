@@ -422,6 +422,7 @@ static int32_t ir_get_local_register(struct ir_context *context, char *name)
 
     if (hashmap_get(context->local_map, name, (void **)(&data)) == MAP_OK)
         return data->reg;
+
     return -1;
 }
 
@@ -551,6 +552,26 @@ static enum opcode get_unary_opcode(enum node_unary_operation op)
     }
 }
 
+static void ir_load_function_args(struct ir_context *c, struct ir_proto *p, struct node *args)
+{
+    assert(args->type == NODE_NAME_LIST);
+
+    for (struct node *iter = args; iter; iter = iter->data.name_list.init) {
+        /* Get name */
+        struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
+        const uint8_t reg = ir_allocate_register(c, p, 1);
+
+        if (name->type == NODE_TYPE_ANNOTATION)
+            ir_set_local_register(c, name->data.type_annotation.identifier->data.identifier.name,
+                                  reg);
+        else /* assert NODE_IDENTIFIER */
+            ir_set_local_register(c, name->data.identifier.name, reg);
+
+        if (iter->type != NODE_NAME_LIST)
+            break;
+    }
+}
+
 /* ir_join() -- joins two IR proto lists together to shape a new list of protos
  *      args: first proto, second proto
  *      rets: new proto list
@@ -647,7 +668,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 {
     if (!node)
         return NULL;
-    // printf("NODE: %s\n", node_names[node->type]);
+
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
             ir_build_proto(context, proto, node->data.expression_statement.expression);
@@ -1059,23 +1080,18 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             break;
         }
         case NODE_IDENTIFIER: {
-            struct ir_instruction *instruction;
-
             const uint8_t target = ir_allocate_register(context, proto, 1);
-            const bool allocated = target == proto->target_register;
+            const int32_t reg = ir_get_local_register(context, node->data.identifier.name);
 
-            int32_t reg;
-
+            /* Identifier is reference to global variable */
             if (node->data.identifier.is_global) {
-                unsigned int index = ir_constant_env(proto, node->data.identifier.s);
+                const uint32_t index = ir_constant_env(proto, node->data.identifier.s);
 
-                instruction = ir_instruction_AD(OP_GETENV, target, index);
-            } else if ((reg = ir_get_local_register(context, node->data.identifier.name)) >= 0 &&
-                       !allocated) {
-                instruction = ir_instruction_ABC(OP_MOVE, target, reg, 0);
+                ir_append(proto->code, ir_instruction_AD(OP_GETENV, target, index));
             }
-            if (instruction)
-                ir_append(proto->code, instruction);
+            /* If reference to local variable, move it into the stack frame */
+            else if (reg >= 0)
+                ir_append(proto->code, ir_instruction_ABC(OP_MOVE, target, reg, 0));
             break;
         }
         case NODE_BLOCK: {
@@ -1093,12 +1109,16 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_FUNCTION_BODY: {
             const struct node *params = node->data.function_body.exprlist;
-            const struct node *namelist = params->data.parameter_list.namelist;
+            struct node *namelist = params->data.parameter_list.namelist;
 
             /* Create new function prototype */
             struct ir_proto *p = ir_proto();
             p->is_vararg = params->data.parameter_list.vararg != NULL;
             p->parameters_size = namelist->data.name_list.size;
+
+            /* First couple registers will point to function parameters (load them) */
+            if (p->parameters_size)
+                ir_load_function_args(context, p, namelist);
 
             /* Prepare function params if vararg is present */
             if (p->is_vararg)

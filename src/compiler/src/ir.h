@@ -63,9 +63,6 @@ struct ir_proto {
     struct ir_proto_list *protos;
     struct ir_constant_list *constant_list;
     struct ir_section *code;
-    
-    uint32_t pids_size;
-    uint32_t pids[BUFSIZ];
 
     /* Variables used within the IR */
     uint8_t top_register;
