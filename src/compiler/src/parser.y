@@ -390,7 +390,11 @@ statement
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
     | LOCAL_T FUNCTION_T IDENTIFIER_T function_body
-        { $$ = node_local(@$, node_type_annotation(@$, $3, node_type(@$, NULL)), $4); }
+        { 
+            struct node *namelist = node_type_annotation(@$, $3, node_type(@$, NULL));
+            struct node *exprlist = $4;
+            $$ = node_local(@$, namelist, exprlist); 
+        }
     | last_statement
         { $$ = $1; }
 

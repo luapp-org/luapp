@@ -1110,7 +1110,6 @@ void print_ast(FILE *output, struct node *node, bool first)
             id++;
             break;
         case NODE_FUNCTION_BODY:
-
             /* Check if we are in the root node */
             if (first) {
                 fprintf(output, "digraph G\n{\n");

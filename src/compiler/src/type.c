@@ -288,8 +288,12 @@ static void type_handle_local_assignment(struct type_context *context, struct no
                                "of type \"%s\"",
                                type_to_string(name->node_type), type_to_string(expr->node_type));
                 context->error_count++;
-            } else
-                name->node_type = expr->node_type;
+            } else {
+                if (name->type != NODE_TYPE_ANNOTATION)
+                    name->node_type = expr->node_type;
+                else 
+                    name->data.type_annotation.type->node_type = expr->node_type;
+            }
         }
 
         type_add(context, identifier, name->node_type);
