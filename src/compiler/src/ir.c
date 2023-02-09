@@ -236,6 +236,8 @@ static struct ir_constant_list *ir_constant_list(struct ir_constant *first,
     list->first = first;
     list->last = last;
 
+    list->size = first && last ? 1 : 0;
+
     return list;
 }
 
@@ -307,7 +309,7 @@ static unsigned int ir_find_number_constant(struct ir_constant_list *list, doubl
     return -1;
 }
 
-static unsigned int ir_find_env_constant(struct ir_constant_list *list, unsigned int id)
+static int ir_find_env_constant(struct ir_constant_list *list, unsigned int id)
 {
     int index = 0;
 
@@ -338,7 +340,7 @@ static unsigned int ir_constant_symbol(struct ir_proto *proto, struct symbol *sy
         // We were unable to find an existing constant
         struct ir_constant *c = ir_constant(type);
         c->data.symbol.symbol_id = symbol->id;
-
+        // printf("ADDING SYMBOL %u\n", symbol->id);
         ir_constant_list_add(proto->constant_list, c);
 
         return proto->constant_list->size++;
@@ -382,9 +384,9 @@ static unsigned int ir_constant_env(struct ir_proto *proto, struct symbol *symbo
 {
     unsigned int id = ir_constant_symbol(proto, symbol, CONSTANT_STRING);
 
-    unsigned int index;
+    int index;
     if ((index = ir_find_env_constant(proto->constant_list, id)) == -1) {
-
+        // printf("ADDING CONSTANT ENV (%u)\n", id);
         // We were unable to find an existing constant
         struct ir_constant *c = ir_constant(CONSTANT_ENVIRONMENT);
         c->data.env.index = id;
@@ -442,7 +444,7 @@ static struct ir_proto_list *ir_proto_list(struct ir_proto *first, struct ir_pro
     list->first = first;
     list->last = last;
 
-    list->size = 1;
+    list->size = first && last ? 1 : 0;
 
     return list;
 }
@@ -645,7 +647,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 {
     if (!node)
         return NULL;
-
+    // printf("NODE: %s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
             ir_build_proto(context, proto, node->data.expression_statement.expression);
@@ -1090,28 +1092,28 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             break;
         }
         case NODE_FUNCTION_BODY: {
-            struct node *params = node->data.function_body.exprlist;
-            struct node *namelist = params->data.parameter_list.namelist;
+            const struct node *params = node->data.function_body.exprlist;
+            const struct node *namelist = params->data.parameter_list.namelist;
 
+            /* Create new function prototype */
             struct ir_proto *p = ir_proto();
             p->is_vararg = params->data.parameter_list.vararg != NULL;
             p->parameters_size = namelist->data.name_list.size;
 
-            struct ir_instruction *arg_instr = ir_instruction_ABC(
-                OP_VARARGPREP, (namelist != NULL ? namelist->data.name_list.size : 0), 0, 0);
+            /* Prepare function params if vararg is present */
+            if (p->is_vararg)
+                ir_append(p->code, ir_instruction_ABC(OP_VARARGPREP, p->parameters_size, 0, 0));
 
-            struct ir_section *section = ir_section(arg_instr, arg_instr);
+            ir_build_proto(context, p, node->data.function_body.body);
 
-            ir_build_proto(context, proto, node->data.function_body.body);
-
-            struct ir_instruction *return_instr = ir_instruction_ABC(OP_RETURN, 0, 1, 0);
-            ir_append(proto->code, return_instr);
-
+            /* Keep constant return result for now */
+            ir_append(p->code, ir_instruction_ABC(OP_RETURN, 0, 1, 0));
             ir_proto_append(proto->protos, p);
 
-            struct ir_instruction *closure = ir_instruction_AD(
-                OP_CLOSURE, ir_allocate_register(context, proto, 1), proto->protos->size - 1);
-            ir_append(proto->code, closure);
+            /* Add closure instruction in main proto */
+            ir_append(proto->code,
+                      ir_instruction_AD(OP_CLOSURE, ir_allocate_register(context, proto, 1),
+                                        proto->protos->size - 1));
             break;
         }
         case NODE_EXPRESSION_LIST: {
