@@ -314,7 +314,7 @@ static int ir_find_env_constant(struct ir_constant_list *list, unsigned int id)
     int index = 0;
 
     for (struct ir_constant *iter = list->first; iter != NULL; iter = iter->next) {
-        if (iter->type == CONSTANT_ENVIRONMENT && iter->data.env.index == index)
+        if (iter->type == CONSTANT_ENVIRONMENT && iter->data.env.index == id)
             return index;
         ++index;
     }
@@ -768,9 +768,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             break;
         }
         case NODE_IF: {
-            const uint8_t top = proto->top_register;
-
-            ir_build_proto(context, proto, node->data.if_statement.condition);
+            struct node *condition = node->data.if_statement.condition;
+            const uint8_t top = ir_get_name_register(context, proto, condition);
 
             /* jump will be overriden later */
             struct ir_instruction *jump = ir_instruction_AD(OP_JMPIFNOT, top, 0);
@@ -790,7 +789,8 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             ir_build_proto(context, proto, node->data.if_statement.else_body);
 
-            jump_out->value = CREATE_iE(OP_JMPBACK, proto->code->size - GETARG_E(jump_out->value) - 1);
+            jump_out->value =
+                CREATE_iE(OP_JMPBACK, proto->code->size - GETARG_E(jump_out->value) - 1);
             break;
         }
         case NODE_ASSIGNMENT: {
