@@ -28,7 +28,7 @@ typedef struct _hashmap_map {
 int hashmap_get_struct_size() { return sizeof(hashmap_map); }
 
 map_t hashmap_duplicate(map_t src)
-{    
+{
     hashmap_map *s = (hashmap_map *)src;
     hashmap_map *m = (hashmap_map *)malloc(sizeof(hashmap_map));
     if (!m)
@@ -37,13 +37,16 @@ map_t hashmap_duplicate(map_t src)
     // Allocate enough space for all of the empty cells
     int nsize = s->table_size * sizeof(hashmap_element);
     m->data = (hashmap_element *)malloc(nsize);
-    
+
     if (!m->data)
         goto err;
 
     /* This will copy all of the empty cells */
-    for (int i = 0; i < s->table_size; i++)
-        m->data[i] = s->data[i];
+    for (int i = 0; i < s->table_size; i++) {
+        m->data[i].in_use = s->data[i].in_use;
+        m->data[i].data = s->data[i].data;
+        m->data[i].key = s->data[i].key;
+    }
 
     m->table_size = s->table_size;
     m->size = s->size;
@@ -55,12 +58,22 @@ err:
     return NULL;
 }
 
+static void print(any_t a, any_t b) {}
+
 void hashmap_print(map_t map)
 {
+    /* Cast the hashmap */
     hashmap_map *m = (hashmap_map *)map;
 
-    for (int i = 0; i < m->size; i++)
-        printf("\"%s\"\n", m->data[i].key);
+    /* On empty hashmap, return immediately */
+    if (hashmap_length(m) <= 0)
+        return;
+
+    /* Linear probing */
+    for (int i = 0; i < m->table_size; i++) {
+        if (m->data[i].in_use)
+            print("%d '%s'\n", m->data[i].key);
+    }
 }
 
 /*

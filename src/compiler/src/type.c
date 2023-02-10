@@ -194,6 +194,7 @@ bool type_is(struct type *first, struct type *second)
 
 static void type_add_name(map_t map, char *name, struct type *t)
 {
+    printf("type add: %s\n", name);
     int res = hashmap_put(map, name, t);
     assert(res == MAP_OK);
 }
@@ -369,13 +370,12 @@ static void type_handle_name_reference(struct type_context *context, struct node
     switch (value->type) {
         case NODE_IDENTIFIER:
             get_type(context, value->data.identifier.name, &t, &res);
-
+            
             /* Ensure that this identifier exists in this context */
             if (!t && context->is_strict) {
                 compiler_error(value->location, "\"%s\" is not defined in this context",
                                value->data.identifier.name);
                 context->error_count++;
-
                 /* If the identifier has been defined */
             } else if (t) {
                 value->node_type = t;
@@ -1010,6 +1010,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     struct type_context new_context = {context->is_strict, context->use_c_arrays,
                                        context->error_count, NULL, context->global_type_map};
+
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);
@@ -1144,7 +1145,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 new_context.type_map = context->type_map;
             else
                 new_context.type_map = hashmap_duplicate(context->type_map);
-
+            printf("------------------\n");
             type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
 
@@ -1154,7 +1155,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             if (!main)
                 free(new_context.type_map);
-
+            printf("------------------\n");
             context->error_count = new_context.error_count;
             break;
     }
