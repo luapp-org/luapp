@@ -1,8 +1,9 @@
 #define LUA_CORE
+#include "lua/lfunc.h"
 #include "lua/lgc.h"
+#include "lua/lobject.h"
 #include "lua/ltable.h"
 #include "lua/lvm.h"
-#include "lua/lobject.h"
 
 #include <stdbool.h>
 
@@ -289,6 +290,20 @@ reentry:
                         return; /* yield */
                     }
                 }
+            }
+            case OP_CLOSURE: {
+                StkId ra = RA(i);
+
+                Proto *pv = cl->p->p[GETARG_D(i)];
+                lua_assert(GETARG_D(i) < cl->p->sizep);
+
+                /* create new lua closure */
+                Closure *ncl = luaF_newLclosure(L, pv->nups, cl->env);
+                ncl->l.p = pv;
+
+                setclvalue(L, ra, ncl);
+                PROTECT(luaC_checkGC(L));
+                continue;
             }
             case OP_NEJMP:
             case OP_EQJMP: {
