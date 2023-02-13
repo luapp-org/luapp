@@ -83,6 +83,9 @@ char *type_to_string(struct type *type)
     static char buf[BUFSIZ];
     bzero(buf, BUFSIZ); /* buffer needs to be empty */
 
+    if (!type) 
+        return "unknown";
+
     if (type->kind == TYPE_PRIMITIVE) {
         switch (type->data.primitive.kind) {
             case TYPE_BASIC_NUMBER:
@@ -194,7 +197,6 @@ bool type_is(struct type *first, struct type *second)
 
 static void type_add_name(map_t map, char *name, struct type *t)
 {
-    printf("type add: %s\n", name);
     int res = hashmap_put(map, name, t);
     assert(res == MAP_OK);
 }
@@ -290,10 +292,7 @@ static void type_handle_local_assignment(struct type_context *context, struct no
                                type_to_string(name->node_type), type_to_string(expr->node_type));
                 context->error_count++;
             } else {
-                if (name->type != NODE_TYPE_ANNOTATION)
-                    name->node_type = expr->node_type;
-                else 
-                    name->data.type_annotation.type->node_type = expr->node_type;
+                name->node_type = expr->node_type;
             }
         }
 
@@ -1145,7 +1144,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 new_context.type_map = context->type_map;
             else
                 new_context.type_map = hashmap_duplicate(context->type_map);
-            printf("------------------\n");
+
             type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
 
@@ -1155,7 +1154,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             if (!main)
                 free(new_context.type_map);
-            printf("------------------\n");
+
             context->error_count = new_context.error_count;
             break;
     }
