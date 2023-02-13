@@ -1086,16 +1086,15 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         case NODE_IDENTIFIER: {
             const uint8_t target = ir_allocate_register(context, proto, 1);
             const int32_t reg = ir_get_local_register(context, node->data.identifier.name);
-
-            /* Identifier is reference to global variable */
-            if (node->data.identifier.is_global) {
+            /* If reference to local variable, move it into the stack frame */
+            if (reg >= 0)
+                ir_append(proto->code, ir_instruction_ABC(OP_MOVE, target, reg, 0));
+            /* Identifier must be reference to global variable */
+            else {
                 const uint32_t index = ir_constant_env(proto, node->data.identifier.s);
 
                 ir_append(proto->code, ir_instruction_AD(OP_GETENV, target, index));
             }
-            /* If reference to local variable, move it into the stack frame */
-            else if (reg >= 0)
-                ir_append(proto->code, ir_instruction_ABC(OP_MOVE, target, reg, 0));
             break;
         }
         case NODE_BLOCK: {

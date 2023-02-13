@@ -83,7 +83,7 @@ char *type_to_string(struct type *type)
     static char buf[BUFSIZ];
     bzero(buf, BUFSIZ); /* buffer needs to be empty */
 
-    if (!type) 
+    if (!type)
         return "unknown";
 
     if (type->kind == TYPE_PRIMITIVE) {
@@ -205,10 +205,11 @@ void get_type(struct type_context *context, char *name, struct type **t, bool *i
 {
     if (hashmap_get(context->type_map, name, (void **)(*(&t))) == MAP_OK)
         *is_global = false;
-    else if (hashmap_get(context->global_type_map, name, (void **)(*(&t))) == MAP_OK)
+    else {
+        if (hashmap_get(context->global_type_map, name, (void **)(*(&t))) != MAP_OK)
+            *t = NULL;
         *is_global = true;
-    else
-        *t = NULL;
+    }
 }
 
 bool type_name_exists(struct type_context *context, char *name)
@@ -280,6 +281,7 @@ static void type_handle_local_assignment(struct type_context *context, struct no
             free(name->node_type);
 
         name->node_type = expr->node_type;
+        identifier = name;
     } else if (name)
         identifier = name->data.type_annotation.identifier;
 
@@ -302,8 +304,12 @@ static void type_handle_local_assignment(struct type_context *context, struct no
             compiler_error(name->location, "variable is inherently \"nil\"");
             context->error_count++;
         }
-        free(name->node_type);
+
+        if (name->node_type)
+            free(name->node_type);
+
         name->node_type = type_basic(TYPE_BASIC_NIL);
+
         type_add(context, identifier, name->node_type);
     } else if (expr) {
         compiler_error(expr->location, "expression is not assigned to a variable");
@@ -369,7 +375,7 @@ static void type_handle_name_reference(struct type_context *context, struct node
     switch (value->type) {
         case NODE_IDENTIFIER:
             get_type(context, value->data.identifier.name, &t, &res);
-            
+
             /* Ensure that this identifier exists in this context */
             if (!t && context->is_strict) {
                 compiler_error(value->location, "\"%s\" is not defined in this context",
@@ -952,10 +958,12 @@ static void type_handle_call(struct type_context *context, struct node *call)
     struct node *f = call->data.call.prefix_expression;
     struct node *args = call->data.call.args;
 
-    if (f->node_type->kind != TYPE_FUNCTION) {
-        compiler_error(f->location, "attempt to call a %s value", type_to_string(f->node_type));
+    if ((context->is_strict && f->node_type->kind != TYPE_FUNCTION) ||
+        f->node_type->kind == TYPE_BASIC_ANY) {
+        compiler_error(f->location, "attempt to call non function type '%s'",
+                       type_to_string(f->node_type));
         context->error_count++;
-    } else {
+    } else if (f->node_type->kind == TYPE_FUNCTION) {
         struct node *fargs = f->node_type->data.function.args_list;
 
         while (true) {
@@ -1009,7 +1017,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     struct type_context new_context = {context->is_strict, context->use_c_arrays,
                                        context->error_count, NULL, context->global_type_map};
-
+    // printf("%s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);
@@ -1090,6 +1098,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
             /* Check if everything is legal */
             type_handle_call(context, node);
+
             break;
         case NODE_IF:
             type_ast_traversal(context, node->data.if_statement.condition, false);
