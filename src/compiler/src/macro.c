@@ -34,8 +34,10 @@ void macro_init(compiler_context_t *context, FILE *input)
         else if (c == '-' && next == '-') {
             fgetc(input);
 
-            if ((c = (char)fgetc(input)) != '!')
-                continue;
+            if ((c = (char)fgetc(input)) != '!') {
+                rewind(input);
+                break;
+            }
 
             char *m = read_macro(input);
 
@@ -46,12 +48,12 @@ void macro_init(compiler_context_t *context, FILE *input)
 
             free(m);
         } else {
-            ungetc(c, input);
+            rewind(input);
             break;
         }
     } while (c != EOF);
 
-    //printf("%c\n", fgetc(input));
+    // printf("%c\n", fgetc(input));
 }
 
 /* macro_print() - prints all macro values for debug purposes.

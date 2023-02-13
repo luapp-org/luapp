@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    compiler_context_t context = {stage, 0};
+    compiler_context_t context = {stage, 0, 0, false, false, false};
 
     bool result = compile(&context, input, output);
 
