@@ -82,7 +82,10 @@ void codegen_write_proto(FILE *output, struct ir_proto *proto)
         }
     }
 
-    /* TODO: List of function prototype indexes */
+    codegen_write_size(output, proto->proto_size);
+    
+    for (uint32_t i = 0; i < proto->proto_size; ++i)
+        codegen_write_size(output, proto->protos[i]);
 }
 
 void codegen_write_program(FILE *output, struct ir_context *context)
@@ -92,17 +95,14 @@ void codegen_write_program(FILE *output, struct ir_context *context)
 
     codegen_write_symbol_table(output, context->table);
 
-    /* Collect the protos */
-    struct ir_proto_list *protos = ir_collect_protos(context->main_proto);
-
     /* Write the proto list to the stream */
-    codegen_write_size(output, protos->size);
+    codegen_write_size(output, context->protos->size);
 
-    for (struct ir_proto *iter = protos->first; iter != NULL; iter = iter->next)
+    for (struct ir_proto *iter = context->protos->first; iter != NULL; iter = iter->next)
         codegen_write_proto(output, iter);
 
-    /* The main function is always the first in the list */
-    codegen_write_size(output, 0);
+    /* The main function is always the last in the list */
+    codegen_write_size(output, context->protos->size - 1);
 
     fprintf(output, "\n\n");
 }

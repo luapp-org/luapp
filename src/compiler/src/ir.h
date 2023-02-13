@@ -60,7 +60,9 @@ struct ir_proto {
     uint8_t upvalues_size;
     bool is_vararg;
 
-    struct ir_proto_list *protos;
+    uint32_t proto_size;
+    uint32_t protos[BUFSIZ];
+
     struct ir_constant_list *constant_list;
     struct ir_section *code;
 
@@ -81,7 +83,7 @@ struct ir_context {
 
     /* What will be serialized */
     struct symbol_table *table;
-    struct ir_proto *main_proto;
+    struct ir_proto_list *protos;
 
     /* IR 'local' register map */
     map_t local_map;
@@ -91,9 +93,8 @@ void ir_init(struct ir_context *context);
 void ir_destroy(struct ir_context *context);
 
 void ir_print_context(FILE *output, struct ir_context *context);
-struct ir_proto *ir_build(struct ir_context *context, struct node *node);
+struct ir_proto_list *ir_build(struct ir_context *context, struct node *node);
 struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *proto,
                                 struct node *node);
-struct ir_proto_list *ir_collect_protos(struct ir_proto *main);
 
 #endif

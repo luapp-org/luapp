@@ -161,7 +161,7 @@ reentry:
     for (;;) {
         /* Prep instruction for execution */
         const Instruction i = *pc++;
-
+        //printf("%s\n", opcode_names[GET_OPCODE(i)]);
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
@@ -296,7 +296,6 @@ reentry:
 
                 Proto *pv = cl->p->p[GETARG_D(i)];
                 lua_assert(GETARG_D(i) < cl->p->sizep);
-
                 /* create new lua closure */
                 Closure *ncl = luaF_newLclosure(L, pv->nups, cl->env);
                 ncl->l.p = pv;

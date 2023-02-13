@@ -465,9 +465,8 @@ static struct ir_proto *ir_proto()
     p->top_register = 0;
     p->target_register = -1;
     p->upvalues_size = 0;
+    p->proto_size = 0;
     p->code = ir_section(NULL, NULL);
-
-    p->protos = ir_proto_list(NULL, NULL);
 
     p->prev = NULL;
     p->next = NULL;
@@ -598,8 +597,7 @@ static struct ir_proto_list *ir_proto_join(struct ir_proto_list *first,
  */
 void ir_init(struct ir_context *context)
 {
-
-    context->main_proto = ir_proto();
+    context->protos = ir_proto_list(NULL, NULL);
     context->local_map = hashmap_new();
 }
 
@@ -668,7 +666,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 {
     if (!node)
         return NULL;
-
+    // printf("NODE %s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
             ir_build_proto(context, proto, node->data.expression_statement.expression);
@@ -1134,12 +1132,14 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
             /* Keep constant return result for now */
             ir_append(p->code, ir_instruction_ABC(OP_RETURN, 0, 1, 0));
-            ir_proto_append(proto->protos, p);
+            ir_proto_append(context->protos, p);
+
+            proto->protos[proto->proto_size++] = context->protos->size - 1;
 
             /* Add closure instruction in main proto */
             ir_append(proto->code,
                       ir_instruction_AD(OP_CLOSURE, ir_allocate_register(context, proto, 1),
-                                        proto->protos->size - 1));
+                                        proto->proto_size - 1));
             break;
         }
         case NODE_EXPRESSION_LIST: {
@@ -1185,9 +1185,9 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 
 /* ir_build() -- will build a new IR proto based on an AST
  *      args: context, AST node
- *      rets: new ir section
+ *      rets: proto list
  */
-struct ir_proto *ir_build(struct ir_context *context, struct node *node)
+struct ir_proto_list *ir_build(struct ir_context *context, struct node *node)
 {
     struct ir_proto *proto = ir_proto();
 
@@ -1206,25 +1206,7 @@ struct ir_proto *ir_build(struct ir_context *context, struct node *node)
     instruction = ir_instruction_ABC(OP_RETURN, 0, 1, 0);
     proto->code = ir_append(proto->code, instruction);
 
-    return proto;
-}
-
-/* ir_collect_protos() -- will collect all protos and shove them into a list
- *      args: main/core proto
- *      rets: new ir proto list
- */
-struct ir_proto_list *ir_collect_protos(struct ir_proto *main)
-{
-    struct ir_proto_list *list = NULL;
-
-    /* recursively reach all function prototypes */
-    for (struct ir_proto *iter = main->protos->first; iter != NULL; iter = iter->next)
-        list = ir_proto_join(list, ir_collect_protos(iter));
-
-    if (!list)
-        return ir_proto_list(main, main);
-
-    return ir_proto_append(list, main);
+    return ir_proto_append(context->protos, proto);
 }
 
 static void ir_print_instruction(FILE *output, struct ir_instruction *instruction)
@@ -1302,11 +1284,15 @@ void ir_print_proto(FILE *output, struct ir_proto *proto)
         }
     }
 
-    fprintf(output, "----------------------------------------------------------------\n");
+    fputc('\n', output);
 
-    /* Dump all protos within the current one (if any) */
-    for (struct ir_proto *iter = proto->protos->first; iter != NULL; iter = iter->next)
-        ir_print_proto(output, iter);
+    /* Dump all closures */
+    fprintf(output, "closures:\n");
+
+    for (int32_t i = 0; i < proto->proto_size; i++)
+        fprintf(output, "%d    %d\n", i, proto->protos[i]);
+
+    fprintf(output, "----------------------------------------------------------------\n");
 }
 
 /* ir_print_context() -- will print all of the contents of the IR context
@@ -1318,6 +1304,7 @@ void ir_print_context(FILE *output, struct ir_context *context)
     /* Dump the symbol table */
     symbol_print_table(output, context->table);
 
-    /* Dump the main function prototype */
-    ir_print_proto(output, context->main_proto);
+    /* Dump each function prototype */
+    for (struct ir_proto *iter = context->protos->first; iter != NULL; iter = iter->next)
+        ir_print_proto(output, iter);
 }

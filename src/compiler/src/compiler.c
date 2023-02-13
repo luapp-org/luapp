@@ -165,7 +165,7 @@ bool compile(compiler_context_t *context, FILE *input, FILE *output)
     struct ir_context ir_context = {0, &symbol_table};
     ir_init(&ir_context);
 
-    ir_context.main_proto = ir_build(&ir_context, tree);
+    ir_context.protos = ir_build(&ir_context, tree);
     context->error_count = ir_context.error_count;
 
     ir_destroy(&ir_context);

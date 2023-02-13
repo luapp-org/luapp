@@ -61,7 +61,7 @@ static TString **read_strings(lua_State *L, FILE *input, uint32_t count)
     return strings;
 }
 
-static Proto *read_proto(lua_State *L, FILE *input, TString **strings, TString *source)
+static Proto *read_proto(lua_State *L, FILE *input, Proto **protos, TString **strings, TString *source)
 {
     Proto *p = luaF_newproto(L);
 
@@ -121,6 +121,16 @@ static Proto *read_proto(lua_State *L, FILE *input, TString **strings, TString *
         }
     }
 
+    /* Load closures into the function prototype */
+    p->sizep = read_size(input);
+    p->p = luaM_newvector(L, p->sizep, Proto*);
+
+    for (uint32_t i = 0; i < p->sizep; ++i) {
+        const uint32_t idx = read_size(input);
+
+        p->p[i] = protos[idx];
+    }
+
     return p;
 }
 
@@ -131,7 +141,7 @@ static Proto **read_protos(lua_State *L, FILE *input, uint32_t count, TString **
     Proto **protos = luaM_newvector(L, count, Proto *);
 
     for (int32_t i = 0; i < count; i++) {
-        protos[i] = read_proto(L, input, strings, source);
+        protos[i] = read_proto(L, input, protos, strings, source);
     }
 
     return protos;
@@ -161,7 +171,7 @@ int32_t luapp_loadfile(lua_State *L, const char *chunkname, FILE *input)
 
     /* Create and push a closure onto the stack */
     Closure *cl = luaF_newLclosure(L, 0, hvalue(gt(L)));
-    cl->l.p = protos[0];
+    cl->l.p = protos[read_size(input)];
     setclvalue(L, L->top, cl);
     incr_top(L);
 
