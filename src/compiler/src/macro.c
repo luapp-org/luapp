@@ -48,12 +48,12 @@ void macro_init(compiler_context_t *context, FILE *input)
 
             free(m);
         } else {
-            rewind(input);
+            ungetc(c, input);
             break;
         }
     } while (c != EOF);
 
-    // printf("%c\n", fgetc(input));
+    fseek(input, 0, SEEK_SET);
 }
 
 /* macro_print() - prints all macro values for debug purposes.
