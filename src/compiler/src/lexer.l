@@ -110,6 +110,8 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "then"              return THEN_T;
 "until"             return UNTIL_T;
 "while"             return WHILE_T;
+"class"             return CLASS_T;
+"constructor"       return CONSTRUCTOR_T;
 
 "number"            return TNUMBER_T;
 "string"            return TSTRING_T;

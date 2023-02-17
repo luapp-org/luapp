@@ -59,6 +59,8 @@
 %token THEN_T
 %token UNTIL_T
 %token WHILE_T
+%token CLASS_T
+%token CONSTRUCTOR_T
 
 /* Type annotations */
 %token TNUMBER_T
@@ -335,6 +337,15 @@ function_body
         { $$ = node_function_body(@$, NULL, NULL, $3); }
 ;
 
+function_definition
+    : FUNCTION_T IDENTIFIER_T function_body
+        {
+            struct node *namelist = node_type_annotation(@$, $2, node_type(@$, NULL));
+            struct node *exprlist = $3;
+            $$ = node_local(@$, namelist, exprlist); 
+        }
+;
+
 /* DIFF: Added `single_assignment` to for loop syntax --> any variable can be incremented 
  *      (Not in vanilla Lua 5.1)
  */
@@ -364,6 +375,17 @@ assignment
         { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
+class_member
+    : name_type
+    | function_definition
+;
+
+class_member_list
+    : class_member
+    | class_member COMMA_T class_member_list
+        { $$ = node_class_member_list(@$, $1, $3); }
+;
+
 statement
     : assignment
         { $$ = $1; }
@@ -389,12 +411,10 @@ statement
         { $$ = node_local(@$, $2, NULL); }
     | LOCAL_T name_list EQUAL_T expression_list
         { $$ = node_local(@$, $2, $4); }
-    | LOCAL_T FUNCTION_T IDENTIFIER_T function_body
-        { 
-            struct node *namelist = node_type_annotation(@$, $3, node_type(@$, NULL));
-            struct node *exprlist = $4;
-            $$ = node_local(@$, namelist, exprlist); 
-        }
+    | LOCAL_T function_definition
+        { $$ = $2; }
+    | CLASS_T IDENTIFIER_T LEFT_BRACKET_T class_member_list RIGHT_BRACKET_T
+        { $$ = node_class_definition(@$, $2, $4); }
     | last_statement
         { $$ = $1; }
 

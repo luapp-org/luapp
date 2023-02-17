@@ -52,8 +52,6 @@ void macro_init(compiler_context_t *context, FILE *input)
             break;
         }
     } while (c != EOF);
-
-    fseek(input, 0, SEEK_SET);
 }
 
 /* macro_print() - prints all macro values for debug purposes.

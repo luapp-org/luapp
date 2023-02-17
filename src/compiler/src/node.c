@@ -23,6 +23,8 @@ const char *const node_names[NODE_SIZE + 1] = {"NODE_NUMBER",
                                                "NODE_NAME_LIST",
                                                "NODE_VARIABLE_LIST",
                                                "NODE_PARAMETER_LIST",
+                                               "NODE_CLASS_MEMBER_LIST",
+                                               "NODE_CLASS_DEFINITION",
                                                "NODE_CALL",
                                                "NODE_EXPRESSION_GROUP",
                                                "NODE_NAME_INDEX",
@@ -356,6 +358,22 @@ struct node *node_variable_list(YYLTYPE location, struct node *init, struct node
     node->data.variable_list.init = init;
     node->data.variable_list.variable = variable;
     node->data.variable_list.size = node_get_size(node);
+
+    return node;
+}
+
+/*  node_class_member_list - allocate a node to represent an class member list
+ *      args: location, first member, next member
+ *      rets: member list node
+ *
+ *  BNF -> class_member {`,´ class_member}
+ */
+struct node *node_class_member_list(YYLTYPE location, struct node *init, struct node *member)
+{
+    struct node *node = node_create(location, NODE_CLASS_MEMBER_LIST);
+
+    node->data.class_member_list.init = init;
+    node->data.class_member_list.member = member;
 
     return node;
 }
@@ -713,6 +731,22 @@ struct node *node_vararg(YYLTYPE location)
     return node;
 }
 
+/*  node_class_definition - allocate a node to represent a new class defintion
+ *      args: location
+ *      rets: member list
+ *
+ *  BNF -> class Name `{` [memberlist] `}`
+ */
+struct node *node_class_definition(YYLTYPE location, struct node *name, struct node *memberlist)
+{
+    struct node *node = node_create(location, NODE_CLASS_DEFINITION);
+
+    node->data.class_definition.memberlist = memberlist;
+    node->data.class_definition.name = name;
+
+    return node;
+}
+
 /*  write_node - writes a node to a file in graphviz format
  *      args: output file, name of the node
  *      rets: none
@@ -894,6 +928,13 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             if (node->data.expression_list.expression != NULL)
                 print_ast(output, node->data.expression_list.expression, false);
+            break;
+        case NODE_CLASS_MEMBER_LIST:
+            /* No graphviz needed */
+            print_ast(output, node->data.class_member_list.init, false);
+
+            if (node->data.class_member_list.member != NULL)
+                print_ast(output, node->data.class_member_list.member, false);
             break;
         case NODE_NAME_LIST:
             /* No graphviz needed */
@@ -1183,6 +1224,20 @@ void print_ast(FILE *output, struct node *node, bool first)
         case NODE_VARARG:
             write_node(output, "...", false);
             break;
+        case NODE_CLASS_DEFINITION:
+            write_node(output, "class_definition", false);
+            /* Save and increment ids */
+            previous = parent_id;
+            parent_id = id++;
+
+            print_ast(output, node->data.class_definition.memberlist, false);
+            print_ast(output, node->data.class_definition.name, false);
+
+            parent_id = previous;
+            break;
+        // case NODE_CONSTRUCTOR:
+        //     write_node(output, "constructor")
+        //     break;
         default:
             break;
     }
@@ -1260,6 +1315,9 @@ int node_get_size(struct node *node)
                 break;
             case NODE_EXPRESSION_LIST:
                 node = node->data.expression_list.init;
+                break;
+            case NODE_CLASS_MEMBER_LIST:
+                node = node->data.class_member_list.init;
                 break;
         }
     }

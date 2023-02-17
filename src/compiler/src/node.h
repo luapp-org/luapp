@@ -28,6 +28,8 @@ enum node_type {
     NODE_NAME_LIST,
     NODE_VARIABLE_LIST,
     NODE_PARAMETER_LIST,
+    NODE_CLASS_MEMBER_LIST,
+    NODE_CLASS_DEFINITION,
     NODE_CALL,
     NODE_EXPRESSION_GROUP,
     NODE_NAME_INDEX,
@@ -54,6 +56,7 @@ enum node_type {
     NODE_ARRAY_CONSTRUCTOR, /* local a: Array<number> = { 1, 2, 3, 4 } */
     NODE_KEY_VALUE_PAIR,
     NODE_TABLE_CONSTRUCTOR,
+    NODE_CONSTRUCTOR
 };
 
 #define NODE_SIZE (int32_t) NODE_TABLE_CONSTRUCTOR + 1
@@ -86,10 +89,10 @@ enum node_unary_operation {
     UNOP_NEG,
     UNOP_NOT,
     UNOP_LEN,
-    UNOP_INCR,/*        a++ */
-    UNOP_INCRRET,/*     ++a */
-    UNOP_DECR,/*        a-- */
-    UNOP_DECRRET/*      --a */
+    UNOP_INCR,    /*        a++ */
+    UNOP_INCRRET, /*     ++a */
+    UNOP_DECR,    /*        a-- */
+    UNOP_DECRRET  /*      --a */
 };
 
 /* Assignment types */
@@ -160,6 +163,18 @@ struct node {
             struct node *vararg;
             int size;
         } parameter_list;
+        struct {
+            struct node *init;
+            struct node *member;
+            int size;
+        } class_member_list;
+        struct {
+            struct node *memberlist;
+            struct node *name; // Note: `name` must be NODE_IDENTIFER
+        } class_definition;
+        struct {
+            struct node *arglist;
+        } constructor;
         struct {
             struct node *expression;
         } expression_statement;
@@ -278,6 +293,7 @@ struct node *node_expression_list(YYLTYPE location, struct node *init, struct no
 struct node *node_parameter_list(YYLTYPE location, struct node *namelist, struct node *vararg);
 struct node *node_name_list(YYLTYPE location, struct node *init, struct node *name);
 struct node *node_variable_list(YYLTYPE location, struct node *init, struct node *variable);
+struct node *node_class_member_list(YYLTYPE location, struct node *init, struct node *member);
 struct node *node_call(YYLTYPE location, struct node *prefix_expression, struct node *args,
                        bool self_call);
 struct node *node_expression_group(YYLTYPE location, struct node *expression);
@@ -307,6 +323,8 @@ struct node *node_generic_for_loop(YYLTYPE location, struct node *local, struct 
 struct node *node_local(YYLTYPE location, struct node *namelist, struct node *exprlist);
 struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);
+struct node *node_class_definition(YYLTYPE location, struct node *name, struct node *memberlist);
+struct node *node_constructor(YYLTYPE location, struct node *arglist);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);

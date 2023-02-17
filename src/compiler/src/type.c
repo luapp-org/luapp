@@ -74,6 +74,22 @@ struct type *type_function(struct node *args_list, struct node *rets_list)
     return t;
 }
 
+/* type_custom() -- creates a custom type
+ *      args: name of then type
+ *      returns: custom type
+ */
+struct type *type_custom(struct node *name)
+{
+    struct type *t;
+
+    t = smalloc(sizeof(struct type));
+
+    t->kind = TYPE_CUSTOM;
+    t->data.custom.name = name;
+
+    return t;
+}
+
 /* type_to_string() -- converts the given type struct to a string representation
  *      args: type
  *      returns: string version of type
@@ -118,6 +134,9 @@ char *type_to_string(struct type *type)
         fs_addstr(&str, node_to_string(type->data.function.rets_list));
 
         return fs_getstr(&str);
+    } else if (type->kind == TYPE_CUSTOM) {
+        sprintf(buf, "%s", type->data.custom.name->data.identifier.name);
+        return strdup(buf);
     }
 
     return "unknown";
@@ -161,6 +180,29 @@ bool type_node_is(struct node *first, struct node *second)
     return true;
 }
 
+bool type_node_list_is_expr_list(struct node *typelist, struct node *exprlist)
+{
+    if (typelist->data.type_list.size != exprlist->data.expression_list.size)
+        return false;
+
+    while (true) {
+        if (typelist->type == NODE_TYPE_LIST && exprlist->type == NODE_EXPRESSION_LIST) {
+            /* Check types and resume next iteration */
+            if (!type_is(typelist->data.type_list.type->node_type,
+                         exprlist->data.expression_list.expression->node_type))
+                return false;
+
+            typelist = typelist->data.type_list.init;
+            exprlist = exprlist->data.expression_list.init;
+        } else if (typelist && exprlist) {
+            if (!type_is(typelist->node_type, exprlist->node_type))
+                return false;
+            return true;
+        } else
+            return false;
+    }
+}
+
 /* type_is() -- determines whether two types are equal
  *      args: first type, second type
  *      returns: yes or no
@@ -188,6 +230,9 @@ bool type_is(struct type *first, struct type *second)
                                     second->data.function.args_list) &&
                        type_node_is(first->data.function.rets_list,
                                     second->data.function.rets_list);
+            case TYPE_CUSTOM:
+                return strcmp(first->data.custom.name->data.identifier.name,
+                              second->data.custom.name->data.identifier.name) == 0;
             default:
                 return false;
         }
@@ -859,6 +904,19 @@ static void type_handle_unary(struct type_context *context, struct node *unary)
     }
 }
 
+static struct node *type_build_type_list_expr(struct node *exprlist)
+{
+    struct node *init = exprlist->data.expression_list.init;
+    struct node *expr = exprlist->data.expression_list.expression;
+    const size_t size = expr->data.expression_list.size;
+
+    if (size == 1)
+        return node_type(exprlist->location, exprlist->node_type);
+
+    return node_type_list(exprlist->location, type_build_type_list_expr(init),
+                          node_type(expr->location, expr->node_type));
+}
+
 static struct node *type_build_type_list(struct type_context *context, struct node *namelist,
                                          struct node *vararg)
 {
@@ -891,7 +949,8 @@ static struct node *type_build_type_list(struct type_context *context, struct no
     }
 }
 
-static void type_handle_function_body(struct type_context *context, struct node *funcbody)
+static void type_handle_function_body(struct type_context *context, struct node *funcbody,
+                                      bool main)
 {
     struct node *typelist = funcbody->data.function_body.type_list;
     struct node *parameters = funcbody->data.function_body.exprlist;
@@ -929,6 +988,38 @@ static void type_handle_function_body(struct type_context *context, struct node 
             namelist = namelist->data.name_list.init;
         else
             namelist = NULL;
+    }
+
+    if (!typelist)
+        return;
+
+    struct node *body = funcbody->data.function_body.body;
+
+    /* Check for return statement */
+    for (struct node *iter = body; body; iter = body->data.block.init) {
+        /* Do the checking part */
+        bool is_statement = !iter->data.block.statement;
+        struct node *stmt = is_statement ? iter : iter->data.block.statement;
+
+        if (stmt->type == NODE_RETURN) {
+            // type_node_is
+            if (!type_node_list_is_expr_list(typelist,
+                              stmt->data.return_statement.exprlist)) {
+                compiler_error(stmt->location,
+                               "return statement type mismatch; check function return type");
+                context->error_count++;
+            }
+            return;
+        }
+
+        if (is_statement && context->is_strict && !main) {
+            compiler_error(funcbody->data.function_body.type_list->location,
+                           "expected return statement");
+            context->error_count++;
+        }
+
+        if (is_statement)
+            break;
     }
 }
 
@@ -1002,6 +1093,14 @@ static void type_handle_expression_group(struct type_context *context, struct no
     free(node->node_type);
 
     node->node_type = node->data.expression_group.expression->node_type;
+}
+
+static void type_handle_class_definition(struct type_context *context, struct node *node)
+{
+    if (node->node_type)
+        free(node->node_type);
+
+    node->node_type = type_custom(node->data.class_definition.name);
 }
 
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
@@ -1157,7 +1256,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
             type_ast_traversal(&new_context, node->data.function_body.exprlist, false);
             type_ast_traversal(&new_context, node->data.function_body.type_list, false);
 
-            type_handle_function_body(&new_context, node);
+            type_handle_function_body(&new_context, node, main);
 
             type_ast_traversal(&new_context, node->data.function_body.body, true);
 
@@ -1165,6 +1264,14 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
                 free(new_context.type_map);
 
             context->error_count = new_context.error_count;
+            break;
+        case NODE_CLASS_MEMBER_LIST:
+            type_ast_traversal(context, node->data.class_member_list.init, false);
+            type_ast_traversal(context, node->data.class_member_list.member, false);
+            break;
+        case NODE_CLASS_DEFINITION:
+            type_ast_traversal(context, node->data.class_definition.memberlist, false);
+            type_ast_traversal(context, node->data.class_definition.name, false);
             break;
     }
 }

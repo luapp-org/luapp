@@ -8,7 +8,13 @@
 
 struct node;
 
-enum type_kind { TYPE_PRIMITIVE, TYPE_ARRAY, TYPE_TABLE, TYPE_FUNCTION, TYPE_CUSTOM };
+enum type_kind {
+    TYPE_PRIMITIVE,
+    TYPE_ARRAY,
+    TYPE_TABLE,
+    TYPE_FUNCTION,
+    TYPE_CUSTOM /* Custom types are userdefined types */
+};
 
 /* Maybe add other types..? */
 enum type_primitive_kind {
@@ -55,11 +61,14 @@ struct type {
             struct node *args_list;
             struct node *rets_list;
         } function;
+        struct {
+            struct node *name;
+        } custom;
     } data;
 };
 
 struct type_context {
-    bool is_strict;  /* Strict context flag */
+    bool is_strict; /* Strict context flag */
     bool use_c_arrays;
     int error_count; /* Number of errors */
 
@@ -74,6 +83,9 @@ struct type *type_basic(enum type_primitive_kind kind);
 struct type *type_array(struct type *type);
 struct type *type_table(struct type *key, struct type *value);
 struct type *type_function(struct node *args_list, struct node *rets_list);
+
+/* TODO: Add slots for types in classes (templates and inheritance) */
+struct type *type_custom(struct node *name);
 
 bool type_is(struct type *first, struct type *second);
 void type_ast_traversal(struct type_context *context, struct node *node, bool main);
