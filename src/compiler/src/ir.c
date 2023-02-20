@@ -1179,6 +1179,15 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             }
             break;
         }
+        case NODE_RETURN: {
+            const uint8_t top = proto->top_register;
+            const size_t size = node->data.return_statement.exprlist->data.expression_list.size;
+
+            ir_build_proto(context, proto, node->data.return_statement.exprlist);
+
+            ir_append(proto->code, ir_instruction_ABC(OP_RETURN, top, size + 1, 0));
+            break;
+        }
     }
 }
 

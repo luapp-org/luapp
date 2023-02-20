@@ -161,7 +161,7 @@ reentry:
     for (;;) {
         /* Prep instruction for execution */
         const Instruction i = *pc++;
-        //printf("%s\n", opcode_names[GET_OPCODE(i)]);
+        // printf("%s\n", opcode_names[GET_OPCODE(i)]);
         /* Handle each opcode */
         switch (GET_OPCODE(i)) {
             case OP_VARARGPREP: {
@@ -500,8 +500,30 @@ reentry:
                 setbvalue(ra, res);
                 continue;
             }
-            case OP_RETURN:
-                goto exit;
+            case OP_RETURN: {
+                TValue *ra = RA(i);
+                int32_t b = GETARG_B(i);
+
+                /* reserve space for all the return arguments */
+                L->top = b == LUA_MULTRET ? L->top : ra + b - 1;
+
+                if (L->openupval)
+                    luaF_close(L, base);
+
+                L->savedpc = pc;
+                b = luaD_poscall(L, ra);
+
+                if (--nexeccalls == 0) /* was previous function running `here'? */
+                    goto exit;         /* no: return */
+                else {                 /* yes: continue its execution */
+                    if (b)
+                        L->top = L->ci->top;
+                    lua_assert(isLua(L->ci));
+                    lua_assert(GET_OPCODE(*((L->ci)->savedpc - 1)) == OP_CALL);
+                    goto reentry;
+                }
+                continue;
+            }
         }
     }
 /* exit point */

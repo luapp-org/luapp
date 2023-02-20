@@ -339,7 +339,7 @@ int luapp_precall(lua_State *L, StkId func, int nresults)
     if (ccl->l.isC) {
         /* Call the actual function */
         lua_lock(L);
-        int32_t ret = ccl->c.f(L);
+        int ret = ccl->c.f(L);
         lua_unlock(L);
 
         if (ret < 0) /* func yeilds */

@@ -2,6 +2,8 @@
  *      parses lexical tokens into an AST (abstract syntax tree)
  */
  
+%verbose
+%debug
 %locations
 %defines
 %define api.pure
@@ -258,12 +260,11 @@ variable
         { $$ = node_name_index(@$, $1, $3, false); }
 ;
 
-prefix_expression
-    : variable
-        { $$ = node_name_reference(@$, $1); }
-    | call
+prefix_expression  
+    : call 
     | LEFT_PARAN_T expression RIGHT_PARAN_T
         { $$ = node_expression_group(@$, $2); }
+    | variable_name_reference
 ;
 
 arguments
@@ -282,7 +283,7 @@ call
 ;
 
 expression
-  : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T
+  : NIL_T  | FALSE_T | TRUE_T | NUMBER_T | STRING_T | VARARG_T  
   | binary_operation | prefix_expression | unary_operation | array_constructor
   | table_constructor 
   | FUNCTION_T function_body

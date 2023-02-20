@@ -1,0 +1,5175 @@
+Terminals unused in grammar
+
+    CONSTRUCTOR_T
+    SQUIGGLE_T
+
+
+State 0 conflicts: 11 shift/reduce
+State 3 conflicts: 11 shift/reduce
+State 7 conflicts: 11 shift/reduce
+State 8 conflicts: 2 shift/reduce
+State 15 conflicts: 1 reduce/reduce
+State 23 conflicts: 1 shift/reduce, 1 reduce/reduce
+State 38 conflicts: 1 shift/reduce
+State 43 conflicts: 36 reduce/reduce
+State 48 conflicts: 1 shift/reduce
+State 53 conflicts: 1 shift/reduce
+State 87 conflicts: 15 shift/reduce
+State 88 conflicts: 1 shift/reduce
+State 89 conflicts: 15 shift/reduce
+State 95 conflicts: 1 reduce/reduce
+State 96 conflicts: 1 reduce/reduce
+State 101 conflicts: 11 shift/reduce
+State 119 conflicts: 11 shift/reduce
+State 150 conflicts: 11 shift/reduce
+State 158 conflicts: 1 shift/reduce
+State 159 conflicts: 1 shift/reduce
+State 161 conflicts: 1 shift/reduce
+State 162 conflicts: 1 shift/reduce
+State 163 conflicts: 1 shift/reduce
+State 164 conflicts: 1 shift/reduce
+State 165 conflicts: 1 shift/reduce
+State 166 conflicts: 1 shift/reduce
+State 167 conflicts: 1 shift/reduce
+State 168 conflicts: 1 shift/reduce
+State 169 conflicts: 1 shift/reduce
+State 170 conflicts: 1 shift/reduce
+State 171 conflicts: 1 shift/reduce
+State 172 conflicts: 1 shift/reduce
+State 173 conflicts: 15 shift/reduce
+State 189 conflicts: 1 shift/reduce
+State 190 conflicts: 11 shift/reduce
+State 191 conflicts: 11 shift/reduce
+State 195 conflicts: 11 shift/reduce
+State 199 conflicts: 11 shift/reduce
+State 213 conflicts: 11 shift/reduce
+State 228 conflicts: 11 shift/reduce
+State 230 conflicts: 11 shift/reduce
+State 234 conflicts: 11 shift/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 binary_operation: expression LESS_THAN_T expression
+    2                 | expression GREATER_THAN_T expression
+    3                 | expression GREATER_EQUAL_T expression
+    4                 | expression LESS_EQUAL_T expression
+    5                 | expression NOT_EQUAL_T expression
+    6                 | expression DOUBLE_EQUAL_T expression
+    7                 | expression AND_T expression
+    8                 | expression OR_T expression
+    9                 | expression PLUS_T expression
+   10                 | expression MINUS_T expression
+   11                 | expression ASTERISK_T expression
+   12                 | expression SLASH_T expression
+   13                 | expression CARROT_T expression
+   14                 | expression PERCENT_T expression
+   15                 | expression CONCAT_T expression
+
+   16 variable_name_reference: variable
+
+   17 unary_operation: MINUS_T expression
+   18                | NOT_T expression
+   19                | POUND_T expression
+   20                | INCREMENT_T variable_name_reference
+   21                | DECREMENT_T variable_name_reference
+   22                | variable_name_reference INCREMENT_T
+   23                | variable_name_reference DECREMENT_T
+   24                | variable_name_reference
+
+   25 expression_list: expression
+   26                | expression COMMA_T expression_list
+
+   27 parameter_list: name_list
+   28               | name_list COMMA_T VARARG_T
+   29               | VARARG_T
+
+   30 name_list: name_type
+   31          | name_type COMMA_T name_list
+
+   32 type_list: type
+   33          | type COMMA_T type_list
+
+   34 type: TNUMBER_T
+   35     | TSTRING_T
+   36     | TBOOLEAN_T
+   37     | TANY_T
+   38     | VARARG_T
+   39     | TARRAY_T LESS_THAN_T type GREATER_THAN_T
+   40     | TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T
+   41     | LEFT_PARAN_T type_list RIGHT_PARAN_T COLON_T type_list
+
+   42 name_type: IDENTIFIER_T COLON_T type
+   43          | IDENTIFIER_T
+
+   44 array_constructor: LEFT_BRACKET_T expression_list RIGHT_BRACKET_T
+   45                  | LEFT_BRACKET_T RIGHT_BRACKET_T
+
+   46 pair: LEFT_SQUARE_T expression RIGHT_SQUARE_T EQUAL_T expression
+
+   47 pair_list: ε
+   48          | pair
+   49          | pair COMMA_T pair_list
+
+   50 table_constructor: LEFT_BRACKET_T pair_list RIGHT_BRACKET_T
+
+   51 variable: IDENTIFIER_T
+   52         | prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T
+   53         | prefix_expression DOT_T IDENTIFIER_T
+
+   54 prefix_expression: call
+   55                  | LEFT_PARAN_T expression RIGHT_PARAN_T
+   56                  | variable_name_reference
+
+   57 arguments: LEFT_PARAN_T RIGHT_PARAN_T
+   58          | LEFT_PARAN_T expression_list RIGHT_PARAN_T
+   59          | STRING_T
+
+   60 call: prefix_expression arguments
+   61     | prefix_expression COLON_T IDENTIFIER_T arguments
+
+   62 expression: NIL_T
+   63           | FALSE_T
+   64           | TRUE_T
+   65           | NUMBER_T
+   66           | STRING_T
+   67           | VARARG_T
+   68           | binary_operation
+   69           | prefix_expression
+   70           | unary_operation
+   71           | array_constructor
+   72           | table_constructor
+   73           | FUNCTION_T function_body
+
+   74 program: block
+
+   75 variable_list: variable
+   76              | variable COMMA_T variable_list
+
+   77 else_body: ELSEIF_T expression THEN_T block else_body
+   78          | ELSEIF_T expression THEN_T block END_T
+   79          | ELSE_T block END_T
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
+   81              | LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
+   82              | LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T
+   83              | LEFT_PARAN_T RIGHT_PARAN_T block END_T
+
+   84 function_definition: FUNCTION_T IDENTIFIER_T function_body
+
+   85 single_assignment: variable EQUAL_T expression
+   86                  | name_type EQUAL_T expression
+
+   87 assignment: variable_list EQUAL_T expression_list
+   88           | variable_list PLUS_EQUAL_T expression_list
+   89           | variable_list MINUS_EQUAL_T expression_list
+   90           | variable_list ASTERISK_EQUAL_T expression_list
+   91           | variable_list SLASH_EQUAL_T expression_list
+   92           | variable_list MOD_EQUAL_T expression_list
+   93           | variable_list CARROT_EQUAL_T expression_list
+   94           | variable_list CONCAT_EQUAL_T expression_list
+
+   95 class_member: name_type
+   96             | function_definition
+
+   97 class_member_list: class_member
+   98                  | class_member COMMA_T class_member_list
+
+   99 statement: assignment
+  100          | call
+  101          | DO_T block END_T
+  102          | WHILE_T expression DO_T block END_T
+  103          | REPEAT_T block UNTIL_T expression
+  104          | IF_T expression THEN_T block END_T
+  105          | IF_T expression THEN_T block else_body
+  106          | FOR_T single_assignment COMMA_T expression DO_T block END_T
+  107          | FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
+  108          | FOR_T name_list IN_T expression_list DO_T block END_T
+  109          | LOCAL_T name_list
+  110          | LOCAL_T name_list EQUAL_T expression_list
+  111          | LOCAL_T function_definition
+  112          | CLASS_T IDENTIFIER_T LEFT_BRACKET_T class_member_list RIGHT_BRACKET_T
+  113          | last_statement
+
+  114 block: ε
+  115      | statement
+  116      | block statement
+
+  117 last_statement: RETURN_T expression_list
+  118               | RETURN_T
+  119               | BREAK_T
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    IDENTIFIER_T (258) 42 43 51 53 61 84 112
+    NUMBER_T (259) 65
+    STRING_T (260) 59 66
+    AND_T (261) 7
+    BREAK_T (262) 119
+    DO_T (263) 101 102 106 107 108
+    ELSE_T (264) 79
+    ELSEIF_T (265) 77 78
+    END_T (266) 78 79 80 81 82 83 101 102 104 106 107 108
+    FALSE_T (267) 63
+    TRUE_T (268) 64
+    FOR_T (269) 106 107 108
+    FUNCTION_T (270) 73 84
+    IF_T (271) 104 105
+    IN_T (272) 108
+    LOCAL_T (273) 109 110 111
+    NIL_T (274) 62
+    NOT_T (275) 18
+    OR_T (276) 8
+    REPEAT_T (277) 103
+    RETURN_T (278) 117 118
+    THEN_T (279) 77 78 104 105
+    UNTIL_T (280) 103
+    WHILE_T (281) 102
+    CLASS_T (282) 112
+    CONSTRUCTOR_T (283)
+    TNUMBER_T (284) 34
+    TSTRING_T (285) 35
+    TBOOLEAN_T (286) 36
+    TANY_T (287) 37
+    TARRAY_T (288) 39
+    TTABLE_T (289) 40
+    PLUS_T (290) 9
+    MINUS_T (291) 10 17
+    ASTERISK_T (292) 11
+    SLASH_T (293) 12
+    PERCENT_T (294) 14
+    EQUAL_T (295) 46 85 86 87 110
+    LEFT_PARAN_T (296) 41 55 57 58 80 81 82 83
+    RIGHT_PARAN_T (297) 41 55 57 58 80 81 82 83
+    RIGHT_SQUARE_T (298) 46 52
+    LEFT_SQUARE_T (299) 46 52
+    CARROT_T (300) 13
+    GREATER_THAN_T (301) 2 39 40
+    LESS_THAN_T (302) 1 39 40
+    SQUIGGLE_T (303)
+    COLON_T (304) 41 42 61 80 82
+    POUND_T (305) 19
+    DOT_T (306) 53
+    COMMA_T (307) 26 28 31 33 40 49 76 98 106 107
+    LEFT_BRACKET_T (308) 44 45 50 112
+    RIGHT_BRACKET_T (309) 44 45 50 112
+    DOUBLE_EQUAL_T (310) 6
+    NOT_EQUAL_T (311) 5
+    GREATER_EQUAL_T (312) 3
+    LESS_EQUAL_T (313) 4
+    CONCAT_T (314) 15
+    VARARG_T (315) 28 29 38 67
+    PLUS_EQUAL_T (316) 88
+    MINUS_EQUAL_T (317) 89
+    ASTERISK_EQUAL_T (318) 90
+    SLASH_EQUAL_T (319) 91
+    MOD_EQUAL_T (320) 92
+    CARROT_EQUAL_T (321) 93
+    CONCAT_EQUAL_T (322) 94
+    DECREMENT_T (323) 21 23
+    INCREMENT_T (324) 20 22
+
+
+Nonterminals, with rules where they appear
+
+    $accept (70)
+        on left: 0
+    binary_operation (71)
+        on left: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+        on right: 68
+    variable_name_reference (72)
+        on left: 16
+        on right: 20 21 22 23 24 56
+    unary_operation (73)
+        on left: 17 18 19 20 21 22 23 24
+        on right: 70
+    expression_list (74)
+        on left: 25 26
+        on right: 26 44 58 87 88 89 90 91 92 93 94 108 110 117
+    parameter_list (75)
+        on left: 27 28 29
+        on right: 80 81
+    name_list (76)
+        on left: 30 31
+        on right: 27 28 31 108 109 110
+    type_list (77)
+        on left: 32 33
+        on right: 33 41 80 82
+    type (78)
+        on left: 34 35 36 37 38 39 40 41
+        on right: 32 33 39 40 42
+    name_type (79)
+        on left: 42 43
+        on right: 30 31 86 95
+    array_constructor (80)
+        on left: 44 45
+        on right: 71
+    pair (81)
+        on left: 46
+        on right: 48 49
+    pair_list (82)
+        on left: 47 48 49
+        on right: 49 50
+    table_constructor (83)
+        on left: 50
+        on right: 72
+    variable (84)
+        on left: 51 52 53
+        on right: 16 75 76 85
+    prefix_expression (85)
+        on left: 54 55 56
+        on right: 52 53 60 61 69
+    arguments (86)
+        on left: 57 58 59
+        on right: 60 61
+    call (87)
+        on left: 60 61
+        on right: 54 100
+    expression (88)
+        on left: 62 63 64 65 66 67 68 69 70 71 72 73
+        on right: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17 18 19 25 26 46 52 55 77 78 85 86 102 103 104 105 106 107
+    program (89)
+        on left: 74
+        on right: 0
+    variable_list (90)
+        on left: 75 76
+        on right: 76 87 88 89 90 91 92 93 94
+    else_body (91)
+        on left: 77 78 79
+        on right: 77 105
+    function_body (92)
+        on left: 80 81 82 83
+        on right: 73 84
+    function_definition (93)
+        on left: 84
+        on right: 96 111
+    single_assignment (94)
+        on left: 85 86
+        on right: 106 107
+    assignment (95)
+        on left: 87 88 89 90 91 92 93 94
+        on right: 99
+    class_member (96)
+        on left: 95 96
+        on right: 97 98
+    class_member_list (97)
+        on left: 97 98
+        on right: 98 112
+    statement (98)
+        on left: 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113
+        on right: 115 116
+    block (99)
+        on left: 114 115 116
+        on right: 74 77 78 79 80 81 82 83 101 102 103 104 105 106 107 108 116
+    last_statement (100)
+        on left: 117 118 119
+        on right: 113
+
+
+State 0
+
+    0 $accept: • program $end
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    program                  go to state 16
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 20
+    last_statement           go to state 21
+
+
+State 1
+
+   51 variable: IDENTIFIER_T •
+
+    $default  reduce using rule 51 (variable)
+
+
+State 2
+
+  119 last_statement: BREAK_T •
+
+    $default  reduce using rule 119 (last_statement)
+
+
+State 3
+
+  101 statement: DO_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 22
+    last_statement           go to state 21
+
+
+State 4
+
+  106 statement: FOR_T • single_assignment COMMA_T expression DO_T block END_T
+  107          | FOR_T • single_assignment COMMA_T expression COMMA_T expression DO_T block END_T
+  108          | FOR_T • name_list IN_T expression_list DO_T block END_T
+
+    IDENTIFIER_T  shift, and go to state 23
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    name_list                go to state 24
+    name_type                go to state 25
+    variable                 go to state 26
+    prefix_expression        go to state 14
+    call                     go to state 27
+    single_assignment        go to state 28
+
+
+State 5
+
+  104 statement: IF_T • expression THEN_T block END_T
+  105          | IF_T • expression THEN_T block else_body
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 49
+
+
+State 6
+
+  109 statement: LOCAL_T • name_list
+  110          | LOCAL_T • name_list EQUAL_T expression_list
+  111          | LOCAL_T • function_definition
+
+    IDENTIFIER_T  shift, and go to state 50
+    FUNCTION_T    shift, and go to state 51
+
+    name_list            go to state 52
+    name_type            go to state 53
+    function_definition  go to state 54
+
+
+State 7
+
+  103 statement: REPEAT_T • block UNTIL_T expression
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 55
+    last_statement           go to state 21
+
+
+State 8
+
+  117 last_statement: RETURN_T • expression_list
+  118               | RETURN_T •
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    IDENTIFIER_T  [reduce using rule 118 (last_statement)]
+    LEFT_PARAN_T  [reduce using rule 118 (last_statement)]
+    $default      reduce using rule 118 (last_statement)
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 56
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 9
+
+  102 statement: WHILE_T • expression DO_T block END_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 58
+
+
+State 10
+
+  112 statement: CLASS_T • IDENTIFIER_T LEFT_BRACKET_T class_member_list RIGHT_BRACKET_T
+
+    IDENTIFIER_T  shift, and go to state 59
+
+
+State 11
+
+   55 prefix_expression: LEFT_PARAN_T • expression RIGHT_PARAN_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 60
+
+
+State 12
+
+   56 prefix_expression: variable_name_reference •
+
+    $default  reduce using rule 56 (prefix_expression)
+
+
+State 13
+
+   16 variable_name_reference: variable •
+   75 variable_list: variable •
+   76              | variable • COMMA_T variable_list
+
+    COMMA_T  shift, and go to state 61
+
+    STRING_T       reduce using rule 16 (variable_name_reference)
+    LEFT_PARAN_T   reduce using rule 16 (variable_name_reference)
+    LEFT_SQUARE_T  reduce using rule 16 (variable_name_reference)
+    COLON_T        reduce using rule 16 (variable_name_reference)
+    DOT_T          reduce using rule 16 (variable_name_reference)
+    $default       reduce using rule 75 (variable_list)
+
+
+State 14
+
+   52 variable: prefix_expression • LEFT_SQUARE_T expression RIGHT_SQUARE_T
+   53         | prefix_expression • DOT_T IDENTIFIER_T
+   60 call: prefix_expression • arguments
+   61     | prefix_expression • COLON_T IDENTIFIER_T arguments
+
+    STRING_T       shift, and go to state 62
+    LEFT_PARAN_T   shift, and go to state 63
+    LEFT_SQUARE_T  shift, and go to state 64
+    COLON_T        shift, and go to state 65
+    DOT_T          shift, and go to state 66
+
+    arguments  go to state 67
+
+
+State 15
+
+   54 prefix_expression: call •
+  100 statement: call •
+
+    STRING_T       reduce using rule 54 (prefix_expression)
+    LEFT_PARAN_T   reduce using rule 54 (prefix_expression)
+    LEFT_PARAN_T   [reduce using rule 100 (statement)]
+    LEFT_SQUARE_T  reduce using rule 54 (prefix_expression)
+    COLON_T        reduce using rule 54 (prefix_expression)
+    DOT_T          reduce using rule 54 (prefix_expression)
+    $default       reduce using rule 100 (statement)
+
+
+State 16
+
+    0 $accept: program • $end
+
+    $end  shift, and go to state 68
+
+
+State 17
+
+   87 assignment: variable_list • EQUAL_T expression_list
+   88           | variable_list • PLUS_EQUAL_T expression_list
+   89           | variable_list • MINUS_EQUAL_T expression_list
+   90           | variable_list • ASTERISK_EQUAL_T expression_list
+   91           | variable_list • SLASH_EQUAL_T expression_list
+   92           | variable_list • MOD_EQUAL_T expression_list
+   93           | variable_list • CARROT_EQUAL_T expression_list
+   94           | variable_list • CONCAT_EQUAL_T expression_list
+
+    EQUAL_T           shift, and go to state 69
+    PLUS_EQUAL_T      shift, and go to state 70
+    MINUS_EQUAL_T     shift, and go to state 71
+    ASTERISK_EQUAL_T  shift, and go to state 72
+    SLASH_EQUAL_T     shift, and go to state 73
+    MOD_EQUAL_T       shift, and go to state 74
+    CARROT_EQUAL_T    shift, and go to state 75
+    CONCAT_EQUAL_T    shift, and go to state 76
+
+
+State 18
+
+   99 statement: assignment •
+
+    $default  reduce using rule 99 (statement)
+
+
+State 19
+
+  115 block: statement •
+
+    $default  reduce using rule 115 (block)
+
+
+State 20
+
+   74 program: block •
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    $default  reduce using rule 74 (program)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 21
+
+  113 statement: last_statement •
+
+    $default  reduce using rule 113 (statement)
+
+
+State 22
+
+  101 statement: DO_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 78
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 23
+
+   42 name_type: IDENTIFIER_T • COLON_T type
+   43          | IDENTIFIER_T •
+   51 variable: IDENTIFIER_T •
+
+    COLON_T  shift, and go to state 79
+
+    IN_T      reduce using rule 43 (name_type)
+    EQUAL_T   reduce using rule 43 (name_type)
+    EQUAL_T   [reduce using rule 51 (variable)]
+    COLON_T   [reduce using rule 51 (variable)]
+    COMMA_T   reduce using rule 43 (name_type)
+    $default  reduce using rule 51 (variable)
+
+
+State 24
+
+  108 statement: FOR_T name_list • IN_T expression_list DO_T block END_T
+
+    IN_T  shift, and go to state 80
+
+
+State 25
+
+   30 name_list: name_type •
+   31          | name_type • COMMA_T name_list
+   86 single_assignment: name_type • EQUAL_T expression
+
+    EQUAL_T  shift, and go to state 81
+    COMMA_T  shift, and go to state 82
+
+    $default  reduce using rule 30 (name_list)
+
+
+State 26
+
+   16 variable_name_reference: variable •
+   85 single_assignment: variable • EQUAL_T expression
+
+    EQUAL_T  shift, and go to state 83
+
+    $default  reduce using rule 16 (variable_name_reference)
+
+
+State 27
+
+   54 prefix_expression: call •
+
+    $default  reduce using rule 54 (prefix_expression)
+
+
+State 28
+
+  106 statement: FOR_T single_assignment • COMMA_T expression DO_T block END_T
+  107          | FOR_T single_assignment • COMMA_T expression COMMA_T expression DO_T block END_T
+
+    COMMA_T  shift, and go to state 84
+
+
+State 29
+
+   65 expression: NUMBER_T •
+
+    $default  reduce using rule 65 (expression)
+
+
+State 30
+
+   66 expression: STRING_T •
+
+    $default  reduce using rule 66 (expression)
+
+
+State 31
+
+   63 expression: FALSE_T •
+
+    $default  reduce using rule 63 (expression)
+
+
+State 32
+
+   64 expression: TRUE_T •
+
+    $default  reduce using rule 64 (expression)
+
+
+State 33
+
+   73 expression: FUNCTION_T • function_body
+
+    LEFT_PARAN_T  shift, and go to state 85
+
+    function_body  go to state 86
+
+
+State 34
+
+   62 expression: NIL_T •
+
+    $default  reduce using rule 62 (expression)
+
+
+State 35
+
+   18 unary_operation: NOT_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 87
+
+
+State 36
+
+   17 unary_operation: MINUS_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 88
+
+
+State 37
+
+   19 unary_operation: POUND_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 89
+
+
+State 38
+
+   44 array_constructor: LEFT_BRACKET_T • expression_list RIGHT_BRACKET_T
+   45                  | LEFT_BRACKET_T • RIGHT_BRACKET_T
+   50 table_constructor: LEFT_BRACKET_T • pair_list RIGHT_BRACKET_T
+
+    IDENTIFIER_T     shift, and go to state 1
+    NUMBER_T         shift, and go to state 29
+    STRING_T         shift, and go to state 30
+    FALSE_T          shift, and go to state 31
+    TRUE_T           shift, and go to state 32
+    FUNCTION_T       shift, and go to state 33
+    NIL_T            shift, and go to state 34
+    NOT_T            shift, and go to state 35
+    MINUS_T          shift, and go to state 36
+    LEFT_PARAN_T     shift, and go to state 11
+    LEFT_SQUARE_T    shift, and go to state 90
+    POUND_T          shift, and go to state 37
+    LEFT_BRACKET_T   shift, and go to state 38
+    RIGHT_BRACKET_T  shift, and go to state 91
+    VARARG_T         shift, and go to state 39
+    DECREMENT_T      shift, and go to state 40
+    INCREMENT_T      shift, and go to state 41
+
+    RIGHT_BRACKET_T  [reduce using rule 47 (pair_list)]
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 92
+    array_constructor        go to state 45
+    pair                     go to state 93
+    pair_list                go to state 94
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 39
+
+   67 expression: VARARG_T •
+
+    $default  reduce using rule 67 (expression)
+
+
+State 40
+
+   21 unary_operation: DECREMENT_T • variable_name_reference
+
+    IDENTIFIER_T  shift, and go to state 1
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 95
+    variable                 go to state 47
+    prefix_expression        go to state 14
+    call                     go to state 27
+
+
+State 41
+
+   20 unary_operation: INCREMENT_T • variable_name_reference
+
+    IDENTIFIER_T  shift, and go to state 1
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 96
+    variable                 go to state 47
+    prefix_expression        go to state 14
+    call                     go to state 27
+
+
+State 42
+
+   68 expression: binary_operation •
+
+    $default  reduce using rule 68 (expression)
+
+
+State 43
+
+   22 unary_operation: variable_name_reference • INCREMENT_T
+   23                | variable_name_reference • DECREMENT_T
+   24                | variable_name_reference •
+   56 prefix_expression: variable_name_reference •
+
+    DECREMENT_T  shift, and go to state 97
+    INCREMENT_T  shift, and go to state 98
+
+    $end             reduce using rule 24 (unary_operation)
+    $end             [reduce using rule 56 (prefix_expression)]
+    IDENTIFIER_T     reduce using rule 24 (unary_operation)
+    IDENTIFIER_T     [reduce using rule 56 (prefix_expression)]
+    STRING_T         reduce using rule 56 (prefix_expression)
+    AND_T            reduce using rule 24 (unary_operation)
+    AND_T            [reduce using rule 56 (prefix_expression)]
+    BREAK_T          reduce using rule 24 (unary_operation)
+    BREAK_T          [reduce using rule 56 (prefix_expression)]
+    DO_T             reduce using rule 24 (unary_operation)
+    DO_T             [reduce using rule 56 (prefix_expression)]
+    ELSE_T           reduce using rule 24 (unary_operation)
+    ELSE_T           [reduce using rule 56 (prefix_expression)]
+    ELSEIF_T         reduce using rule 24 (unary_operation)
+    ELSEIF_T         [reduce using rule 56 (prefix_expression)]
+    END_T            reduce using rule 24 (unary_operation)
+    END_T            [reduce using rule 56 (prefix_expression)]
+    FOR_T            reduce using rule 24 (unary_operation)
+    FOR_T            [reduce using rule 56 (prefix_expression)]
+    IF_T             reduce using rule 24 (unary_operation)
+    IF_T             [reduce using rule 56 (prefix_expression)]
+    LOCAL_T          reduce using rule 24 (unary_operation)
+    LOCAL_T          [reduce using rule 56 (prefix_expression)]
+    OR_T             reduce using rule 24 (unary_operation)
+    OR_T             [reduce using rule 56 (prefix_expression)]
+    REPEAT_T         reduce using rule 24 (unary_operation)
+    REPEAT_T         [reduce using rule 56 (prefix_expression)]
+    RETURN_T         reduce using rule 24 (unary_operation)
+    RETURN_T         [reduce using rule 56 (prefix_expression)]
+    THEN_T           reduce using rule 24 (unary_operation)
+    THEN_T           [reduce using rule 56 (prefix_expression)]
+    UNTIL_T          reduce using rule 24 (unary_operation)
+    UNTIL_T          [reduce using rule 56 (prefix_expression)]
+    WHILE_T          reduce using rule 24 (unary_operation)
+    WHILE_T          [reduce using rule 56 (prefix_expression)]
+    CLASS_T          reduce using rule 24 (unary_operation)
+    CLASS_T          [reduce using rule 56 (prefix_expression)]
+    PLUS_T           reduce using rule 24 (unary_operation)
+    PLUS_T           [reduce using rule 56 (prefix_expression)]
+    MINUS_T          reduce using rule 24 (unary_operation)
+    MINUS_T          [reduce using rule 56 (prefix_expression)]
+    ASTERISK_T       reduce using rule 24 (unary_operation)
+    ASTERISK_T       [reduce using rule 56 (prefix_expression)]
+    SLASH_T          reduce using rule 24 (unary_operation)
+    SLASH_T          [reduce using rule 56 (prefix_expression)]
+    PERCENT_T        reduce using rule 24 (unary_operation)
+    PERCENT_T        [reduce using rule 56 (prefix_expression)]
+    LEFT_PARAN_T     reduce using rule 24 (unary_operation)
+    LEFT_PARAN_T     [reduce using rule 56 (prefix_expression)]
+    RIGHT_PARAN_T    reduce using rule 24 (unary_operation)
+    RIGHT_PARAN_T    [reduce using rule 56 (prefix_expression)]
+    RIGHT_SQUARE_T   reduce using rule 24 (unary_operation)
+    RIGHT_SQUARE_T   [reduce using rule 56 (prefix_expression)]
+    LEFT_SQUARE_T    reduce using rule 56 (prefix_expression)
+    CARROT_T         reduce using rule 24 (unary_operation)
+    CARROT_T         [reduce using rule 56 (prefix_expression)]
+    GREATER_THAN_T   reduce using rule 24 (unary_operation)
+    GREATER_THAN_T   [reduce using rule 56 (prefix_expression)]
+    LESS_THAN_T      reduce using rule 24 (unary_operation)
+    LESS_THAN_T      [reduce using rule 56 (prefix_expression)]
+    COLON_T          reduce using rule 56 (prefix_expression)
+    DOT_T            reduce using rule 56 (prefix_expression)
+    COMMA_T          reduce using rule 24 (unary_operation)
+    COMMA_T          [reduce using rule 56 (prefix_expression)]
+    RIGHT_BRACKET_T  reduce using rule 24 (unary_operation)
+    RIGHT_BRACKET_T  [reduce using rule 56 (prefix_expression)]
+    DOUBLE_EQUAL_T   reduce using rule 24 (unary_operation)
+    DOUBLE_EQUAL_T   [reduce using rule 56 (prefix_expression)]
+    NOT_EQUAL_T      reduce using rule 24 (unary_operation)
+    NOT_EQUAL_T      [reduce using rule 56 (prefix_expression)]
+    GREATER_EQUAL_T  reduce using rule 24 (unary_operation)
+    GREATER_EQUAL_T  [reduce using rule 56 (prefix_expression)]
+    LESS_EQUAL_T     reduce using rule 24 (unary_operation)
+    LESS_EQUAL_T     [reduce using rule 56 (prefix_expression)]
+    CONCAT_T         reduce using rule 24 (unary_operation)
+    CONCAT_T         [reduce using rule 56 (prefix_expression)]
+    $default         reduce using rule 24 (unary_operation)
+
+
+State 44
+
+   70 expression: unary_operation •
+
+    $default  reduce using rule 70 (expression)
+
+
+State 45
+
+   71 expression: array_constructor •
+
+    $default  reduce using rule 71 (expression)
+
+
+State 46
+
+   72 expression: table_constructor •
+
+    $default  reduce using rule 72 (expression)
+
+
+State 47
+
+   16 variable_name_reference: variable •
+
+    $default  reduce using rule 16 (variable_name_reference)
+
+
+State 48
+
+   52 variable: prefix_expression • LEFT_SQUARE_T expression RIGHT_SQUARE_T
+   53         | prefix_expression • DOT_T IDENTIFIER_T
+   60 call: prefix_expression • arguments
+   61     | prefix_expression • COLON_T IDENTIFIER_T arguments
+   69 expression: prefix_expression •
+
+    STRING_T       shift, and go to state 62
+    LEFT_PARAN_T   shift, and go to state 63
+    LEFT_SQUARE_T  shift, and go to state 64
+    COLON_T        shift, and go to state 65
+    DOT_T          shift, and go to state 66
+
+    LEFT_PARAN_T  [reduce using rule 69 (expression)]
+    $default      reduce using rule 69 (expression)
+
+    arguments  go to state 67
+
+
+State 49
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+  104 statement: IF_T expression • THEN_T block END_T
+  105          | IF_T expression • THEN_T block else_body
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    THEN_T           shift, and go to state 101
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 50
+
+   42 name_type: IDENTIFIER_T • COLON_T type
+   43          | IDENTIFIER_T •
+
+    COLON_T  shift, and go to state 79
+
+    $default  reduce using rule 43 (name_type)
+
+
+State 51
+
+   84 function_definition: FUNCTION_T • IDENTIFIER_T function_body
+
+    IDENTIFIER_T  shift, and go to state 115
+
+
+State 52
+
+  109 statement: LOCAL_T name_list •
+  110          | LOCAL_T name_list • EQUAL_T expression_list
+
+    EQUAL_T  shift, and go to state 116
+
+    $default  reduce using rule 109 (statement)
+
+
+State 53
+
+   30 name_list: name_type •
+   31          | name_type • COMMA_T name_list
+
+    COMMA_T  shift, and go to state 82
+
+    COMMA_T   [reduce using rule 30 (name_list)]
+    $default  reduce using rule 30 (name_list)
+
+
+State 54
+
+  111 statement: LOCAL_T function_definition •
+
+    $default  reduce using rule 111 (statement)
+
+
+State 55
+
+  103 statement: REPEAT_T block • UNTIL_T expression
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    UNTIL_T       shift, and go to state 117
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 56
+
+  117 last_statement: RETURN_T expression_list •
+
+    $default  reduce using rule 117 (last_statement)
+
+
+State 57
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   25 expression_list: expression •
+   26                | expression • COMMA_T expression_list
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    COMMA_T          shift, and go to state 118
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    $default  reduce using rule 25 (expression_list)
+
+
+State 58
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+  102 statement: WHILE_T expression • DO_T block END_T
+
+    AND_T            shift, and go to state 99
+    DO_T             shift, and go to state 119
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 59
+
+  112 statement: CLASS_T IDENTIFIER_T • LEFT_BRACKET_T class_member_list RIGHT_BRACKET_T
+
+    LEFT_BRACKET_T  shift, and go to state 120
+
+
+State 60
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   55 prefix_expression: LEFT_PARAN_T expression • RIGHT_PARAN_T
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    RIGHT_PARAN_T    shift, and go to state 121
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 61
+
+   76 variable_list: variable COMMA_T • variable_list
+
+    IDENTIFIER_T  shift, and go to state 1
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 27
+    variable_list            go to state 122
+
+
+State 62
+
+   59 arguments: STRING_T •
+
+    $default  reduce using rule 59 (arguments)
+
+
+State 63
+
+   57 arguments: LEFT_PARAN_T • RIGHT_PARAN_T
+   58          | LEFT_PARAN_T • expression_list RIGHT_PARAN_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    RIGHT_PARAN_T   shift, and go to state 123
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 124
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 64
+
+   52 variable: prefix_expression LEFT_SQUARE_T • expression RIGHT_SQUARE_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 125
+
+
+State 65
+
+   61 call: prefix_expression COLON_T • IDENTIFIER_T arguments
+
+    IDENTIFIER_T  shift, and go to state 126
+
+
+State 66
+
+   53 variable: prefix_expression DOT_T • IDENTIFIER_T
+
+    IDENTIFIER_T  shift, and go to state 127
+
+
+State 67
+
+   60 call: prefix_expression arguments •
+
+    $default  reduce using rule 60 (call)
+
+
+State 68
+
+    0 $accept: program $end •
+
+    $default  accept
+
+
+State 69
+
+   87 assignment: variable_list EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 128
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 70
+
+   88 assignment: variable_list PLUS_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 129
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 71
+
+   89 assignment: variable_list MINUS_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 130
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 72
+
+   90 assignment: variable_list ASTERISK_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 131
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 73
+
+   91 assignment: variable_list SLASH_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 132
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 74
+
+   92 assignment: variable_list MOD_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 133
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 75
+
+   93 assignment: variable_list CARROT_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 134
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 76
+
+   94 assignment: variable_list CONCAT_EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 135
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 77
+
+  116 block: block statement •
+
+    $default  reduce using rule 116 (block)
+
+
+State 78
+
+  101 statement: DO_T block END_T •
+
+    $default  reduce using rule 101 (statement)
+
+
+State 79
+
+   42 name_type: IDENTIFIER_T COLON_T • type
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type  go to state 144
+
+
+State 80
+
+  108 statement: FOR_T name_list IN_T • expression_list DO_T block END_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 145
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 81
+
+   86 single_assignment: name_type EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 146
+
+
+State 82
+
+   31 name_list: name_type COMMA_T • name_list
+
+    IDENTIFIER_T  shift, and go to state 50
+
+    name_list  go to state 147
+    name_type  go to state 53
+
+
+State 83
+
+   85 single_assignment: variable EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 148
+
+
+State 84
+
+  106 statement: FOR_T single_assignment COMMA_T • expression DO_T block END_T
+  107          | FOR_T single_assignment COMMA_T • expression COMMA_T expression DO_T block END_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 149
+
+
+State 85
+
+   80 function_body: LEFT_PARAN_T • parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
+   81              | LEFT_PARAN_T • parameter_list RIGHT_PARAN_T block END_T
+   82              | LEFT_PARAN_T • RIGHT_PARAN_T COLON_T type_list block END_T
+   83              | LEFT_PARAN_T • RIGHT_PARAN_T block END_T
+
+    IDENTIFIER_T   shift, and go to state 50
+    RIGHT_PARAN_T  shift, and go to state 150
+    VARARG_T       shift, and go to state 151
+
+    parameter_list  go to state 152
+    name_list       go to state 153
+    name_type       go to state 53
+
+
+State 86
+
+   73 expression: FUNCTION_T function_body •
+
+    $default  reduce using rule 73 (expression)
+
+
+State 87
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   18 unary_operation: NOT_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    AND_T            [reduce using rule 18 (unary_operation)]
+    OR_T             [reduce using rule 18 (unary_operation)]
+    PLUS_T           [reduce using rule 18 (unary_operation)]
+    MINUS_T          [reduce using rule 18 (unary_operation)]
+    ASTERISK_T       [reduce using rule 18 (unary_operation)]
+    SLASH_T          [reduce using rule 18 (unary_operation)]
+    PERCENT_T        [reduce using rule 18 (unary_operation)]
+    CARROT_T         [reduce using rule 18 (unary_operation)]
+    GREATER_THAN_T   [reduce using rule 18 (unary_operation)]
+    LESS_THAN_T      [reduce using rule 18 (unary_operation)]
+    DOUBLE_EQUAL_T   [reduce using rule 18 (unary_operation)]
+    NOT_EQUAL_T      [reduce using rule 18 (unary_operation)]
+    GREATER_EQUAL_T  [reduce using rule 18 (unary_operation)]
+    LESS_EQUAL_T     [reduce using rule 18 (unary_operation)]
+    CONCAT_T         [reduce using rule 18 (unary_operation)]
+    $default         reduce using rule 18 (unary_operation)
+
+
+State 88
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   17 unary_operation: MINUS_T expression •
+
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 17 (unary_operation)]
+    $default  reduce using rule 17 (unary_operation)
+
+
+State 89
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   19 unary_operation: POUND_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    AND_T            [reduce using rule 19 (unary_operation)]
+    OR_T             [reduce using rule 19 (unary_operation)]
+    PLUS_T           [reduce using rule 19 (unary_operation)]
+    MINUS_T          [reduce using rule 19 (unary_operation)]
+    ASTERISK_T       [reduce using rule 19 (unary_operation)]
+    SLASH_T          [reduce using rule 19 (unary_operation)]
+    PERCENT_T        [reduce using rule 19 (unary_operation)]
+    CARROT_T         [reduce using rule 19 (unary_operation)]
+    GREATER_THAN_T   [reduce using rule 19 (unary_operation)]
+    LESS_THAN_T      [reduce using rule 19 (unary_operation)]
+    DOUBLE_EQUAL_T   [reduce using rule 19 (unary_operation)]
+    NOT_EQUAL_T      [reduce using rule 19 (unary_operation)]
+    GREATER_EQUAL_T  [reduce using rule 19 (unary_operation)]
+    LESS_EQUAL_T     [reduce using rule 19 (unary_operation)]
+    CONCAT_T         [reduce using rule 19 (unary_operation)]
+    $default         reduce using rule 19 (unary_operation)
+
+
+State 90
+
+   46 pair: LEFT_SQUARE_T • expression RIGHT_SQUARE_T EQUAL_T expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 154
+
+
+State 91
+
+   45 array_constructor: LEFT_BRACKET_T RIGHT_BRACKET_T •
+
+    $default  reduce using rule 45 (array_constructor)
+
+
+State 92
+
+   44 array_constructor: LEFT_BRACKET_T expression_list • RIGHT_BRACKET_T
+
+    RIGHT_BRACKET_T  shift, and go to state 155
+
+
+State 93
+
+   48 pair_list: pair •
+   49          | pair • COMMA_T pair_list
+
+    COMMA_T  shift, and go to state 156
+
+    $default  reduce using rule 48 (pair_list)
+
+
+State 94
+
+   50 table_constructor: LEFT_BRACKET_T pair_list • RIGHT_BRACKET_T
+
+    RIGHT_BRACKET_T  shift, and go to state 157
+
+
+State 95
+
+   21 unary_operation: DECREMENT_T variable_name_reference •
+   56 prefix_expression: variable_name_reference •
+
+    STRING_T       reduce using rule 56 (prefix_expression)
+    LEFT_PARAN_T   reduce using rule 21 (unary_operation)
+    LEFT_PARAN_T   [reduce using rule 56 (prefix_expression)]
+    LEFT_SQUARE_T  reduce using rule 56 (prefix_expression)
+    COLON_T        reduce using rule 56 (prefix_expression)
+    DOT_T          reduce using rule 56 (prefix_expression)
+    $default       reduce using rule 21 (unary_operation)
+
+
+State 96
+
+   20 unary_operation: INCREMENT_T variable_name_reference •
+   56 prefix_expression: variable_name_reference •
+
+    STRING_T       reduce using rule 56 (prefix_expression)
+    LEFT_PARAN_T   reduce using rule 20 (unary_operation)
+    LEFT_PARAN_T   [reduce using rule 56 (prefix_expression)]
+    LEFT_SQUARE_T  reduce using rule 56 (prefix_expression)
+    COLON_T        reduce using rule 56 (prefix_expression)
+    DOT_T          reduce using rule 56 (prefix_expression)
+    $default       reduce using rule 20 (unary_operation)
+
+
+State 97
+
+   23 unary_operation: variable_name_reference DECREMENT_T •
+
+    $default  reduce using rule 23 (unary_operation)
+
+
+State 98
+
+   22 unary_operation: variable_name_reference INCREMENT_T •
+
+    $default  reduce using rule 22 (unary_operation)
+
+
+State 99
+
+    7 binary_operation: expression AND_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 158
+
+
+State 100
+
+    8 binary_operation: expression OR_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 159
+
+
+State 101
+
+  104 statement: IF_T expression THEN_T • block END_T
+  105          | IF_T expression THEN_T • block else_body
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 160
+    last_statement           go to state 21
+
+
+State 102
+
+    9 binary_operation: expression PLUS_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 161
+
+
+State 103
+
+   10 binary_operation: expression MINUS_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 162
+
+
+State 104
+
+   11 binary_operation: expression ASTERISK_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 163
+
+
+State 105
+
+   12 binary_operation: expression SLASH_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 164
+
+
+State 106
+
+   14 binary_operation: expression PERCENT_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 165
+
+
+State 107
+
+   13 binary_operation: expression CARROT_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 166
+
+
+State 108
+
+    2 binary_operation: expression GREATER_THAN_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 167
+
+
+State 109
+
+    1 binary_operation: expression LESS_THAN_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 168
+
+
+State 110
+
+    6 binary_operation: expression DOUBLE_EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 169
+
+
+State 111
+
+    5 binary_operation: expression NOT_EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 170
+
+
+State 112
+
+    3 binary_operation: expression GREATER_EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 171
+
+
+State 113
+
+    4 binary_operation: expression LESS_EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 172
+
+
+State 114
+
+   15 binary_operation: expression CONCAT_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 173
+
+
+State 115
+
+   84 function_definition: FUNCTION_T IDENTIFIER_T • function_body
+
+    LEFT_PARAN_T  shift, and go to state 85
+
+    function_body  go to state 174
+
+
+State 116
+
+  110 statement: LOCAL_T name_list EQUAL_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 175
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 117
+
+  103 statement: REPEAT_T block UNTIL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 176
+
+
+State 118
+
+   26 expression_list: expression COMMA_T • expression_list
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    expression_list          go to state 177
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 57
+
+
+State 119
+
+  102 statement: WHILE_T expression DO_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 178
+    last_statement           go to state 21
+
+
+State 120
+
+  112 statement: CLASS_T IDENTIFIER_T LEFT_BRACKET_T • class_member_list RIGHT_BRACKET_T
+
+    IDENTIFIER_T  shift, and go to state 50
+    FUNCTION_T    shift, and go to state 51
+
+    name_type            go to state 179
+    function_definition  go to state 180
+    class_member         go to state 181
+    class_member_list    go to state 182
+
+
+State 121
+
+   55 prefix_expression: LEFT_PARAN_T expression RIGHT_PARAN_T •
+
+    $default  reduce using rule 55 (prefix_expression)
+
+
+State 122
+
+   76 variable_list: variable COMMA_T variable_list •
+
+    $default  reduce using rule 76 (variable_list)
+
+
+State 123
+
+   57 arguments: LEFT_PARAN_T RIGHT_PARAN_T •
+
+    $default  reduce using rule 57 (arguments)
+
+
+State 124
+
+   58 arguments: LEFT_PARAN_T expression_list • RIGHT_PARAN_T
+
+    RIGHT_PARAN_T  shift, and go to state 183
+
+
+State 125
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   52 variable: prefix_expression LEFT_SQUARE_T expression • RIGHT_SQUARE_T
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    RIGHT_SQUARE_T   shift, and go to state 184
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 126
+
+   61 call: prefix_expression COLON_T IDENTIFIER_T • arguments
+
+    STRING_T      shift, and go to state 62
+    LEFT_PARAN_T  shift, and go to state 63
+
+    arguments  go to state 185
+
+
+State 127
+
+   53 variable: prefix_expression DOT_T IDENTIFIER_T •
+
+    $default  reduce using rule 53 (variable)
+
+
+State 128
+
+   87 assignment: variable_list EQUAL_T expression_list •
+
+    $default  reduce using rule 87 (assignment)
+
+
+State 129
+
+   88 assignment: variable_list PLUS_EQUAL_T expression_list •
+
+    $default  reduce using rule 88 (assignment)
+
+
+State 130
+
+   89 assignment: variable_list MINUS_EQUAL_T expression_list •
+
+    $default  reduce using rule 89 (assignment)
+
+
+State 131
+
+   90 assignment: variable_list ASTERISK_EQUAL_T expression_list •
+
+    $default  reduce using rule 90 (assignment)
+
+
+State 132
+
+   91 assignment: variable_list SLASH_EQUAL_T expression_list •
+
+    $default  reduce using rule 91 (assignment)
+
+
+State 133
+
+   92 assignment: variable_list MOD_EQUAL_T expression_list •
+
+    $default  reduce using rule 92 (assignment)
+
+
+State 134
+
+   93 assignment: variable_list CARROT_EQUAL_T expression_list •
+
+    $default  reduce using rule 93 (assignment)
+
+
+State 135
+
+   94 assignment: variable_list CONCAT_EQUAL_T expression_list •
+
+    $default  reduce using rule 94 (assignment)
+
+
+State 136
+
+   34 type: TNUMBER_T •
+
+    $default  reduce using rule 34 (type)
+
+
+State 137
+
+   35 type: TSTRING_T •
+
+    $default  reduce using rule 35 (type)
+
+
+State 138
+
+   36 type: TBOOLEAN_T •
+
+    $default  reduce using rule 36 (type)
+
+
+State 139
+
+   37 type: TANY_T •
+
+    $default  reduce using rule 37 (type)
+
+
+State 140
+
+   39 type: TARRAY_T • LESS_THAN_T type GREATER_THAN_T
+
+    LESS_THAN_T  shift, and go to state 186
+
+
+State 141
+
+   40 type: TTABLE_T • LESS_THAN_T type COMMA_T type GREATER_THAN_T
+
+    LESS_THAN_T  shift, and go to state 187
+
+
+State 142
+
+   41 type: LEFT_PARAN_T • type_list RIGHT_PARAN_T COLON_T type_list
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type_list  go to state 188
+    type       go to state 189
+
+
+State 143
+
+   38 type: VARARG_T •
+
+    $default  reduce using rule 38 (type)
+
+
+State 144
+
+   42 name_type: IDENTIFIER_T COLON_T type •
+
+    $default  reduce using rule 42 (name_type)
+
+
+State 145
+
+  108 statement: FOR_T name_list IN_T expression_list • DO_T block END_T
+
+    DO_T  shift, and go to state 190
+
+
+State 146
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   86 single_assignment: name_type EQUAL_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    $default  reduce using rule 86 (single_assignment)
+
+
+State 147
+
+   31 name_list: name_type COMMA_T name_list •
+
+    $default  reduce using rule 31 (name_list)
+
+
+State 148
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   85 single_assignment: variable EQUAL_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    $default  reduce using rule 85 (single_assignment)
+
+
+State 149
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+  106 statement: FOR_T single_assignment COMMA_T expression • DO_T block END_T
+  107          | FOR_T single_assignment COMMA_T expression • COMMA_T expression DO_T block END_T
+
+    AND_T            shift, and go to state 99
+    DO_T             shift, and go to state 191
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    COMMA_T          shift, and go to state 192
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 150
+
+   82 function_body: LEFT_PARAN_T RIGHT_PARAN_T • COLON_T type_list block END_T
+   83              | LEFT_PARAN_T RIGHT_PARAN_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+    COLON_T       shift, and go to state 193
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 194
+    last_statement           go to state 21
+
+
+State 151
+
+   29 parameter_list: VARARG_T •
+
+    $default  reduce using rule 29 (parameter_list)
+
+
+State 152
+
+   80 function_body: LEFT_PARAN_T parameter_list • RIGHT_PARAN_T COLON_T type_list block END_T
+   81              | LEFT_PARAN_T parameter_list • RIGHT_PARAN_T block END_T
+
+    RIGHT_PARAN_T  shift, and go to state 195
+
+
+State 153
+
+   27 parameter_list: name_list •
+   28               | name_list • COMMA_T VARARG_T
+
+    COMMA_T  shift, and go to state 196
+
+    $default  reduce using rule 27 (parameter_list)
+
+
+State 154
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   46 pair: LEFT_SQUARE_T expression • RIGHT_SQUARE_T EQUAL_T expression
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    RIGHT_SQUARE_T   shift, and go to state 197
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 155
+
+   44 array_constructor: LEFT_BRACKET_T expression_list RIGHT_BRACKET_T •
+
+    $default  reduce using rule 44 (array_constructor)
+
+
+State 156
+
+   49 pair_list: pair COMMA_T • pair_list
+
+    LEFT_SQUARE_T  shift, and go to state 90
+
+    $default  reduce using rule 47 (pair_list)
+
+    pair       go to state 93
+    pair_list  go to state 198
+
+
+State 157
+
+   50 table_constructor: LEFT_BRACKET_T pair_list RIGHT_BRACKET_T •
+
+    $default  reduce using rule 50 (table_constructor)
+
+
+State 158
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    7                 | expression AND_T expression •
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 7 (binary_operation)]
+    $default  reduce using rule 7 (binary_operation)
+
+
+State 159
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    8                 | expression OR_T expression •
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 8 (binary_operation)]
+    $default  reduce using rule 8 (binary_operation)
+
+
+State 160
+
+  104 statement: IF_T expression THEN_T block • END_T
+  105          | IF_T expression THEN_T block • else_body
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    ELSE_T        shift, and go to state 199
+    ELSEIF_T      shift, and go to state 200
+    END_T         shift, and go to state 201
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    else_body                go to state 202
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 161
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+    9                 | expression PLUS_T expression •
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 9 (binary_operation)]
+    $default  reduce using rule 9 (binary_operation)
+
+
+State 162
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   10                 | expression MINUS_T expression •
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 10 (binary_operation)]
+    $default  reduce using rule 10 (binary_operation)
+
+
+State 163
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   11                 | expression ASTERISK_T expression •
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PERCENT_T  shift, and go to state 106
+    CARROT_T   shift, and go to state 107
+    CONCAT_T   shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 11 (binary_operation)]
+    $default  reduce using rule 11 (binary_operation)
+
+
+State 164
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   12                 | expression SLASH_T expression •
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PERCENT_T  shift, and go to state 106
+    CARROT_T   shift, and go to state 107
+    CONCAT_T   shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 12 (binary_operation)]
+    $default  reduce using rule 12 (binary_operation)
+
+
+State 165
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   14                 | expression PERCENT_T expression •
+   15                 | expression • CONCAT_T expression
+
+    CONCAT_T  shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 14 (binary_operation)]
+    $default  reduce using rule 14 (binary_operation)
+
+
+State 166
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   13                 | expression CARROT_T expression •
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    CONCAT_T  shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 13 (binary_operation)]
+    $default  reduce using rule 13 (binary_operation)
+
+
+State 167
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    2                 | expression GREATER_THAN_T expression •
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 2 (binary_operation)]
+    $default  reduce using rule 2 (binary_operation)
+
+
+State 168
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    1                 | expression LESS_THAN_T expression •
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 1 (binary_operation)]
+    $default  reduce using rule 1 (binary_operation)
+
+
+State 169
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    6                 | expression DOUBLE_EQUAL_T expression •
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 6 (binary_operation)]
+    $default  reduce using rule 6 (binary_operation)
+
+
+State 170
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    5                 | expression NOT_EQUAL_T expression •
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 5 (binary_operation)]
+    $default  reduce using rule 5 (binary_operation)
+
+
+State 171
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    3                 | expression GREATER_EQUAL_T expression •
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 3 (binary_operation)]
+    $default  reduce using rule 3 (binary_operation)
+
+
+State 172
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    4                 | expression LESS_EQUAL_T expression •
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+
+    PLUS_T      shift, and go to state 102
+    MINUS_T     shift, and go to state 103
+    ASTERISK_T  shift, and go to state 104
+    SLASH_T     shift, and go to state 105
+    PERCENT_T   shift, and go to state 106
+    CARROT_T    shift, and go to state 107
+    CONCAT_T    shift, and go to state 114
+
+    CONCAT_T  [reduce using rule 4 (binary_operation)]
+    $default  reduce using rule 4 (binary_operation)
+
+
+State 173
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   15                 | expression CONCAT_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    AND_T            [reduce using rule 15 (binary_operation)]
+    OR_T             [reduce using rule 15 (binary_operation)]
+    PLUS_T           [reduce using rule 15 (binary_operation)]
+    MINUS_T          [reduce using rule 15 (binary_operation)]
+    ASTERISK_T       [reduce using rule 15 (binary_operation)]
+    SLASH_T          [reduce using rule 15 (binary_operation)]
+    PERCENT_T        [reduce using rule 15 (binary_operation)]
+    CARROT_T         [reduce using rule 15 (binary_operation)]
+    GREATER_THAN_T   [reduce using rule 15 (binary_operation)]
+    LESS_THAN_T      [reduce using rule 15 (binary_operation)]
+    DOUBLE_EQUAL_T   [reduce using rule 15 (binary_operation)]
+    NOT_EQUAL_T      [reduce using rule 15 (binary_operation)]
+    GREATER_EQUAL_T  [reduce using rule 15 (binary_operation)]
+    LESS_EQUAL_T     [reduce using rule 15 (binary_operation)]
+    CONCAT_T         [reduce using rule 15 (binary_operation)]
+    $default         reduce using rule 15 (binary_operation)
+
+
+State 174
+
+   84 function_definition: FUNCTION_T IDENTIFIER_T function_body •
+
+    $default  reduce using rule 84 (function_definition)
+
+
+State 175
+
+  110 statement: LOCAL_T name_list EQUAL_T expression_list •
+
+    $default  reduce using rule 110 (statement)
+
+
+State 176
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+  103 statement: REPEAT_T block UNTIL_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    $default  reduce using rule 103 (statement)
+
+
+State 177
+
+   26 expression_list: expression COMMA_T expression_list •
+
+    $default  reduce using rule 26 (expression_list)
+
+
+State 178
+
+  102 statement: WHILE_T expression DO_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 203
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 179
+
+   95 class_member: name_type •
+
+    $default  reduce using rule 95 (class_member)
+
+
+State 180
+
+   96 class_member: function_definition •
+
+    $default  reduce using rule 96 (class_member)
+
+
+State 181
+
+   97 class_member_list: class_member •
+   98                  | class_member • COMMA_T class_member_list
+
+    COMMA_T  shift, and go to state 204
+
+    $default  reduce using rule 97 (class_member_list)
+
+
+State 182
+
+  112 statement: CLASS_T IDENTIFIER_T LEFT_BRACKET_T class_member_list • RIGHT_BRACKET_T
+
+    RIGHT_BRACKET_T  shift, and go to state 205
+
+
+State 183
+
+   58 arguments: LEFT_PARAN_T expression_list RIGHT_PARAN_T •
+
+    $default  reduce using rule 58 (arguments)
+
+
+State 184
+
+   52 variable: prefix_expression LEFT_SQUARE_T expression RIGHT_SQUARE_T •
+
+    $default  reduce using rule 52 (variable)
+
+
+State 185
+
+   61 call: prefix_expression COLON_T IDENTIFIER_T arguments •
+
+    $default  reduce using rule 61 (call)
+
+
+State 186
+
+   39 type: TARRAY_T LESS_THAN_T • type GREATER_THAN_T
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type  go to state 206
+
+
+State 187
+
+   40 type: TTABLE_T LESS_THAN_T • type COMMA_T type GREATER_THAN_T
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type  go to state 207
+
+
+State 188
+
+   41 type: LEFT_PARAN_T type_list • RIGHT_PARAN_T COLON_T type_list
+
+    RIGHT_PARAN_T  shift, and go to state 208
+
+
+State 189
+
+   32 type_list: type •
+   33          | type • COMMA_T type_list
+
+    COMMA_T  shift, and go to state 209
+
+    COMMA_T   [reduce using rule 32 (type_list)]
+    $default  reduce using rule 32 (type_list)
+
+
+State 190
+
+  108 statement: FOR_T name_list IN_T expression_list DO_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 210
+    last_statement           go to state 21
+
+
+State 191
+
+  106 statement: FOR_T single_assignment COMMA_T expression DO_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 211
+    last_statement           go to state 21
+
+
+State 192
+
+  107 statement: FOR_T single_assignment COMMA_T expression COMMA_T • expression DO_T block END_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 212
+
+
+State 193
+
+   82 function_body: LEFT_PARAN_T RIGHT_PARAN_T COLON_T • type_list block END_T
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type_list  go to state 213
+    type       go to state 189
+
+
+State 194
+
+   83 function_body: LEFT_PARAN_T RIGHT_PARAN_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 214
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 195
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T • COLON_T type_list block END_T
+   81              | LEFT_PARAN_T parameter_list RIGHT_PARAN_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+    COLON_T       shift, and go to state 215
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 216
+    last_statement           go to state 21
+
+
+State 196
+
+   28 parameter_list: name_list COMMA_T • VARARG_T
+
+    VARARG_T  shift, and go to state 217
+
+
+State 197
+
+   46 pair: LEFT_SQUARE_T expression RIGHT_SQUARE_T • EQUAL_T expression
+
+    EQUAL_T  shift, and go to state 218
+
+
+State 198
+
+   49 pair_list: pair COMMA_T pair_list •
+
+    $default  reduce using rule 49 (pair_list)
+
+
+State 199
+
+   79 else_body: ELSE_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 219
+    last_statement           go to state 21
+
+
+State 200
+
+   77 else_body: ELSEIF_T • expression THEN_T block else_body
+   78          | ELSEIF_T • expression THEN_T block END_T
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 220
+
+
+State 201
+
+  104 statement: IF_T expression THEN_T block END_T •
+
+    $default  reduce using rule 104 (statement)
+
+
+State 202
+
+  105 statement: IF_T expression THEN_T block else_body •
+
+    $default  reduce using rule 105 (statement)
+
+
+State 203
+
+  102 statement: WHILE_T expression DO_T block END_T •
+
+    $default  reduce using rule 102 (statement)
+
+
+State 204
+
+   98 class_member_list: class_member COMMA_T • class_member_list
+
+    IDENTIFIER_T  shift, and go to state 50
+    FUNCTION_T    shift, and go to state 51
+
+    name_type            go to state 179
+    function_definition  go to state 180
+    class_member         go to state 181
+    class_member_list    go to state 221
+
+
+State 205
+
+  112 statement: CLASS_T IDENTIFIER_T LEFT_BRACKET_T class_member_list RIGHT_BRACKET_T •
+
+    $default  reduce using rule 112 (statement)
+
+
+State 206
+
+   39 type: TARRAY_T LESS_THAN_T type • GREATER_THAN_T
+
+    GREATER_THAN_T  shift, and go to state 222
+
+
+State 207
+
+   40 type: TTABLE_T LESS_THAN_T type • COMMA_T type GREATER_THAN_T
+
+    COMMA_T  shift, and go to state 223
+
+
+State 208
+
+   41 type: LEFT_PARAN_T type_list RIGHT_PARAN_T • COLON_T type_list
+
+    COLON_T  shift, and go to state 224
+
+
+State 209
+
+   33 type_list: type COMMA_T • type_list
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type_list  go to state 225
+    type       go to state 189
+
+
+State 210
+
+  108 statement: FOR_T name_list IN_T expression_list DO_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 226
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 211
+
+  106 statement: FOR_T single_assignment COMMA_T expression DO_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 227
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 212
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+  107 statement: FOR_T single_assignment COMMA_T expression COMMA_T expression • DO_T block END_T
+
+    AND_T            shift, and go to state 99
+    DO_T             shift, and go to state 228
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 213
+
+   82 function_body: LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 229
+    last_statement           go to state 21
+
+
+State 214
+
+   83 function_body: LEFT_PARAN_T RIGHT_PARAN_T block END_T •
+
+    $default  reduce using rule 83 (function_body)
+
+
+State 215
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T • type_list block END_T
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type_list  go to state 230
+    type       go to state 189
+
+
+State 216
+
+   81 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 231
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 217
+
+   28 parameter_list: name_list COMMA_T VARARG_T •
+
+    $default  reduce using rule 28 (parameter_list)
+
+
+State 218
+
+   46 pair: LEFT_SQUARE_T expression RIGHT_SQUARE_T EQUAL_T • expression
+
+    IDENTIFIER_T    shift, and go to state 1
+    NUMBER_T        shift, and go to state 29
+    STRING_T        shift, and go to state 30
+    FALSE_T         shift, and go to state 31
+    TRUE_T          shift, and go to state 32
+    FUNCTION_T      shift, and go to state 33
+    NIL_T           shift, and go to state 34
+    NOT_T           shift, and go to state 35
+    MINUS_T         shift, and go to state 36
+    LEFT_PARAN_T    shift, and go to state 11
+    POUND_T         shift, and go to state 37
+    LEFT_BRACKET_T  shift, and go to state 38
+    VARARG_T        shift, and go to state 39
+    DECREMENT_T     shift, and go to state 40
+    INCREMENT_T     shift, and go to state 41
+
+    binary_operation         go to state 42
+    variable_name_reference  go to state 43
+    unary_operation          go to state 44
+    array_constructor        go to state 45
+    table_constructor        go to state 46
+    variable                 go to state 47
+    prefix_expression        go to state 48
+    call                     go to state 27
+    expression               go to state 232
+
+
+State 219
+
+   79 else_body: ELSE_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 233
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 220
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   77 else_body: ELSEIF_T expression • THEN_T block else_body
+   78          | ELSEIF_T expression • THEN_T block END_T
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    THEN_T           shift, and go to state 234
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+
+State 221
+
+   98 class_member_list: class_member COMMA_T class_member_list •
+
+    $default  reduce using rule 98 (class_member_list)
+
+
+State 222
+
+   39 type: TARRAY_T LESS_THAN_T type GREATER_THAN_T •
+
+    $default  reduce using rule 39 (type)
+
+
+State 223
+
+   40 type: TTABLE_T LESS_THAN_T type COMMA_T • type GREATER_THAN_T
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type  go to state 235
+
+
+State 224
+
+   41 type: LEFT_PARAN_T type_list RIGHT_PARAN_T COLON_T • type_list
+
+    TNUMBER_T     shift, and go to state 136
+    TSTRING_T     shift, and go to state 137
+    TBOOLEAN_T    shift, and go to state 138
+    TANY_T        shift, and go to state 139
+    TARRAY_T      shift, and go to state 140
+    TTABLE_T      shift, and go to state 141
+    LEFT_PARAN_T  shift, and go to state 142
+    VARARG_T      shift, and go to state 143
+
+    type_list  go to state 236
+    type       go to state 189
+
+
+State 225
+
+   33 type_list: type COMMA_T type_list •
+
+    $default  reduce using rule 33 (type_list)
+
+
+State 226
+
+  108 statement: FOR_T name_list IN_T expression_list DO_T block END_T •
+
+    $default  reduce using rule 108 (statement)
+
+
+State 227
+
+  106 statement: FOR_T single_assignment COMMA_T expression DO_T block END_T •
+
+    $default  reduce using rule 106 (statement)
+
+
+State 228
+
+  107 statement: FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 237
+    last_statement           go to state 21
+
+
+State 229
+
+   82 function_body: LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 238
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 230
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 239
+    last_statement           go to state 21
+
+
+State 231
+
+   81 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T •
+
+    $default  reduce using rule 81 (function_body)
+
+
+State 232
+
+    1 binary_operation: expression • LESS_THAN_T expression
+    2                 | expression • GREATER_THAN_T expression
+    3                 | expression • GREATER_EQUAL_T expression
+    4                 | expression • LESS_EQUAL_T expression
+    5                 | expression • NOT_EQUAL_T expression
+    6                 | expression • DOUBLE_EQUAL_T expression
+    7                 | expression • AND_T expression
+    8                 | expression • OR_T expression
+    9                 | expression • PLUS_T expression
+   10                 | expression • MINUS_T expression
+   11                 | expression • ASTERISK_T expression
+   12                 | expression • SLASH_T expression
+   13                 | expression • CARROT_T expression
+   14                 | expression • PERCENT_T expression
+   15                 | expression • CONCAT_T expression
+   46 pair: LEFT_SQUARE_T expression RIGHT_SQUARE_T EQUAL_T expression •
+
+    AND_T            shift, and go to state 99
+    OR_T             shift, and go to state 100
+    PLUS_T           shift, and go to state 102
+    MINUS_T          shift, and go to state 103
+    ASTERISK_T       shift, and go to state 104
+    SLASH_T          shift, and go to state 105
+    PERCENT_T        shift, and go to state 106
+    CARROT_T         shift, and go to state 107
+    GREATER_THAN_T   shift, and go to state 108
+    LESS_THAN_T      shift, and go to state 109
+    DOUBLE_EQUAL_T   shift, and go to state 110
+    NOT_EQUAL_T      shift, and go to state 111
+    GREATER_EQUAL_T  shift, and go to state 112
+    LESS_EQUAL_T     shift, and go to state 113
+    CONCAT_T         shift, and go to state 114
+
+    $default  reduce using rule 46 (pair)
+
+
+State 233
+
+   79 else_body: ELSE_T block END_T •
+
+    $default  reduce using rule 79 (else_body)
+
+
+State 234
+
+   77 else_body: ELSEIF_T expression THEN_T • block else_body
+   78          | ELSEIF_T expression THEN_T • block END_T
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    IDENTIFIER_T  [reduce using rule 114 (block)]
+    BREAK_T       [reduce using rule 114 (block)]
+    DO_T          [reduce using rule 114 (block)]
+    FOR_T         [reduce using rule 114 (block)]
+    IF_T          [reduce using rule 114 (block)]
+    LOCAL_T       [reduce using rule 114 (block)]
+    REPEAT_T      [reduce using rule 114 (block)]
+    RETURN_T      [reduce using rule 114 (block)]
+    WHILE_T       [reduce using rule 114 (block)]
+    CLASS_T       [reduce using rule 114 (block)]
+    LEFT_PARAN_T  [reduce using rule 114 (block)]
+    $default      reduce using rule 114 (block)
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 19
+    block                    go to state 240
+    last_statement           go to state 21
+
+
+State 235
+
+   40 type: TTABLE_T LESS_THAN_T type COMMA_T type • GREATER_THAN_T
+
+    GREATER_THAN_T  shift, and go to state 241
+
+
+State 236
+
+   41 type: LEFT_PARAN_T type_list RIGHT_PARAN_T COLON_T type_list •
+
+    $default  reduce using rule 41 (type)
+
+
+State 237
+
+  107 statement: FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 242
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 238
+
+   82 function_body: LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T •
+
+    $default  reduce using rule 82 (function_body)
+
+
+State 239
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    END_T         shift, and go to state 243
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 240
+
+   77 else_body: ELSEIF_T expression THEN_T block • else_body
+   78          | ELSEIF_T expression THEN_T block • END_T
+  116 block: block • statement
+
+    IDENTIFIER_T  shift, and go to state 1
+    BREAK_T       shift, and go to state 2
+    DO_T          shift, and go to state 3
+    ELSE_T        shift, and go to state 199
+    ELSEIF_T      shift, and go to state 200
+    END_T         shift, and go to state 244
+    FOR_T         shift, and go to state 4
+    IF_T          shift, and go to state 5
+    LOCAL_T       shift, and go to state 6
+    REPEAT_T      shift, and go to state 7
+    RETURN_T      shift, and go to state 8
+    WHILE_T       shift, and go to state 9
+    CLASS_T       shift, and go to state 10
+    LEFT_PARAN_T  shift, and go to state 11
+
+    variable_name_reference  go to state 12
+    variable                 go to state 13
+    prefix_expression        go to state 14
+    call                     go to state 15
+    variable_list            go to state 17
+    else_body                go to state 245
+    assignment               go to state 18
+    statement                go to state 77
+    last_statement           go to state 21
+
+
+State 241
+
+   40 type: TTABLE_T LESS_THAN_T type COMMA_T type GREATER_THAN_T •
+
+    $default  reduce using rule 40 (type)
+
+
+State 242
+
+  107 statement: FOR_T single_assignment COMMA_T expression COMMA_T expression DO_T block END_T •
+
+    $default  reduce using rule 107 (statement)
+
+
+State 243
+
+   80 function_body: LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T •
+
+    $default  reduce using rule 80 (function_body)
+
+
+State 244
+
+   78 else_body: ELSEIF_T expression THEN_T block END_T •
+
+    $default  reduce using rule 78 (else_body)
+
+
+State 245
+
+   77 else_body: ELSEIF_T expression THEN_T block else_body •
+
+    $default  reduce using rule 77 (else_body)
