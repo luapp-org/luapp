@@ -261,7 +261,7 @@ variable
 ;
 
 prefix_expression  
-    : call 
+    : call /* TODO: fix this annoying bug where calls can't be parsed as expressions */
     | LEFT_PARAN_T expression RIGHT_PARAN_T
         { $$ = node_expression_group(@$, $2); }
     | variable_name_reference
