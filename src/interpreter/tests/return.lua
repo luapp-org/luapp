@@ -1,1 +1,1 @@
-print( f() )
+local a = f()

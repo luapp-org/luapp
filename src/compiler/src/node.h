@@ -56,7 +56,7 @@ enum node_type {
     NODE_ARRAY_CONSTRUCTOR, /* local a: Array<number> = { 1, 2, 3, 4 } */
     NODE_KEY_VALUE_PAIR,
     NODE_TABLE_CONSTRUCTOR,
-    NODE_CONSTRUCTOR
+    NODE_CLASS_CONSTRUCTOR
 };
 
 #define NODE_SIZE (int32_t) NODE_TABLE_CONSTRUCTOR + 1
@@ -173,9 +173,6 @@ struct node {
             struct node *name; // Note: `name` must be NODE_IDENTIFER
         } class_definition;
         struct {
-            struct node *arglist;
-        } constructor;
-        struct {
             struct node *expression;
         } expression_statement;
         struct {
@@ -257,6 +254,9 @@ struct node {
         struct {
             struct node *pairlist;
         } table_constructor;
+        struct {    
+            struct node *funcbody;
+        } class_constructor;
     } data;
 };
 
@@ -324,7 +324,7 @@ struct node *node_local(YYLTYPE location, struct node *namelist, struct node *ex
 struct node *node_return(YYLTYPE location, struct node *exprlist);
 struct node *node_break(YYLTYPE location);
 struct node *node_class_definition(YYLTYPE location, struct node *name, struct node *memberlist);
-struct node *node_constructor(YYLTYPE location, struct node *arglist);
+struct node *node_class_constructor(YYLTYPE location, struct node *function_body);
 
 /* Graphviz generation methods */
 void write_node(FILE *output, char *name, bool higlight);

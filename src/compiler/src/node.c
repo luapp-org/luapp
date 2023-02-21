@@ -747,6 +747,21 @@ struct node *node_class_definition(YYLTYPE location, struct node *name, struct n
     return node;
 }
 
+/*  node_class_constructor - allocate a node to represent a new class constructor definition
+ *      args: location, body
+ *      rets: class constructor
+ *
+ *  BNF -> constructor `(` [arglist] `)`  end
+ */
+struct node *node_class_constructor(YYLTYPE location, struct node *function_body)
+{
+    struct node *node = node_create(location, NODE_CLASS_CONSTRUCTOR);
+
+    node->data.class_constructor.funcbody = function_body;
+
+    return node;
+}
+
 /*  write_node - writes a node to a file in graphviz format
  *      args: output file, name of the node
  *      rets: none
@@ -1235,9 +1250,9 @@ void print_ast(FILE *output, struct node *node, bool first)
 
             parent_id = previous;
             break;
-        // case NODE_CONSTRUCTOR:
-        //     write_node(output, "constructor")
-        //     break;
+        case NODE_CLASS_CONSTRUCTOR:
+             write_node(output, "class_constructor", false);
+             break;
         default:
             break;
     }

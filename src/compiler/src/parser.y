@@ -14,6 +14,9 @@
 %token-table
 
 %{
+    // #define YYDEBUG 1
+    // yydebug = 1;
+
     #include <stdio.h>
 
     #include "compiler.h"
@@ -172,7 +175,6 @@ unary_operation
         { $$ = node_unary_operation(@$, UNOP_INCR, $1); }
   | variable_name_reference DECREMENT_T
         { $$ = node_unary_operation(@$, UNOP_DECR, $1); }
-  | variable_name_reference
 ;
 
 expression_list 
@@ -260,10 +262,14 @@ variable
         { $$ = node_name_index(@$, $1, $3, false); }
 ;
 
+expression_group 
+    : LEFT_PARAN_T expression RIGHT_PARAN_T
+        { $$ = node_expression_group(@$, $2); }
+;
+
 prefix_expression  
     : call /* TODO: fix this annoying bug where calls can't be parsed as expressions */
-    | LEFT_PARAN_T expression RIGHT_PARAN_T
-        { $$ = node_expression_group(@$, $2); }
+    | expression_group
     | variable_name_reference
 ;
 
