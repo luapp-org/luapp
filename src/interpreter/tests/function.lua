@@ -4,4 +4,4 @@ local function func(a: number, b: string): boolean
     return true
 end
 
-func(1, "a")
+print("output: ", func(1, "a"))

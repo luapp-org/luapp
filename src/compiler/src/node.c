@@ -1251,8 +1251,8 @@ void print_ast(FILE *output, struct node *node, bool first)
             parent_id = previous;
             break;
         case NODE_CLASS_CONSTRUCTOR:
-             write_node(output, "class_constructor", false);
-             break;
+            write_node(output, "class_constructor", false);
+            break;
         default:
             break;
     }
@@ -1362,4 +1362,24 @@ bool node_is_constant_list(struct node *exprlist)
             break;
     }
     return true;
+}
+
+bool node_expression_list_contains(struct node *exprlist, enum node_type type)
+{
+    assert(exprlist);
+
+    if (exprlist->type != NODE_EXPRESSION_LIST)
+        return exprlist->type == type;
+
+    for (struct node *iter = exprlist; iter; iter = iter->data.expression_list.init) {
+        /* Get the expression from the list */
+        struct node *expr =
+            iter->type == NODE_EXPRESSION_LIST ? iter->data.expression_list.expression : iter;
+        
+        if (expr->type == type)
+            return true;
+        
+        if (iter->type != NODE_EXPRESSION_LIST)
+            return false;
+    }
 }

@@ -467,6 +467,7 @@ static struct ir_proto *ir_proto()
     p->upvalues_size = 0;
     p->proto_size = 0;
     p->code = ir_section(NULL, NULL);
+    p->mult_ret = true;
 
     p->prev = NULL;
     p->next = NULL;
@@ -669,6 +670,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
     // printf("NODE %s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
+            proto->mult_ret = false;
             ir_build_proto(context, proto, node->data.expression_statement.expression);
             break;
         }
@@ -743,6 +745,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             struct node *function = node->data.call.prefix_expression;
             struct node *args = node->data.call.args;
 
+            uint8_t c = !proto->mult_ret;
+
+            if (!proto->mult_ret)
+                proto->mult_ret = true;
+
             int size = 0;
 
             /* Set the size of the args list */
@@ -758,7 +765,9 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, function);
             ir_build_proto(context, proto, args);
 
-            instruction = ir_instruction_ABC(OP_CALL, old, size + 1, 1);
+            bool mult_call = node_expression_list_contains(args, NODE_CALL);
+
+            instruction = ir_instruction_ABC(OP_CALL, old, mult_call ? 0 : size + 1, c);
 
             ir_free_register(context, proto, size + 1);
 
@@ -1181,7 +1190,10 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_RETURN: {
             const uint8_t top = proto->top_register;
-            const size_t size = node->data.return_statement.exprlist->data.expression_list.size;
+            const size_t size =
+                node->data.return_statement.exprlist->type == NODE_EXPRESSION_LIST
+                    ? node->data.return_statement.exprlist->data.expression_list.size
+                    : 1;
 
             ir_build_proto(context, proto, node->data.return_statement.exprlist);
 

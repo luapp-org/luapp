@@ -1,1 +1,2 @@
-local a = f()
+local a: number = print()
+print(a)

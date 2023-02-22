@@ -337,7 +337,6 @@ char *node_to_string(struct node *node);
 int node_get_size(struct node *node);
 bool node_is_constant_list(struct node *exprlist);
 
-typedef bool (*node_iterator_callback)(const struct node *n);
-void node_iterate_expression_list(struct node *list, node_iterator_callback cb);
+bool node_expression_list_contains(struct node *exprlist, enum node_type type);
 
 #endif

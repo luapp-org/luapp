@@ -69,6 +69,7 @@ struct ir_proto {
     /* Variables used within the IR */
     uint8_t top_register;
     int32_t target_register;
+    bool mult_ret;
     struct ir_proto *prev, *next;
 };
 
