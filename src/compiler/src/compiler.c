@@ -21,7 +21,14 @@
 void compiler_error(YYLTYPE location, const char *format, ...)
 {
     va_list ap;
-    printf("Error (%d, %d): ", location.first_line, location.first_column);
+
+    if (location.first_line == location.last_line)
+        printf("Error (%d, %d-%d): ", location.first_line, location.first_column,
+               location.last_column);
+    else
+        printf("Error (%d-%d, %d-%d): ", location.first_line, location.last_line,
+               location.first_column, location.last_column);
+
     va_start(ap, format);
     vprintf(format, ap);
     va_end(ap);

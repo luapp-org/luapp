@@ -64,6 +64,7 @@ struct type {
         } function;
         struct {
             struct node *name;
+            struct node *node; /* node defining this type */
         } custom;
     } data;
 };
@@ -86,7 +87,7 @@ struct type *type_table(struct type *key, struct type *value);
 struct type *type_function(struct node *args_list, struct node *rets_list);
 
 /* TODO: Add slots for types in classes (templates and inheritance) */
-struct type *type_custom(struct node *name);
+struct type *type_custom(struct node *name, struct node *node);
 
 bool type_is(struct type *first, struct type *second);
 void type_ast_traversal(struct type_context *context, struct node *node, bool main);

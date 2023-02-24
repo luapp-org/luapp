@@ -386,8 +386,15 @@ assignment
         { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
+class_constructor_body
+    : LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
+        { $$ = node_function_body(@$, $2, NULL, $4); }
+    | LEFT_PARAN_T RIGHT_PARAN_T block END_T
+        { $$ = node_function_body(@$, NULL, NULL, $3); }
+;
+
 class_constructor 
-    : CONSTRUCTOR_T function_body
+    : CONSTRUCTOR_T class_constructor_body
         { $$ = node_class_constructor(@$, $2); }
 ;
 
@@ -400,7 +407,7 @@ class_member
 class_member_list
     : class_member
     | class_member COMMA_T class_member_list
-        { $$ = node_class_member_list(@$, $1, $3); }
+        { $$ = node_class_member_list(@$, $3, $1); }
 ;
 
 statement

@@ -51,6 +51,7 @@ const char *const node_names[NODE_SIZE + 1] = {"NODE_NUMBER",
                                                "NODE_ARRAY_CONSTRUCTOR",
                                                "NODE_KEY_VALUE_PAIR",
                                                "NODE_TABLE_CONSTRUCTOR",
+                                               "NODE_CLASS_CONSTRUCTOR",
                                                NULL};
 
 /*  node_create - allocate and initialize a generic node
@@ -1388,4 +1389,38 @@ bool node_expression_list_contains(struct node *exprlist, enum node_type type)
         if (iter->type != NODE_EXPRESSION_LIST)
             return false;
     }
+}
+
+bool node_class_member_list_contains(struct node *memberlist, struct node *name)
+{
+    if (!memberlist || !name)
+        return false;
+
+    char *namestr = NULL;
+
+    if (name->type == NODE_IDENTIFIER)
+        namestr = name->data.identifier.name;
+    else if (name->type == NODE_TYPE_ANNOTATION)
+        namestr = name->data.type_annotation.identifier->data.identifier.name;
+
+    for (struct node *iter = memberlist; iter; iter = iter->data.class_member_list.init) {
+        /* Get member from the member list */
+        struct node *member =
+            iter->type == NODE_CLASS_MEMBER_LIST ? iter->data.class_member_list.member : iter;
+
+        /* Don't count anything after the name */
+        if (member == name)
+            return false;
+
+        if (member->type == NODE_IDENTIFIER && !strcmp(namestr, member->data.identifier.name))
+            return true;
+        else if (member->type == NODE_TYPE_ANNOTATION &&
+                 !strcmp(namestr, member->data.type_annotation.identifier->data.identifier.name))
+            return true;
+
+        if (iter->type != NODE_CLASS_MEMBER_LIST)
+            break;
+    }
+
+    return false;
 }

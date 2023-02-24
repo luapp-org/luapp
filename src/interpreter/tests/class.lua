@@ -1,8 +1,6 @@
 class MyClass {
     a: number,
-    b: number,
 
-    constructor()
-        print('hello!')
+    constructor(arg: number)
     end
 }
