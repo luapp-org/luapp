@@ -386,8 +386,14 @@ assignment
         { $$ = node_assignment(@$, $1, ASSIGN_CON, $3); }
 ;
 
+class_constructor 
+    : CONSTRUCTOR_T function_body
+        { $$ = node_class_constructor(@$, $2); }
+;
+
 class_member
     : name_type
+    | class_constructor
     | function_definition
 ;
 

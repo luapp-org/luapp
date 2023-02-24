@@ -1252,6 +1252,13 @@ void print_ast(FILE *output, struct node *node, bool first)
             break;
         case NODE_CLASS_CONSTRUCTOR:
             write_node(output, "class_constructor", false);
+
+            previous = parent_id;
+            parent_id = id++;
+
+            print_ast(output, node->data.class_constructor.funcbody, false);
+
+            parent_id = previous;
             break;
         default:
             break;
@@ -1374,10 +1381,10 @@ bool node_expression_list_contains(struct node *exprlist, enum node_type type)
         /* Get the expression from the list */
         struct node *expr =
             iter->type == NODE_EXPRESSION_LIST ? iter->data.expression_list.expression : iter;
-        
+
         if (expr->type == type)
             return true;
-        
+
         if (iter->type != NODE_EXPRESSION_LIST)
             return false;
     }
