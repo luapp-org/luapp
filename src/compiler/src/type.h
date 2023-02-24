@@ -36,7 +36,8 @@ enum type_primitive_kind {
                         *   -- system does stuff
                         * end
                         */
-    TYPE_BASIC_ANY
+    TYPE_BASIC_ANY,
+    TYPE_BASIC_VOID
 };
 
 struct type {

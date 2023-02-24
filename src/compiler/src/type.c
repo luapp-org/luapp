@@ -116,6 +116,8 @@ char *type_to_string(struct type *type)
                 return "nil";
             case TYPE_BASIC_ANY:
                 return "any";
+            case TYPE_BASIC_VOID:
+                return "void";
         }
     } else if (type->kind == TYPE_ARRAY) {
         sprintf(buf, "Array<%s>", type_to_string(type->data.array.type));
@@ -182,6 +184,11 @@ bool type_node_is(struct node *first, struct node *second)
 
 bool type_node_list_is_expr_list(struct node *typelist, struct node *exprlist)
 {
+    if (!typelist && !exprlist)
+        return true;
+    if (!typelist || !exprlist)
+        return false;
+
     if (typelist->data.type_list.size != exprlist->data.expression_list.size)
         return false;
 
@@ -294,7 +301,11 @@ void type_init(struct type_context *context)
     /* Todo add function calls! */
     type_add_name(context->global_type_map, "print",
                   type_function(node_type(loc, type_basic(TYPE_BASIC_VARARG)),
-                                node_type(loc, type_basic(TYPE_BASIC_ANY))));
+                                node_type(loc, type_basic(TYPE_BASIC_VOID))));
+
+    type_add_name(context->global_type_map, "type",
+                  type_function(node_type(loc, type_basic(TYPE_BASIC_ANY)),
+                                node_type(loc, type_basic(TYPE_BASIC_STRING))));
 }
 
 /* type_destroy() -- deallocates space for the type context
@@ -963,48 +974,50 @@ static void type_handle_function_body(struct type_context *context, struct node 
 
     funcbody->node_type = type_function(type_build_type_list(context, namelist, vararg), typelist);
 
-    while (true) {
-        struct node *p = NULL;
+    for (struct node *iter = namelist; iter; iter = iter->data.name_list.init) {
+        /* get name */
+        struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
 
-        if (namelist == NULL)
-            break;
-        else if (namelist->type == NODE_NAME_LIST) {
-            p = namelist->data.name_list.name;
-        } else
-            p = namelist;
-
-        if (p->type != NODE_TYPE_ANNOTATION) {
+        if (name->type != NODE_TYPE_ANNOTATION) {
+            /* Error if strict context */
             if (context->is_strict) {
-                /* Scream */
-                compiler_error(p->location,
+                compiler_error(name->location,
                                "expected type annotation; compiler is in \"strict\" mode");
                 context->error_count++;
             }
-            type_add(context, p, p->node_type);
-        } else
-            type_add(context, p->data.type_annotation.identifier, p->node_type);
 
-        if (namelist->type == NODE_NAME_LIST)
-            namelist = namelist->data.name_list.init;
-        else
-            namelist = NULL;
+            type_add(context, name, name->node_type);
+        } else
+            type_add(context, name->data.type_annotation.identifier, name->node_type);
+
+        if (iter->type != NODE_NAME_LIST)
+            break;
     }
 
-    if (!typelist)
-        return;
+    if (!typelist && context->is_strict) {
+        compiler_error(funcbody->location, "expected type return list as compiler is in \"strict\" "
+                                           "mode. Did you forget a 'void' annotation?");
+        context->error_count++;
+    }
 
     struct node *body = funcbody->data.function_body.body;
 
     /* Check for return statement */
     for (struct node *iter = body; body; iter = body->data.block.init) {
         /* Do the checking part */
-        bool is_statement = !iter->data.block.statement;
+        const bool is_statement = !iter->data.block.statement;
+        const bool is_void = typelist && typelist->type == NODE_TYPE &&
+                             type_is_primitive(typelist->node_type, TYPE_BASIC_VOID);
         struct node *stmt = is_statement ? iter : iter->data.block.statement;
 
         if (stmt->type == NODE_RETURN) {
-            // type_node_is
-            if (!type_node_list_is_expr_list(typelist,
-                              stmt->data.return_statement.exprlist)) {
+            // fastcheck exprlist and typelist
+            struct node *exprlist = stmt->data.return_statement.exprlist;
+
+            if (is_void && !exprlist)
+                return;
+
+            if (!type_node_list_is_expr_list(typelist, exprlist)) {
                 compiler_error(stmt->location,
                                "return statement type mismatch; check function return type");
                 context->error_count++;
@@ -1012,7 +1025,7 @@ static void type_handle_function_body(struct type_context *context, struct node 
             return;
         }
 
-        if (is_statement && context->is_strict && !main) {
+        if (is_statement && !is_void && context->is_strict && !main) {
             compiler_error(funcbody->data.function_body.type_list->location,
                            "expected return statement");
             context->error_count++;

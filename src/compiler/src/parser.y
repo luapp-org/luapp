@@ -72,6 +72,7 @@
 %token TSTRING_T
 %token TBOOLEAN_T
 %token TANY_T
+%token TVOID_T
 %token TARRAY_T
 %token TTABLE_T
 
@@ -194,6 +195,7 @@ parameter_list
 
 name_list 
     : name_type
+        { $$ = $1; }
     | name_type COMMA_T name_list 
         { $$ = node_name_list(@$, $3, $1); }
 ;
@@ -213,6 +215,8 @@ type
         { $$ = node_type(@$, type_basic(TYPE_BASIC_BOOLEAN)); }
     | TANY_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_ANY)); }
+    | TVOID_T
+        { $$ = node_type(@$, type_basic(TYPE_BASIC_VOID)); }
     | VARARG_T
         { $$ = node_type(@$, type_basic(TYPE_BASIC_VARARG)); }
     | TARRAY_T LESS_THAN_T type GREATER_THAN_T 
@@ -440,7 +444,7 @@ last_statement
     : RETURN_T expression_list
         { $$ = node_return(@$, $2); }
     | RETURN_T
-        { $$ = node_return(@$, node_nil(@$)); }
+        { $$ = node_return(@$, NULL); }
     | BREAK_T
         { $$ = node_break(@$); }
 ;

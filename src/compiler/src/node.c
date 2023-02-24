@@ -1314,10 +1314,6 @@ int node_get_size(struct node *node)
     type = node->type;
 
     for (node; node != NULL; size++) {
-        /* Must be singular; increase counter and return */
-        if (node->type != type)
-            return ++size;
-
         switch (node->type) {
             case NODE_NAME_LIST:
                 node = node->data.name_list.init;
@@ -1334,6 +1330,8 @@ int node_get_size(struct node *node)
             case NODE_CLASS_MEMBER_LIST:
                 node = node->data.class_member_list.init;
                 break;
+            default:
+                return ++size;
         }
     }
 }
@@ -1366,7 +1364,8 @@ bool node_is_constant_list(struct node *exprlist)
 
 bool node_expression_list_contains(struct node *exprlist, enum node_type type)
 {
-    assert(exprlist);
+    if (!exprlist)
+        return false;
 
     if (exprlist->type != NODE_EXPRESSION_LIST)
         return exprlist->type == type;

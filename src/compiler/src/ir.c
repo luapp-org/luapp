@@ -765,11 +765,11 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
             ir_build_proto(context, proto, function);
             ir_build_proto(context, proto, args);
 
-            bool mult_call = node_expression_list_contains(args, NODE_CALL);
+            uint8_t b = node_expression_list_contains(args, NODE_CALL) ? 0 : size + 1;
 
-            instruction = ir_instruction_ABC(OP_CALL, old, mult_call ? 0 : size + 1, c);
+            instruction = ir_instruction_ABC(OP_CALL, old, b, c);
 
-            ir_free_register(context, proto, size + 1);
+            ir_free_register(context, proto, b);
 
             ir_append(proto->code, instruction);
             break;

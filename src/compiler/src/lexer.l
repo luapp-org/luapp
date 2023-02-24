@@ -117,6 +117,7 @@ lstring         \[\[(.*?|\n|\r)\]\]
 "string"            return TSTRING_T;
 "boolean"           return TBOOLEAN_T;
 "any"               return TANY_T;
+"void"              return TVOID_T;
 "Array"             return TARRAY_T;
 "Table"             return TTABLE_T;
 
