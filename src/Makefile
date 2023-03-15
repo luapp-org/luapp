@@ -1,3 +1,7 @@
+# Make out directory (bin/)
+OUTDIR = bin
+$(shell mkdir -p $(OUTDIR))
+
 %.yy.c : %.l
 	flex --header-file=$(subst .yy.c,.yy.h,$@) -o $@ $<
 
@@ -15,13 +19,14 @@ VM_OBJS = vm/src/main.c ${VM_CORE} common/opcodes.c
 INTERPRETER_OBJS = interpreter/main.c ${COMPILER_CORE} ${VM_CORE}
 
 compiler: $(COMPILER_OBJS)
-	gcc -o bin/luappc $^ -lm
+	gcc -o ${OUTDIR}/luappc $^ -lm
 
 # runtime -> vm
 runtime: $(VM_OBJS)
-	gcc -o bin/luappvm $^ -lm
+	gcc -o ${OUTDIR}/luappvm $^ -lm
 
 interpreter: $(INTERPRETER_OBJS)
-	gcc -o bin/luapp $^ -lm
+	gcc -o ${OUTDIR}/luapp $^ -lm
+
 
 .PHONY: interpreter runtime compiler
