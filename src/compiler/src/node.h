@@ -59,7 +59,7 @@ enum node_type {
     NODE_CLASS_CONSTRUCTOR
 };
 
-#define NODE_SIZE (int32_t) NODE_TABLE_CONSTRUCTOR + 1
+#define NODE_SIZE (int32_t) NODE_CLASS_CONSTRUCTOR + 1
 
 extern const char *const node_names[NODE_SIZE + 1];
 
@@ -338,5 +338,6 @@ int node_get_size(struct node *node);
 bool node_is_constant_list(struct node *exprlist);
 
 bool node_expression_list_contains(struct node *exprlist, enum node_type type);
+bool node_class_member_list_contains(struct node *memberlist, struct node *name);
 
 #endif

@@ -75,10 +75,10 @@ struct type *type_function(struct node *args_list, struct node *rets_list)
 }
 
 /* type_custom() -- creates a custom type
- *      args: name of then type
+ *      args: name of then type, node associated with the type definition
  *      returns: custom type
  */
-struct type *type_custom(struct node *name)
+struct type *type_custom(struct node *name, struct node *node)
 {
     struct type *t;
 
@@ -86,6 +86,7 @@ struct type *type_custom(struct node *name)
 
     t->kind = TYPE_CUSTOM;
     t->data.custom.name = name;
+    t->data.custom.node = node;
 
     return t;
 }
@@ -1113,7 +1114,88 @@ static void type_handle_class_definition(struct type_context *context, struct no
     if (node->node_type)
         free(node->node_type);
 
-    node->node_type = type_custom(node->data.class_definition.name);
+    node->node_type = type_custom(node->data.class_definition.name, node);
+
+    struct node *member_list = node->data.class_definition.memberlist;
+
+    for (struct node *iter = member_list; iter; iter = iter->data.class_member_list.init) {
+        /* Get the member from the list */
+        struct node *member =
+            iter->type == NODE_CLASS_MEMBER_LIST ? iter->data.class_member_list.member : iter;
+
+        switch (member->type) {
+            case NODE_IDENTIFIER: {
+                if (context->is_strict) {
+                    compiler_error(member->location,
+                                   "expected type annotation; compiler is in \"strict\" mode");
+                    context->error_count++;
+                }
+
+                if (node_class_member_list_contains(member_list, member)) {
+                    compiler_error(member->location,
+                                   "member \"%s\" has already been defined in this class",
+                                   member->data.identifier.name);
+                    context->error_count++;
+                }
+                break;
+            }
+            case NODE_TYPE_ANNOTATION: {
+                if (node_class_member_list_contains(member_list, member)) {
+                    compiler_error(member->location,
+                                   "member \"%s\" has already been defined in this class",
+                                   member->data.type_annotation.identifier->data.identifier.name);
+                    context->error_count++;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+        if (iter->type != NODE_CLASS_MEMBER_LIST)
+            break;
+    }
+}
+
+static void type_handle_class_constructor(struct type_context *context, struct node *node)
+{
+    if (node->node_type)
+        free(node->node_type);
+
+    struct node *funcbody = node->data.class_constructor.funcbody;
+    struct node *parameters = funcbody->data.function_body.exprlist;
+
+    if (!parameters) { /* no args */
+        node->node_type = type_function(node_type(node->location, type_basic(TYPE_BASIC_VOID)),
+                                        node_type(node->location, type_basic(TYPE_BASIC_VOID)));
+        return;
+    }
+
+    struct node *vararg = parameters->data.parameter_list.vararg;
+    struct node *namelist = parameters->data.parameter_list.namelist;
+
+    node->node_type =
+        type_function(type_build_type_list(context, namelist, vararg),
+                      node_type(node->location, type_basic(TYPE_BASIC_VOID))); /* no return */
+
+    for (struct node *iter = namelist; iter; iter = iter->data.name_list.init) {
+        /* get name */
+        struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
+
+        if (name->type != NODE_TYPE_ANNOTATION) {
+            /* Error if strict context */
+            if (context->is_strict) {
+                compiler_error(name->location,
+                               "expected type annotation; compiler is in \"strict\" mode");
+                context->error_count++;
+            }
+            type_add(context, name, name->node_type);
+        } else
+            type_add(context, name->data.type_annotation.identifier, name->node_type);
+
+        if (iter->type != NODE_NAME_LIST)
+            break;
+    }
 }
 
 /* type_ast_traversal() -- traverses the AST and ensures that there are no type mismatches
@@ -1285,6 +1367,16 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
         case NODE_CLASS_DEFINITION:
             type_ast_traversal(context, node->data.class_definition.memberlist, false);
             type_ast_traversal(context, node->data.class_definition.name, false);
+
+            type_handle_class_definition(context, node);
+            break;
+        case NODE_CLASS_CONSTRUCTOR:
+            /* Note: don't traverse the function body as no typelist is provided. This will cause
+             * unwanted errors.  */
+            type_ast_traversal(
+                context, node->data.class_constructor.funcbody->data.function_body.exprlist, false);
+
+            type_handle_class_constructor(context, node);
             break;
     }
 }
