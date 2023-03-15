@@ -306,7 +306,7 @@ program
             // *root = node_function_body(@$, node_parameter_list(@$, NULL, node_vararg(@$)), node_type(@$, type_basic(TYPE_BASIC_ANY)), $1);
             //*root = $1;
             struct node *params = node_parameter_list(@$, NULL, node_vararg(@$));
-            struct node *type = node_type(@$, type_basic(TYPE_BASIC_ANY)); 
+            struct node *type = node_type(@$, type_basic(TYPE_BASIC_VOID)); 
             *root = node_function_body(@$, params, type, $1);
         }
 ;
@@ -341,7 +341,9 @@ function_body
     : LEFT_PARAN_T parameter_list RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, $2, $5, $6); }
     | LEFT_PARAN_T parameter_list RIGHT_PARAN_T block END_T
-        { $$ = node_function_body(@$, $2, NULL, $4); }
+        { 
+            
+            $$ = node_function_body(@$, $2, NULL, $4); }
     | LEFT_PARAN_T RIGHT_PARAN_T COLON_T type_list block END_T
         { $$ = node_function_body(@$, NULL, $4, $5); }
     | LEFT_PARAN_T RIGHT_PARAN_T block END_T

@@ -979,7 +979,7 @@ static void type_handle_function_body(struct type_context *context, struct node 
                       typelist);
 
     /* Check only if args exist */
-    if (namelist) {
+    if (namelist != NULL) {
         for (struct node *iter = namelist; iter; iter = iter->data.name_list.init) {
             /* get name */
             struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
@@ -1009,6 +1009,9 @@ static void type_handle_function_body(struct type_context *context, struct node 
     }
 
     struct node *body = funcbody->data.function_body.body;
+
+    if (main)
+        return;
 
     /* Check for return statement */
     for (struct node *iter = body; body; iter = body->data.block.init) {
@@ -1219,7 +1222,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     struct type_context new_context = {context->is_strict, context->use_c_arrays,
                                        context->error_count, NULL, context->global_type_map};
-    // printf("%s\n", node_names[node->type]);
+    //printf("%s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);

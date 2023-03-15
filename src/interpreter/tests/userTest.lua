@@ -6,6 +6,6 @@ end
 --local a = HW
 
 HW()
---print = nil
+print = nil
 --HW()
 
