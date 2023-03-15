@@ -2,7 +2,7 @@
 This is the Lua++ C lang build, currently in development but is soon to be completed. If you are interested in learning more about this project, please visit our website: [luaplusplus.org](https://www.luaplusplus.org). This codebase is not specifically tweaked to a certain compiler, so any C/C++ compiler should be able to build this project easily. Personally, I recommend building it with ```gcc``` although ```clang``` or ```MSVSC``` would also work fine.
 
 Disclamer
-> Lua++ is still under heavy development so when you are testing the programming language keep that in mind. There are a LOT of minor bugs spreat around in the codebase so don't expect a production ready application. Otherwise, thank you for showing interest in Lua++.
+> Lua++ is still under heavy development so when you are testing the programming language keep that in mind. There are a LOT of minor bugs spread around in the codebase so don't expect a production ready application. Otherwise, thank you for showing interest in Lua++.
 
 ### How to use
 1. Make sure that you have ``make``, ``flex``, and ``bison`` installed. To install them on a Linux machine run the following commands:
