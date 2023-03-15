@@ -967,38 +967,45 @@ static void type_handle_function_body(struct type_context *context, struct node 
     struct node *typelist = funcbody->data.function_body.type_list;
     struct node *parameters = funcbody->data.function_body.exprlist;
 
-    struct node *vararg = parameters->data.parameter_list.vararg;
-    struct node *namelist = parameters->data.parameter_list.namelist;
+    struct node *vararg = parameters ? parameters->data.parameter_list.vararg : NULL;
+    struct node *namelist = parameters ? parameters->data.parameter_list.namelist : NULL;
 
     if (funcbody->node_type)
         free(funcbody->node_type);
 
-    funcbody->node_type = type_function(type_build_type_list(context, namelist, vararg), typelist);
+    funcbody->node_type =
+        type_function(parameters ? type_build_type_list(context, namelist, vararg)
+                                 : node_type(funcbody->location, type_basic(TYPE_BASIC_VOID)),
+                      typelist);
 
-    for (struct node *iter = namelist; iter; iter = iter->data.name_list.init) {
-        /* get name */
-        struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
+    /* Check only if args exist */
+    if (namelist) {
+        for (struct node *iter = namelist; iter; iter = iter->data.name_list.init) {
+            /* get name */
+            struct node *name = iter->type == NODE_NAME_LIST ? iter->data.name_list.name : iter;
 
-        if (name->type != NODE_TYPE_ANNOTATION) {
-            /* Error if strict context */
-            if (context->is_strict) {
-                compiler_error(name->location,
-                               "expected type annotation; compiler is in \"strict\" mode");
-                context->error_count++;
-            }
+            if (name->type != NODE_TYPE_ANNOTATION) {
+                /* Error if strict context */
+                if (context->is_strict) {
+                    compiler_error(name->location,
+                                   "expected type annotation; compiler is in \"strict\" mode");
+                    context->error_count++;
+                }
 
-            type_add(context, name, name->node_type);
-        } else
-            type_add(context, name->data.type_annotation.identifier, name->node_type);
+                type_add(context, name, name->node_type);
+            } else
+                type_add(context, name->data.type_annotation.identifier, name->node_type);
 
-        if (iter->type != NODE_NAME_LIST)
-            break;
+            if (iter->type != NODE_NAME_LIST)
+                break;
+        }
     }
 
     if (!typelist && context->is_strict) {
         compiler_error(funcbody->location, "expected type return list as compiler is in \"strict\" "
                                            "mode. Did you forget a 'void' annotation?");
         context->error_count++;
+        return;
     }
 
     struct node *body = funcbody->data.function_body.body;
@@ -1052,7 +1059,8 @@ static void type_handle_single_call(struct type_context *context, struct node *a
     } else if (arg) {
         compiler_error(arg->location, "too many arguments in function call");
         context->error_count++;
-    } else if (type && !type_is_primitive(type->node_type, TYPE_BASIC_VARARG)) {
+    } else if (type && !type_is_primitive(type->node_type, TYPE_BASIC_VARARG) &&
+               !type_is_primitive(type->node_type, TYPE_BASIC_VOID)) {
         compiler_error(location, "too few arguments in function call");
         context->error_count++;
     }
