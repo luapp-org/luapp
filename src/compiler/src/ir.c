@@ -667,7 +667,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
 {
     if (!node)
         return NULL;
-    // printf("NODE %s\n", node_names[node->type]);
+    //printf("NODE %s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT: {
             proto->mult_ret = false;
@@ -1121,13 +1121,13 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
         }
         case NODE_FUNCTION_BODY: {
             const struct node *params = node->data.function_body.exprlist;
-            struct node *namelist = params->data.parameter_list.namelist;
-
+            struct node *namelist = params ? params->data.parameter_list.namelist : NULL;
+       
             /* Create new function prototype */
             struct ir_proto *p = ir_proto();
-            p->is_vararg = params->data.parameter_list.vararg != NULL;
-            p->parameters_size = namelist->data.name_list.size;
-
+            p->is_vararg = params ? params->data.parameter_list.vararg != NULL : false;
+            p->parameters_size = namelist ? namelist->data.name_list.size : 0;
+ 
             /* First couple registers will point to function parameters (load them) */
             if (p->parameters_size)
                 ir_load_function_args(context, p, namelist);
@@ -1137,7 +1137,7 @@ struct ir_proto *ir_build_proto(struct ir_context *context, struct ir_proto *pro
                 ir_append(p->code, ir_instruction_ABC(OP_VARARGPREP, p->parameters_size, 0, 0));
 
             ir_build_proto(context, p, node->data.function_body.body);
-
+            
             /* Keep constant return result for now */
             ir_append(p->code, ir_instruction_ABC(OP_RETURN, 0, 1, 0));
             ir_proto_append(context->protos, p);

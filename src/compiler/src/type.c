@@ -1016,7 +1016,7 @@ static void type_handle_function_body(struct type_context *context, struct node 
     /* Check for return statement */
     for (struct node *iter = body; body; iter = body->data.block.init) {
         /* Do the checking part */
-        const bool is_statement = !iter->data.block.statement;
+        const bool is_statement = iter->type != NODE_BLOCK;
         const bool is_void = typelist && typelist->type == NODE_TYPE &&
                              type_is_primitive(typelist->node_type, TYPE_BASIC_VOID);
         struct node *stmt = is_statement ? iter : iter->data.block.statement;
@@ -1038,7 +1038,8 @@ static void type_handle_function_body(struct type_context *context, struct node 
 
         if (is_statement && !is_void && context->is_strict && !main) {
             compiler_error(funcbody->data.function_body.type_list->location,
-                           "expected return statement");
+                           "expected return statement; last satement was %s",
+                           node_names[stmt->type]);
             context->error_count++;
         }
 
@@ -1222,7 +1223,7 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
 
     struct type_context new_context = {context->is_strict, context->use_c_arrays,
                                        context->error_count, NULL, context->global_type_map};
-    //printf("%s\n", node_names[node->type]);
+    // printf("%s\n", node_names[node->type]);
     switch (node->type) {
         case NODE_EXPRESSION_STATEMENT:
             type_ast_traversal(context, node->data.expression_statement.expression, false);
@@ -1240,6 +1241,8 @@ void type_ast_traversal(struct type_context *context, struct node *node, bool ma
         case NODE_EXPRESSION_INDEX:
             type_ast_traversal(context, node->data.expression_index.expression, false);
             type_ast_traversal(context, node->data.expression_index.index, false);
+
+            // type_handle_expression_index(context, node);
             break;
         case NODE_LOCAL:
             /* Visit children */

@@ -52,6 +52,8 @@ struct type {
         struct {
             /* Array kind --> Array<type> */
             struct type *type;
+
+            struct node *node; /* Pointer to node constructor */
         } array;
         struct {
             /* Table kind --> Table<type, type> */

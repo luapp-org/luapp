@@ -4,4 +4,9 @@ local function func(a: number, b: string): boolean
     return true
 end
 
+local function voidFun(): string
+    return "str"
+end
+
 print("output: ", func(1, "a"))
+print(voidFun())

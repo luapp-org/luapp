@@ -450,7 +450,6 @@ block
     : %empty
         { $$ = NULL; }
     | statement
-        { $$ = node_block(@$, $1, NULL); }
     | block statement
         { $$ = node_block(@$, $1, $2); }
 ;
