@@ -1,6 +1,8 @@
 ## Lua++ Compiler
 The current folder contains all of the contents of the compiler (``luappc``). If you are interested in the codebase, take a look in ``src/``.
 
+> The current compiler will soon be replaced by lorraine. You can learn more about the compiler [here](https://github.com/luapp-org/lorraine).
+
 ### Lua++ syntax in extented BNF
 Most of this is from [lua.org](https://www.lua.org/manual/5.1/manual.html#8), but I have added some modifications. Those are marked in the codebase.
 ```
