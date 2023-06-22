@@ -20,6 +20,8 @@ sudo apt install make
 ```
 
 ### Compiler
+> Note: compiler development moved to [lorraine](https://github.com/luapp-org/lorraine).
+
 The current complier is very user friendly. It consists of four stages: ``lexer``, ``parser``, ``ir``, and ``codegen``. These are all toggable via the ``-s`` command line argument. This gives you the ability to inspect each stage of the compiler in detail. The usage for the compiler binary is provided below:
 ```
 luappc -s [lexer|parser|type|symbol|ir|codgen] -o [outputfile] [inputfile]
